@@ -2,7 +2,7 @@
 *.config
 *.vs/
 *debug/
-*appsettings.*
+*appsettings.json
 *.props
 *.targets
 launchSettings.json
