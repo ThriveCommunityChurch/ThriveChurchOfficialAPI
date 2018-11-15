@@ -24,6 +24,7 @@ namespace ThriveChurchOfficialAPI
             .SetBasePath(env.ContentRootPath)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
+            builder.AddEnvironmentVariables();
             Configuration = builder.Build();
         }
 
@@ -40,7 +41,10 @@ namespace ThriveChurchOfficialAPI
             services.AddOptions();
 
             // Add our Config object so it can be injected later
-            services.Configure<AppSettings>(Configuration.GetSection("EsvApiKey"));
+            services.Configure<AppSettings>(options => Configuration.GetSection("EsvApiKey").Bind(options));
+
+            services.AddSingleton(Configuration);
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

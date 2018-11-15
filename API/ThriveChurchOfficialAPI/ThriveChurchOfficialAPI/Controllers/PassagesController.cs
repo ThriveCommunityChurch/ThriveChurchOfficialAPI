@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using ThriveChurchOfficialAPI.Repositories;
+using ThriveChurchOfficialAPI.Services;
 
 namespace ThriveChurchOfficialAPI.Controllers
 {
@@ -11,18 +14,20 @@ namespace ThriveChurchOfficialAPI.Controllers
     [ApiController]
     public class PassagesController : ControllerBase
     {
-        private readonly IOptions<AppSettings> config;
+        private readonly IPassagesService _passagesService;
+        private readonly IPassagesRepository _passagesRepository;
 
-        public PassagesController(IOptions<AppSettings> config)
+        public PassagesController(IConfiguration configuration)
         {
-            this.config = EsvApiKey;
+            _passagesRepository = new PassagesRepository();
+            _passagesService = new PassagesService(configuration, _passagesRepository);
         }
 
         // GET api/passage
         [HttpGet]
-        public ActionResult<string> Get()
+        public async Task<ActionResult<string>> Get()
         {
-            return  "value1 value2";
+            return await _passagesService.GetAllPassages();
         }
 
         // GET api/passage/{id}

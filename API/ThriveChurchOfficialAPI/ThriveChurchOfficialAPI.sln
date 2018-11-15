@@ -3,9 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2050
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThriveChurchOfficialAPI", "ThriveChurchOfficialAPI\ThriveChurchOfficialAPI.csproj", "{4C2E9EA6-25B3-4475-B4DF-39FE11526649}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ThriveChurchOfficialAPI", "ThriveChurchOfficialAPI\ThriveChurchOfficialAPI.csproj", "{4C2E9EA6-25B3-4475-B4DF-39FE11526649}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1B02F5DC-473A-44B1-8F39-7C4694392238}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThriveChurchOfficialAPI.Services", "ThriveChurchOfficialAPI.Services\ThriveChurchOfficialAPI.Services.csproj", "{B3502CB8-7924-4193-AB9A-ED7D4F99CEBD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThriveChurchOfficialAPI.Repositories", "ThriveChurchOfficialAPI.Repositories\ThriveChurchOfficialAPI.Repositories.csproj", "{3F5B9FFF-F46C-4B89-B5E9-E8E6057BECB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,6 +21,14 @@ Global
 		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3502CB8-7924-4193-AB9A-ED7D4F99CEBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3502CB8-7924-4193-AB9A-ED7D4F99CEBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3502CB8-7924-4193-AB9A-ED7D4F99CEBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3502CB8-7924-4193-AB9A-ED7D4F99CEBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F5B9FFF-F46C-4B89-B5E9-E8E6057BECB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F5B9FFF-F46C-4B89-B5E9-E8E6057BECB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F5B9FFF-F46C-4B89-B5E9-E8E6057BECB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F5B9FFF-F46C-4B89-B5E9-E8E6057BECB8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
