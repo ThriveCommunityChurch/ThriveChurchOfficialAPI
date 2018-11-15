@@ -1,1 +1,10 @@
-# .NET Core
+# .NET Core debug folders / Security Ignores
+*.config
+*.vs/
+*debug/
+*appsettings.*
+*.props
+*.targets
+launchSettings.json
+*assets.json
+*.cache
