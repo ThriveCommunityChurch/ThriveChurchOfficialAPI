@@ -9,3 +9,8 @@ launchSettings.json
 *assets.json
 *.cache
 *.db
+
+# Random other ignores that might end up in here
+*.png
+*.jpeg
+*.jpg
