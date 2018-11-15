@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2050
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThriveChurchOfficialAPI", "ThriveChurchOfficialAPI\ThriveChurchOfficialAPI.csproj", "{4C2E9EA6-25B3-4475-B4DF-39FE11526649}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1B02F5DC-473A-44B1-8F39-7C4694392238}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C2E9EA6-25B3-4475-B4DF-39FE11526649}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {61095C09-C22A-4642-AFF3-B82B6F3B7A16}
+	EndGlobalSection
+EndGlobal
