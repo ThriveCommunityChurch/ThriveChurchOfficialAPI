@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ThriveChurchOfficialAPI.Core\ThriveChurchOfficialAPI.Core.csproj" />
     <ProjectReference Include="..\ThriveChurchOfficialAPI.Services\ThriveChurchOfficialAPI.Services.csproj" />
   </ItemGroup>
 

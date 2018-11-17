@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -10,6 +11,6 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        Task<string> GetAllPassages();
+        Task<PassagesResponse> GetPassagesForSearch(string searchCriteria);
     }
 }

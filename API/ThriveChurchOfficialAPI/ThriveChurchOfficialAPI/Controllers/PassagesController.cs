@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
 using ThriveChurchOfficialAPI.Services;
 
@@ -25,23 +26,18 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // GET api/passage
         [HttpGet]
-        public async Task<ActionResult<string>> Get()
+        public async Task<ActionResult<PassagesResponse>> Get(string searchCriteria)
         {
-            return await _passagesService.GetAllPassages();
-        }
+            var response = await _passagesService.GetPassagesForSearch(searchCriteria);
 
-        // GET api/passage/{id}
-        [HttpGet("{id}")]
-        public ActionResult<string> GetPassageForId(int id)
-        {
-            return "value";
-        }
+            if (response == default(PassagesResponse))
+            {
+                return new ActionResult<PassagesResponse>(new PassagesResponse());
+            }
 
-        // GET api/passage/{query}
-        [HttpGet("{id}")]
-        public ActionResult<string> GetPassageForQuery(int id)
-        {
-            return "value";
+            var value = new ActionResult<PassagesResponse>(response);
+
+            return value;
         }
     }
 }

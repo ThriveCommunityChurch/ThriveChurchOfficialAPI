@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ThriveChurchOfficialAPI.Repositories
@@ -9,19 +10,17 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
         }
 
-        public async Task<string> GetAllPassages(string apiKey)
+        public async Task<string> GetPassagesForSearch(string apiKey, string searchCriteria)
         {
             // setup the request
-            var uri = "https://api.esv.org/v3/passage/search/?q=rabble";
+            var uri = string.Format("https://api.esv.org/v3/passage/text/?q={0}", searchCriteria);
 
-            var response = await Get(uri, apiKey);
+            var response = await GetPassages(uri, apiKey);
 
-            if (response != null)
-            {
-                Console.Write(response);
-            }
+            // get the passage results from the passage response
+            var passageResults = response.passages;
 
-            return "";
+            return passageResults;
         }
     }
 }

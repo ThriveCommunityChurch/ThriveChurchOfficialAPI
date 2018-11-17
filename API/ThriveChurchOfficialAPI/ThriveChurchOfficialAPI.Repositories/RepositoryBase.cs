@@ -1,6 +1,9 @@
-﻿using System.Net.Http;
+﻿using Newtonsoft.Json;
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
-
 namespace ThriveChurchOfficialAPI.Repositories
 {
     public abstract class RepositoryBase
@@ -10,7 +13,9 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         }
 
-        public async Task<HttpResponseMessage> Get(string uri, string authenticationToken)
+        // This should probably return any type that the user requests, however if the API we are using ever breaks the contract
+        // 
+        public async Task<PassageTextInfo> GetPassages(string uri, string authenticationToken)
         {
             var authToken = string.Format("Token {0}", authenticationToken);
 
@@ -21,10 +26,16 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             HttpClient client = new HttpClient();
 
-            var response = await client.SendAsync(request);
+            PassageTextInfo passageAndInfo = null;
+            HttpResponseMessage response = await client.SendAsync(request);
 
-            return response;
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonString = await response.Content.ReadAsStringAsync();
+                passageAndInfo = JsonConvert.DeserializeObject<PassageTextInfo>(jsonString);
+            }
 
+            return passageAndInfo;
         }
     }
 }

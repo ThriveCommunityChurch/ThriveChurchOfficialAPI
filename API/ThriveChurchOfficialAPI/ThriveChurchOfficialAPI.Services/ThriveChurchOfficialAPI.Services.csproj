@@ -5,6 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ThriveChurchOfficialAPI.Core\ThriveChurchOfficialAPI.Core.csproj">
+      <Private>true</Private>
+    </ProjectReference>
     <ProjectReference Include="..\ThriveChurchOfficialAPI.Repositories\ThriveChurchOfficialAPI.Repositories.csproj" />
   </ItemGroup>
 
