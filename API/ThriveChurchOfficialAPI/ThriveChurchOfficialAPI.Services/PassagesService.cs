@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -107,6 +107,16 @@ namespace ThriveChurchOfficialAPI.Services
                 var footnoteInfo = footnoteText.Split(':');
                 var footnoteChapter = footnoteInfo[0];
                 var verseInfo = footnoteInfo[1].Split(' ');
+                // it might actually look super cool to make the verse numbers superscripted above, so we will need to keep them, removing the [] around it
+                // and then converting it to a unicode superscripted number like so:
+                // 
+                // USE THIS EXAMPLE
+                //
+                //string SuperscriptDigits =  "\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079";
+                //var text = "25432";
+                //string superscript = new string(text.Select(x => SuperscriptDigits[x - '0']).ToArray());
+                // 
+            
                 var isNumVerse = Int32.TryParse(verseInfo[0], out int x);
                 var isNumChapter = Int32.TryParse(footnoteChapter, out int y);
 
