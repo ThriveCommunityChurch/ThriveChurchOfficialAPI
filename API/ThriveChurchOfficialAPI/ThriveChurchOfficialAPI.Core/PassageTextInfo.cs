@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -9,7 +6,9 @@ namespace ThriveChurchOfficialAPI
     {
         public PassageTextInfo()
         {
-
+            passage_meta = null;
+            parsed = null;
+            passages = null;
         }
 
         public string query { get; set; }
@@ -20,6 +19,14 @@ namespace ThriveChurchOfficialAPI
         /// this is a strange object because the ESV api returns the passages as one
         /// whole string all together including the footnotes
         /// </summary>
-        public string passages { get; set; }
+        public IEnumerable<string> passages { get; set; }
+
+        /// <summary>
+        /// this seems silly to me to have a 2D datatype here.
+        /// Not sure how that's useful
+        /// </summary>
+        public IEnumerable<int[]> parsed { get; set; }
+
+        public IEnumerable<PassageMetadata> passage_meta { get; set; }
     }
 }
