@@ -24,6 +24,12 @@ namespace ThriveChurchOfficialAPI
             {
                 Start = strSource.IndexOf(strStart, 0) + strStart.Length;
                 End = strSource.IndexOf(strEnd, Start);
+
+                if (End == -1 || Start == -1)
+                {
+                    return "";
+                }
+
                 return strSource.Substring(Start, End - Start);
             }
             else

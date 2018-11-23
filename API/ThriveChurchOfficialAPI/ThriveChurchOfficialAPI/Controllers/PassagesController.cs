@@ -28,7 +28,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<PassagesResponse>> Get(string searchCriteria)
         {
-            searchCriteria = "John 1";
+            searchCriteria = "Psalm 119";
 
             var response = await _passagesService.GetPassagesForSearch(searchCriteria);
 
