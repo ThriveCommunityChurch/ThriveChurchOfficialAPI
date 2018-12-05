@@ -1,28 +1,22 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace ThriveChurchOfficialAPI.Core
 {
     /// <summary>
     /// C'tor
     /// </summary>
-    public class LiveSermons
+    public class LiveStreamingResponse
     {
-        public LiveSermons()
+        public LiveStreamingResponse()
         {
             IsLive = false;
-            VideoUrlSlug = null;
+            VideoUrl = null;
             Title = null;
             SpecialEventTimes = null;
+            IsSpecialEvent = false;
         }
-
-        /// <summary>
-        /// ObjectId notation from Mongo
-        /// </summary>
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
 
         /// <summary>
         /// Flag determining whether or not a stream is currently active
@@ -30,10 +24,9 @@ namespace ThriveChurchOfficialAPI.Core
         public bool IsLive { get; set; }
 
         /// <summary>
-        /// Slug to be used for facebook
-        /// EX) facebook.com/{pageName}/videos/{insert-slug-here}
+        /// Full path to the video that is currently streaming
         /// </summary>
-        public string VideoUrlSlug { get; set; }
+        public string VideoUrl { get; set; }
 
         /// <summary>
         /// The title of the video / message
@@ -48,19 +41,14 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime ExpirationTime { get; set; }
 
         /// <summary>
-        /// Timestamp for the last time this objct was updated
+        /// Used to determine if this stream is for one that might not be during the normal Sunday times
         /// </summary>
-        public DateTime LastUpdated { get; set; }
+        public bool IsSpecialEvent { get; set; }
 
         /// <summary>
-        /// The start and end times of a special event that is to be broadcast
+        /// The start and end times of the special event that is to be broadcast
         /// if null => then this is not a special event
         /// </summary>
         public DateRange SpecialEventTimes { get; set; }
-
-        public bool ValidateRequest(LiveSermons request)
-        {
-            return true;
-        }
     }
 }
