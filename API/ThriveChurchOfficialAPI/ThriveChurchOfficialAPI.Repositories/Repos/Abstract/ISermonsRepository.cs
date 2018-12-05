@@ -8,7 +8,8 @@ namespace ThriveChurchOfficialAPI.Repositories
     {
         Task<AllSermonsResponse> GetAllSermons();
 
-
         Task<LiveSermons> GetLiveSermons();
+
+        Task<LiveSermons> UpdateLiveSermons(LiveSermons request);
     }
 }

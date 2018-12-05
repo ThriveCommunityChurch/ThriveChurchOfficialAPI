@@ -14,6 +14,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// Return the information about a live sermon going on now - if it's live
         /// </summary>
         /// <returns></returns>
-        Task<LiveSermons> GetLiveSermons();
+        Task<LiveStreamingResponse> GetLiveSermons();
+
+        /// <summary>
+        /// Updates the LiveSermons Object and updates mongo
+        /// </summary>
+        /// <returns></returns>
+        Task<LiveStreamingResponse> UpdateLiveSermons(LiveSermons request);
     }
 }

@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
-using ThriveChurchOfficialAPI.Repositories;
 using ThriveChurchOfficialAPI.Services;
 
 namespace ThriveChurchOfficialAPI.Controllers
@@ -33,13 +32,22 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         [HttpGet("live")]
-        public async Task<ActionResult<LiveSermons>> GetLiveSermons()
+        public async Task<ActionResult<LiveStreamingResponse>> GetLiveSermons()
         {
             var response = await _sermonsService.GetLiveSermons();
 
-            var value = new ActionResult<LiveSermons>(response).Value;
+            var value = new ActionResult<LiveStreamingResponse>(response).Value;
 
             return value;
+        }
+
+        [HttpPut("live")]
+        public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveSermons([FromBody] LiveSermons request)
+        {
+            var response = await _sermonsService.UpdateLiveSermons(request);
+
+
+            return response;
         }
     }
 }
