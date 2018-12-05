@@ -4,6 +4,9 @@ using System.Text;
 
 namespace ThriveChurchOfficialAPI.Core
 {
+    /// <summary>
+    /// C'tor
+    /// </summary>
     public class PassagesResponse
     {
         public PassagesResponse()

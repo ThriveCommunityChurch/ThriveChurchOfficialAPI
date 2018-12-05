@@ -42,6 +42,7 @@ namespace ThriveChurchOfficialAPI
 
             // Add our Config object so it can be injected later
             services.Configure<AppSettings>(options => Configuration.GetSection("EsvApiKey").Bind(options));
+            services.Configure<AppSettings>(options => Configuration.GetSection("MongoConnectionString").Bind(options));
 
             services.AddSingleton(Configuration);
 
