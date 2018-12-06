@@ -51,7 +51,7 @@ namespace ThriveChurchOfficialAPI.Services
                     IsLive = true,
                     Title = getAllSermonsResponse.Title,
                     VideoUrl = videoUrl,
-                    ExpirationTime = new DateTime(1990, 01, 01, 11, 15, 0, 0), //TODO: are we sure this is right?
+                    ExpirationTime = getAllSermonsResponse.ExpirationTime,
                     IsSpecialEvent = getAllSermonsResponse.SpecialEventTimes != null ? true : false,
                     SpecialEventTimes = getAllSermonsResponse.SpecialEventTimes ?? null
                 };
@@ -84,10 +84,25 @@ namespace ThriveChurchOfficialAPI.Services
                 return default(LiveStreamingResponse);
             }
 
-            var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(request);
+            // generate the updated object so we can update everything at once in the repo
+            var getAllSermonsResponse = await _sermonsRepository.GetLiveSermons();
+
+            // Update this object for the requested fields
+            var updated = new LiveSermons()
+            {
+                ExpirationTime = new DateTime(1990, 01, 01, 11, 15, 0, 0), // reset this on this update
+                IsLive = true, 
+                LastUpdated = DateTime.UtcNow,
+                SpecialEventTimes = null,
+                Title = request.Title,
+                VideoUrlSlug = request.Slug
+            };
+
+            var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
             if (updateLiveSermonsResponse == null)
             {
-                // something really bad happened here
+                // something bad happened here
+                return default(LiveStreamingResponse);
             }
 
             var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",

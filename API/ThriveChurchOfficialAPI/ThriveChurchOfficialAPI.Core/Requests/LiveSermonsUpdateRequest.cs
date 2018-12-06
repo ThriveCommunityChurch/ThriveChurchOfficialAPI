@@ -21,9 +21,24 @@ namespace ThriveChurchOfficialAPI.Core
         /// The requested Video url Slug
         /// </summary>
         public string Slug { get; set; }
-
-        public static bool ValidateRequest(LiveSermonsUpdateRequest request)
+        
+        /// <summary>
+        /// Validates the requested object
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public bool ValidateRequest(LiveSermonsUpdateRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.Title))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Slug))
+            {
+                return false;
+            }
+
             return true;
         }
     }
