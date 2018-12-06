@@ -57,10 +57,5 @@ namespace ThriveChurchOfficialAPI.Core
         /// if null => then this is not a special event
         /// </summary>
         public DateRange SpecialEventTimes { get; set; }
-
-        public bool ValidateRequest(LiveSermons request)
-        {
-            return true;
-        }
     }
 }

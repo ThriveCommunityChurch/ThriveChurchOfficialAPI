@@ -42,7 +42,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         [HttpPut("live")]
-        public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveSermons([FromBody] LiveSermons request)
+        public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveSermons([FromBody] LiveSermonsUpdateRequest request)
         {
             var response = await _sermonsService.UpdateLiveSermons(request);
 
