@@ -21,5 +21,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <returns></returns>
         Task<LiveStreamingResponse> UpdateLiveSermons(LiveSermonsUpdateRequest request);
+
+        /// <summary>
+        /// Updates the LiveSermon for a special event
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<LiveStreamingResponse> UpdateLiveForSpecialEvents(LiveSermonsSpecialEventUpdateRequest request);
     }
 }

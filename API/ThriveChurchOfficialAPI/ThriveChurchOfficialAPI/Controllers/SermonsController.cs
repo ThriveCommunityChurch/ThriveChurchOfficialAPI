@@ -46,6 +46,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateLiveSermons(request);
 
+            return response;
+        }
+
+        [HttpPut("live/special")]
+        public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveForSpecialEvents([FromBody] LiveSermonsSpecialEventUpdateRequest request)
+        {
+            var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
 
             return response;
         }

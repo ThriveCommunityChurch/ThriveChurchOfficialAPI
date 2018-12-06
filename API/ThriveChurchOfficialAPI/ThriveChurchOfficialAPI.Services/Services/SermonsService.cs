@@ -120,5 +120,58 @@ namespace ThriveChurchOfficialAPI.Services
 
             return response;
         }
+
+        /// <summary>
+        /// Updates the LiveSermon to be a special event
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<LiveStreamingResponse> UpdateLiveForSpecialEvents(LiveSermonsSpecialEventUpdateRequest request)
+        {
+            // validate the request
+            var validRequest = new LiveSermonsSpecialEventUpdateRequest().ValidateRequest(request);
+
+            if (!validRequest)
+            {
+                // an error ocurred here
+                return default(LiveStreamingResponse);
+            }
+
+            // generate the updated object so we can update everything at once in the repo
+            var getAllSermonsResponse = await _sermonsRepository.GetLiveSermons();
+
+            // Update this object for the requested fields
+            var updated = new LiveSermons()
+            {
+                ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 15, 0, 0),
+                IsLive = true,
+                LastUpdated = DateTime.UtcNow,
+                SpecialEventTimes = request.SpecialEventTimes,
+                Title = request.Title,
+                VideoUrlSlug = request.Slug
+            };
+
+            var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
+            if (updateLiveSermonsResponse == null)
+            {
+                // something bad happened here
+                return default(LiveStreamingResponse);
+            }
+
+            var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
+                    updateLiveSermonsResponse.VideoUrlSlug);
+
+            var response = new LiveStreamingResponse()
+            {
+                ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
+                IsLive = updateLiveSermonsResponse.IsLive,
+                IsSpecialEvent = true,
+                SpecialEventTimes = request.SpecialEventTimes,
+                Title = updateLiveSermonsResponse.Title,
+                VideoUrl = videoUrl
+            };
+
+            return response;
+        }
     }
 }
