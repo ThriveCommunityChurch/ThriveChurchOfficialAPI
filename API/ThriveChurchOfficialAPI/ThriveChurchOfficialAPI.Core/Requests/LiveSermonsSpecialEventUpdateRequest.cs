@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -10,6 +10,7 @@ namespace ThriveChurchOfficialAPI.Core
         {
             Title = null;
             Slug = null;
+            SpecialEventTimes = null;
         }
 
         /// <summary>
