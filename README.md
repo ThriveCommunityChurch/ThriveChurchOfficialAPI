@@ -5,6 +5,11 @@ This API is primarily used by the Thrive Church Official App for serving users w
 - C# .NET Core 2.1
 - MongoDB
 
+## Caching
+*Note, the Caching that this application uses is **NOT** persistant, and will expire thirty (30) seconds after an initial request.*
+
+If you wish to poll this API for whether or not the `LiveSermon` object is still active, the response will contain the Expiration Time (in **UTC**) for the `LiveSermon` object. Using this you will be able to gague how much longer the stream will be active. This will prevent having to poll the route in a loop to determine if right now the time has passed.
+
 ## Contributing
 Please create your own .NET Core 2.1 application on your machine within this git directory. Once your application has been made. This is important because there are a number of files that are created when initializing a new .NET Application that you will need. Many of these files are settings, DLLs, Binaries, and other debugging files that have been ignored as to not clutter the repo. 
 
