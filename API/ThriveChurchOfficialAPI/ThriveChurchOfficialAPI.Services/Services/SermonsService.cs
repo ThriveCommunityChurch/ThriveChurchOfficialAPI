@@ -1,5 +1,8 @@
 using System;
+using System.Runtime.Caching;
 using System.Threading.Tasks;
+using System.Threading;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
@@ -9,13 +12,17 @@ namespace ThriveChurchOfficialAPI.Services
     public class SermonsService : BaseService, ISermonsService
     {
         private readonly ISermonsRepository _sermonsRepository;
+        private IMemoryCache _cache;
+        private Timer _timer;
 
         // the controller cannot have multiple inheritance so we must push it to the service layer
-        public SermonsService(IConfiguration Configuration)
+        public SermonsService(IConfiguration Configuration,
+            IMemoryCache memoryCache)
             : base(Configuration)
         {
             // init the repo with the connection string
             _sermonsRepository = new SermonsRepository(Configuration);
+            _cache = memoryCache;
         }
 
         /// <summary>
@@ -173,5 +180,86 @@ namespace ThriveChurchOfficialAPI.Services
 
             return response;
         }
+
+        /// <summary>
+        /// Returns info about an acive stream
+        /// </summary>
+        /// <returns></returns>
+        public async Task<LiveSermonsPollingResponse> PollForLiveEventData()
+        {
+            LiveSermons liveSermons = new LiveSermons();
+            MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions();
+
+            // check the cache first -> if there's a value there grab it
+            if (!_cache.TryGetValue(CacheKeys.GetSermons, out liveSermons))
+            {
+                // Key not in cache, so get data.
+                liveSermons = await _sermonsRepository.GetLiveSermons();
+
+                // Set cache options.
+                cacheEntryOptions = new MemoryCacheEntryOptions()
+                    // Keep in cache for this time, reset time if accessed.
+                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
+
+                // Save data in cache.
+                _cache.Set(CacheKeys.GetSermons, liveSermons, cacheEntryOptions);
+            }
+
+            // generate response
+            var response = new LiveSermonsPollingResponse()
+            {
+                IsLive = liveSermons.IsLive,
+                StreamExpirationTime = liveSermons.ExpirationTime
+            };
+
+            return response;
+
+            // otherwise go to mongo and grab the object and return it
+            // once we have it here store it in the cache
+            // and then return it
+
+            // if an error ocurs then return with null
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private void DetermineIfStreamIsInactive()
+        {
+            // we'll look every 10 seconds to see if the stream has expired
+            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+        }
+
+        /// <summary>
+        /// Do the things
+        /// </summary>
+        /// <param name="state"></param>
+        private async void DoWork(object state)
+        {
+            // look in mongo or cache this response until the time in the DB is finished
+            // we just need to make sure we update the value in the database automaticaly when this is past the expiration time
+            // we might be able to use the same polling logic
+            var pollingResponse = await PollForLiveEventData();
+
+            // IT's now later than what the time is in the database
+            if (DateTime.UtcNow > pollingResponse.StreamExpirationTime.ToUniversalTime())
+            {
+                // update mongo to reflect that the sermon is inactive
+                var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
+
+                // when it's done kill the timer
+                _timer?.Change(Timeout.Infinite, 0);
+                _timer?.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Globally used Caching keys for O(1) lookups
+    /// </summary>
+    public static class CacheKeys
+    {
+        public static string GetSermons { get { return "LiveSermonsCache"; } }
     }
 }

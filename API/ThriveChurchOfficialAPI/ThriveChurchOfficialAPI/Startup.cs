@@ -34,6 +34,9 @@ namespace ThriveChurchOfficialAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // enable in-memory caching
+            services.AddMemoryCache();
+
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             services.AddMvc();

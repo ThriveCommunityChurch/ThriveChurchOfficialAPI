@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Services;
@@ -13,11 +14,12 @@ namespace ThriveChurchOfficialAPI.Controllers
     {
         private readonly ISermonsService _sermonsService;
 
-        public SermonsController(IConfiguration configuration)
+        public SermonsController(IConfiguration configuration,
+            IMemoryCache memoryCache)
         {
             // delay the init of the repo for when we go to the service, we will grab the connection 
             // string from the IConfiguration object there instead of init-ing the repo here
-            _sermonsService = new SermonsService(configuration);
+            _sermonsService = new SermonsService(configuration, memoryCache);
         }
 
         // GET api/sermons
@@ -53,6 +55,14 @@ namespace ThriveChurchOfficialAPI.Controllers
         public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveForSpecialEvents([FromBody] LiveSermonsSpecialEventUpdateRequest request)
         {
             var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
+
+            return response;
+        }
+
+        [HttpGet("live/poll")]
+        public async Task<ActionResult<LiveSermonsPollingResponse>> PollForLiveEventData()
+        {
+            var response = await _sermonsService.PollForLiveEventData();
 
             return response;
         }
