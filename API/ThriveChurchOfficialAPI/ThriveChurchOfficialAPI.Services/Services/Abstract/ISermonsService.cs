@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Services
@@ -6,7 +6,7 @@ namespace ThriveChurchOfficialAPI.Services
     public interface ISermonsService
     {
         /// <summary>
-        /// returns a list of all Passage Objets
+        /// returns a list of all Sermon Series'
         /// </summary>
         Task<AllSermonsResponse> GetAllSermons();
 

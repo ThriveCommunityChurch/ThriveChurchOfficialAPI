@@ -42,25 +42,25 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<LiveStreamingResponse> GetLiveSermons()
         {
-            var getAllSermonsResponse = await _sermonsRepository.GetLiveSermons();
+            var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
             LiveStreamingResponse response;
 
             // if we are currently streaming then we will need to add the slug to the middle of the Facebook link
-            if (getAllSermonsResponse.IsLive)
+            if (getLiveSermonsResponse.IsLive)
             {
                 var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
-                    getAllSermonsResponse.VideoUrlSlug);
+                    getLiveSermonsResponse.VideoUrlSlug);
 
                 // do the business logic here friend
                 response = new LiveStreamingResponse()
                 {
                     IsLive = true,
-                    Title = getAllSermonsResponse.Title,
+                    Title = getLiveSermonsResponse.Title,
                     VideoUrl = videoUrl,
-                    ExpirationTime = getAllSermonsResponse.ExpirationTime,
-                    IsSpecialEvent = getAllSermonsResponse.SpecialEventTimes != null ? true : false,
-                    SpecialEventTimes = getAllSermonsResponse.SpecialEventTimes ?? null
+                    ExpirationTime = getLiveSermonsResponse.ExpirationTime,
+                    IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false,
+                    SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null
                 };
             }
             else
@@ -68,7 +68,8 @@ namespace ThriveChurchOfficialAPI.Services
                 // we are not streaming so there's no need to include anything
                 response = new LiveStreamingResponse()
                 {
-                    IsLive = false
+                    IsLive = false,
+                    ExpirationTime = getLiveSermonsResponse.ExpirationTime
                 };
             }
 
