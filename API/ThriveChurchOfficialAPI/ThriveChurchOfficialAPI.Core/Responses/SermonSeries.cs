@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -24,7 +25,9 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// ObjectId notation from Mongo
         /// </summary>
-        public ObjectId _id { get; set; }
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
 
         /// <summary>
         /// The name of the sermon series
@@ -66,5 +69,31 @@ namespace ThriveChurchOfficialAPI.Core
         /// A collection of Messages spoken / given by someone within this sermon series
         /// </summary>
         public IEnumerable<SermonMessage> Messages { get; set; }
+
+        public bool ValidateRequest(SermonSeries request)
+        {
+            if (request == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(request.ArtUrl) || 
+                request.StartDate == null || 
+                string.IsNullOrEmpty(request.Name) || 
+                string.IsNullOrEmpty(request.Slug) ||
+                string.IsNullOrEmpty(request.Thumbnail) ||
+                string.IsNullOrEmpty(request.Year))
+            {
+                return false;
+            }
+
+            // messages must at least be an object, it should not be null
+            if (request.Messages == null)
+            {
+                request.Messages = new List<SermonMessage>();
+            }
+
+            return true;
+        }
     }
 }

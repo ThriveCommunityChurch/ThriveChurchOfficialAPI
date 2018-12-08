@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
+using System.Linq;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -31,6 +32,42 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<AllSermonsResponse> GetAllSermons()
         {
             var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
+
+            // do the business logic here friend
+
+            return getAllSermonsResponse;
+        }
+
+        /// <summary>
+        /// returns a list of all Passage Objets
+        /// </summary>
+        public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
+        {
+            var validRequest = new SermonSeries().ValidateRequest(request);
+
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            // the Slug on the series should be unique, so if we already have one with this slug
+            // return an error - because we want to avoid having bad data in our database
+            var allSermonSries = await _sermonsRepository.GetAllSermons();
+
+            if (allSermonSries == null || allSermonSries == default(AllSermonsResponse))
+            {
+                return null;
+            }
+
+            var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
+
+            if (seriesWithSameSlug.Any())
+            {
+                // there is already a sermon series with this slug, respond with one of those
+                return seriesWithSameSlug.FirstOrDefault();
+            }
+
+            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
 
             // do the business logic here friend
 

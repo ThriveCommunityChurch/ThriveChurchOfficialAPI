@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using MongoDB.Bson;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
+using System.Linq;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -23,7 +24,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<AllSermonsResponse> GetAllSermons()
         {
-            // connect to mongo and get 'r done
             var client = new MongoClient(connectionString);
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");
@@ -32,10 +32,32 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             var allSermonsResponse = new AllSermonsResponse()
             {
-                Sermons = documents
+                Sermons = documents.OrderBy(i => i.StartDate)
             };
 
             return allSermonsResponse;
+        }
+
+        /// <summary>
+        /// Adds a new SermonSeries to the Sermons Collection
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
+        {
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+            await collection.InsertOneAsync(request);
+
+            // respond with the inserted object
+            var inserted = await collection.FindAsync(
+                    Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
+
+            var response = inserted.FirstOrDefault();
+
+            return response;
         }
 
         /// <summary>
@@ -45,7 +67,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<LiveSermons> GetLiveSermons()
         {
-            // connect to mongo and get 'r done
             var client = new MongoClient(connectionString);
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");
@@ -62,7 +83,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<LiveSermons> UpdateLiveSermons(LiveSermons request)
         {
-            // connect to mongo and get 'r done
             var client = new MongoClient(connectionString);
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");

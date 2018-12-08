@@ -33,6 +33,16 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
+        [HttpPost("series")]
+        public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] SermonSeries request)
+        {
+            var response = await _sermonsService.CreateNewSermonSeries(request);
+
+            var value = new ActionResult<SermonSeries>(response);
+
+            return value;
+        }
+
         [HttpGet("live")]
         public async Task<ActionResult<LiveStreamingResponse>> GetLiveSermons()
         {

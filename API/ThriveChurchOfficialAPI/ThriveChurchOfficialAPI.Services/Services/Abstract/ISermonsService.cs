@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Services
@@ -9,6 +9,13 @@ namespace ThriveChurchOfficialAPI.Services
         /// returns a list of all Sermon Series'
         /// </summary>
         Task<AllSermonsResponse> GetAllSermons();
+
+        /// <summary>
+        /// Creates a new Sermon Series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonSeries> CreateNewSermonSeries(SermonSeries request);
 
         /// <summary>
         /// Return the information about a live sermon going on now - if it's live
