@@ -44,6 +44,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// Set a time when a livestream notification will disappear,
         /// after this time when a user loads the page the notification will disappear.
         /// We will only use the time here.
+        /// NOTE: Stored as UTC.
         /// </summary>
         public DateTime ExpirationTime { get; set; }
 

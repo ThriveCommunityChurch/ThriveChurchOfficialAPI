@@ -34,5 +34,11 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <returns></returns>
         Task<LiveSermonsPollingResponse> PollForLiveEventData();
+
+        /// <summary>
+        /// Reset the LiveSermons object back to it's origional state & stop async timer
+        /// </summary>
+        /// <returns></returns>
+        Task<LiveSermons> UpdateLiveSermonsInactive();
     }
 }

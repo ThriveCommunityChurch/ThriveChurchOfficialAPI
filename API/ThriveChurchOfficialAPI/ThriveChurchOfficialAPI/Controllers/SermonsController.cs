@@ -66,5 +66,13 @@ namespace ThriveChurchOfficialAPI.Controllers
 
             return response;
         }
+
+        [HttpDelete("live")]
+        public async Task<ActionResult<LiveSermons>> UpdateLiveSermonsInactive()
+        {
+            var response = await _sermonsService.UpdateLiveSermonsInactive();
+
+            return response;
+        }
     }
 }

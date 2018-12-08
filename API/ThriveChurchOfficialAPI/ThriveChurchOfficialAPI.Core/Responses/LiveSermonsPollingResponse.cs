@@ -12,7 +12,7 @@ namespace ThriveChurchOfficialAPI.Core
         }
         
         /// <summary>
-        /// Time that the stream should be done
+        /// Expiry time for the LiveSermon object, in UTC
         /// </summary>
         public DateTime StreamExpirationTime { get; set; }
 

@@ -77,7 +77,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                     .Set(l => l.SpecialEventTimes, request.SpecialEventTimes)
                     .Set(l => l.Title, request.Title)
                     .Set(l => l.VideoUrlSlug, request.VideoUrlSlug)
-                    .Set(l => l.ExpirationTime, request.ExpirationTime)
+                    .Set(l => l.ExpirationTime, request.ExpirationTime.ToUniversalTime())
                 );
 
             if (document == null || document == default(LiveSermons))
@@ -97,6 +97,37 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
 
             return response;
+        }
+
+        /// <summary>
+        /// Update LiveSermons to inactive once the stream has concluded
+        /// </summary>
+        /// <returns></returns>
+        public async Task<LiveSermons> UpdateLiveSermonsInactive()
+        {
+            var liveSermonsResponse = await GetLiveSermons();
+
+            if (liveSermonsResponse == null || liveSermonsResponse == default(LiveSermons))
+            {
+                // something bad happened here
+                return default(LiveSermons);
+            }
+
+            // make the change to reflect that this sermon was just updated
+            liveSermonsResponse.IsLive = false;
+            liveSermonsResponse.Title = null;
+            liveSermonsResponse.VideoUrlSlug = null;
+            liveSermonsResponse.SpecialEventTimes = null;
+
+            var updatedLiveSermon = await UpdateLiveSermons(liveSermonsResponse);
+
+            if (updatedLiveSermon == null || updatedLiveSermon == default(LiveSermons))
+            {
+                // something bad happened here
+                return default(LiveSermons);
+            }
+
+            return updatedLiveSermon;
         }
     }
 }
