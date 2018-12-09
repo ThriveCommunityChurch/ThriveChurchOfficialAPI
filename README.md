@@ -5,6 +5,9 @@ This API is primarily used by the Thrive Church Official App for serving users w
 - C# .NET Core 2.1
 - MongoDB
 
+## API Documentation & Swagger UI
+Visiting `~/swagger/index.html` in your browser will allow you to view the Swagger UI for the API and easily send API requests as well as view response objects.
+
 ## Caching
 *Note, the Caching that this application uses is **NOT** persistant, and will expire thirty (30) seconds after an initial request.*
 
