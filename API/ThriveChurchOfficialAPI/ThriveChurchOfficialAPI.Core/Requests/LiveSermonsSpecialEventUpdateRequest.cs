@@ -34,7 +34,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public bool ValidateRequest(LiveSermonsSpecialEventUpdateRequest request)
+        public static bool ValidateRequest(LiveSermonsSpecialEventUpdateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
             {

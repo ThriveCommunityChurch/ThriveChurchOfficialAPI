@@ -63,7 +63,7 @@ namespace ThriveChurchOfficialAPI
 
             services.AddSingleton(Configuration);
 
-            // do DI properly
+            // Manually register DI dependencies
             services.AddTransient(typeof(ISermonsService), typeof(SermonsService));
             services.AddTransient(typeof(IPassagesRepository), typeof(PassagesRepository));
             services.AddTransient(typeof(ISermonsRepository), typeof(SermonsRepository));

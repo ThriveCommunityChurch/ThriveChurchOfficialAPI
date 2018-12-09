@@ -30,7 +30,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
             var documents = await collection.Find(_ => true).ToListAsync();
 
-            var allSermonsResponse = new AllSermonsResponse()
+            var allSermonsResponse = new AllSermonsResponse
             {
                 Sermons = documents.OrderBy(i => i.StartDate)
             };

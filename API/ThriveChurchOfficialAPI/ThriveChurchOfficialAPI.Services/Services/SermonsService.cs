@@ -40,7 +40,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
         {
-            var validRequest = new SermonSeries().ValidateRequest(request);
+            var validRequest = SermonSeries.ValidateRequest(request);
 
             if (!validRequest)
             {
@@ -79,7 +79,7 @@ namespace ThriveChurchOfficialAPI.Services
             var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
             // we are not streaming so there's no need to include anything
-            var response = new LiveStreamingResponse()
+            var response = new LiveStreamingResponse
             {
                 IsLive = false,
                 ExpirationTime = getLiveSermonsResponse.ExpirationTime
@@ -119,7 +119,7 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // Update this object for the requested fields
-            var updated = new LiveSermons()
+            var updated = new LiveSermons
             {
                 ExpirationTime = new DateTime(1990, 01, 01, 12, 20, 0, 0), // reset this on this update & give ourselves a little buffer (5 min)
                 IsLive = true, 
@@ -141,7 +141,7 @@ namespace ThriveChurchOfficialAPI.Services
                     updateLiveSermonsResponse.VideoUrlSlug);
 
             // times have already been converted to UTC
-            var response = new LiveStreamingResponse()
+            var response = new LiveStreamingResponse
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
                 IsLive = updateLiveSermonsResponse.IsLive,
@@ -165,7 +165,7 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<LiveStreamingResponse> UpdateLiveForSpecialEvents(LiveSermonsSpecialEventUpdateRequest request)
         {
             // validate the request
-            var validRequest = new LiveSermonsSpecialEventUpdateRequest().ValidateRequest(request);
+            var validRequest = LiveSermonsSpecialEventUpdateRequest.ValidateRequest(request);
 
             if (!validRequest)
             {
@@ -177,7 +177,7 @@ namespace ThriveChurchOfficialAPI.Services
             var getAllSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
             // Update this object for the requested fields
-            var updated = new LiveSermons()
+            var updated = new LiveSermons
             {
                 ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 15, 0, 0),
                 IsLive = true,
@@ -197,7 +197,7 @@ namespace ThriveChurchOfficialAPI.Services
             var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
                     updateLiveSermonsResponse.VideoUrlSlug);
 
-            var response = new LiveStreamingResponse()
+            var response = new LiveStreamingResponse
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime.ToUniversalTime(),
                 IsLive = updateLiveSermonsResponse.IsLive,
@@ -245,7 +245,7 @@ namespace ThriveChurchOfficialAPI.Services
                     _timer?.Dispose();
                 }
 
-                var pastTimeResponse = new LiveSermonsPollingResponse()
+                var pastTimeResponse = new LiveSermonsPollingResponse
                 {
                     IsLive = false
                     // we cannot set the ExpireTime because it will have been null here
@@ -255,19 +255,13 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // generate response
-            var response = new LiveSermonsPollingResponse()
+            var response = new LiveSermonsPollingResponse
             {
                 IsLive = liveSermons.IsLive,
                 StreamExpirationTime = liveSermons.ExpirationTime.ToUniversalTime()
             };
 
             return response;
-
-            // otherwise go to mongo and grab the object and return it
-            // once we have it here store it in the cache
-            // and then return it
-
-            // if an error ocurs then return with null
         }
 
         /// <summary>

@@ -9,9 +9,6 @@ namespace ThriveChurchOfficialAPI
 {
     public abstract class BaseService
     {
-        public BaseService()
-        {
-        }
 
         public string GetBetween(string strSource, string strStart, string strEnd)
         {

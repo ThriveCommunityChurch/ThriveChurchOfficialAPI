@@ -70,7 +70,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         public IEnumerable<SermonMessage> Messages { get; set; }
 
-        public bool ValidateRequest(SermonSeries request)
+        public static bool ValidateRequest(SermonSeries request)
         {
             if (request == null)
             {
