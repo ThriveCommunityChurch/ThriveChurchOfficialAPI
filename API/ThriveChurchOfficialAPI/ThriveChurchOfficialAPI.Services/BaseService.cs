@@ -9,14 +9,8 @@ namespace ThriveChurchOfficialAPI
 {
     public abstract class BaseService
     {
-        // allow any service to be able to retrieve this configuration easily
-        public readonly string EsvApiKey;
-        public readonly string MongoConnectionString;
-
-        public BaseService(IConfiguration Configuration)
+        public BaseService()
         {
-            // get the API key from appsettings.json
-            EsvApiKey = Configuration["EsvApiKey"]; 
         }
 
         public string GetBetween(string strSource, string strStart, string strEnd)

@@ -11,11 +11,10 @@ namespace ThriveChurchOfficialAPI.Services
     public class PassagesService : BaseService, IPassagesService
     {
         private readonly IPassagesRepository _passagesRepository;
+        
 
         // the controller cannot have multiple inheritance so we must push it to the service layer
-        public PassagesService(IConfiguration Configuration,
-            IPassagesRepository passagesRepository) 
-            : base(Configuration)
+        public PassagesService(IPassagesRepository passagesRepository)
         {
             _passagesRepository = passagesRepository;
         }
@@ -34,7 +33,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             // since ESV returns everything as one massive string, I need to convert everything to objects
             // Then to strings if I wish
-            var getPassagesResponse = await _passagesRepository.GetPassagesForSearch(EsvApiKey, searchCriteria);
+            var getPassagesResponse = await _passagesRepository.GetPassagesForSearch(searchCriteria);
 
             // this may or may not need to be called several times so this would make sense to move this into the base service
             var convertObjectResponse = ConvertESVTextIntoConsumibleObjects(getPassagesResponse);

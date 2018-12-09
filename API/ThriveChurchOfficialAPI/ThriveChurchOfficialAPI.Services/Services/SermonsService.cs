@@ -17,13 +17,10 @@ namespace ThriveChurchOfficialAPI.Services
         private Timer _timer;
 
         // the controller cannot have multiple inheritance so we must push it to the service layer
-        public SermonsService(IConfiguration Configuration,
-            IMemoryCache memoryCache)
-            : base(Configuration)
+        public SermonsService(ISermonsRepository sermonsRepo)
         {
             // init the repo with the connection string
-            _sermonsRepository = new SermonsRepository(Configuration);
-            _cache = memoryCache;
+            _sermonsRepository = sermonsRepo;
         }
 
         /// <summary>
@@ -81,7 +78,12 @@ namespace ThriveChurchOfficialAPI.Services
         {
             var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
-            LiveStreamingResponse response;
+            // we are not streaming so there's no need to include anything
+            var response = new LiveStreamingResponse()
+            {
+                IsLive = false,
+                ExpirationTime = getLiveSermonsResponse.ExpirationTime
+            };
 
             // if we are currently streaming then we will need to add the slug to the middle of the Facebook link
             if (getLiveSermonsResponse.IsLive)
@@ -90,24 +92,11 @@ namespace ThriveChurchOfficialAPI.Services
                     getLiveSermonsResponse.VideoUrlSlug);
 
                 // do the business logic here friend
-                response = new LiveStreamingResponse()
-                {
-                    IsLive = true,
-                    Title = getLiveSermonsResponse.Title,
-                    VideoUrl = videoUrl,
-                    ExpirationTime = getLiveSermonsResponse.ExpirationTime,
-                    IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false,
-                    SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null
-                };
-            }
-            else
-            {
-                // we are not streaming so there's no need to include anything
-                response = new LiveStreamingResponse()
-                {
-                    IsLive = false,
-                    ExpirationTime = getLiveSermonsResponse.ExpirationTime
-                };
+                response.IsLive = true;
+                response.Title = getLiveSermonsResponse.Title;
+                response.VideoUrl = videoUrl;
+                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
+                response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
             }
 
             return response;
@@ -121,16 +110,13 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<LiveStreamingResponse> UpdateLiveSermons(LiveSermonsUpdateRequest request)
         {
             // validate the request
-            var validRequest = new LiveSermonsUpdateRequest().ValidateRequest(request);
+            var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
 
             if (!validRequest)
             {
                 // an error ocurred here
                 return default(LiveStreamingResponse);
             }
-
-            // generate the updated object so we can update everything at once in the repo
-            var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
             // Update this object for the requested fields
             var updated = new LiveSermons()
@@ -141,7 +127,7 @@ namespace ThriveChurchOfficialAPI.Services
                 SpecialEventTimes = null,
                 Title = request.Title,
                 VideoUrlSlug = request.Slug,
-                Id = getLiveSermonsResponse.Id
+                Id = request.Id
             };
 
             var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);

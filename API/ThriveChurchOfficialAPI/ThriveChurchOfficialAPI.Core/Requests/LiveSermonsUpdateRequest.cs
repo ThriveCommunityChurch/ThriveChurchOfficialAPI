@@ -10,6 +10,7 @@ namespace ThriveChurchOfficialAPI.Core
         {
             Title = null;
             Slug = null;
+            Id = null;
         }
 
         /// <summary>
@@ -21,13 +22,18 @@ namespace ThriveChurchOfficialAPI.Core
         /// The requested Video url Slug
         /// </summary>
         public string Slug { get; set; }
+
+        /// <summary>
+        /// The Id of the LiveSermon object in Mongo
+        /// </summary>
+        public string Id { get; set; }
         
         /// <summary>
         /// Validates the requested object
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public bool ValidateRequest(LiveSermonsUpdateRequest request)
+        public static bool ValidateRequest(LiveSermonsUpdateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
             {
@@ -35,6 +41,11 @@ namespace ThriveChurchOfficialAPI.Core
             }
 
             if (string.IsNullOrWhiteSpace(request.Slug))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Id))
             {
                 return false;
             }

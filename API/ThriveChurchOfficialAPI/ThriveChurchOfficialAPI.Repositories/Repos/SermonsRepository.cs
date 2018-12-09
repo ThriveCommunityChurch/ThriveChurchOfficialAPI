@@ -71,7 +71,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");
             IMongoCollection<LiveSermons> collection = db.GetCollection<LiveSermons>("Livestream");
-            var documents = await collection.Find(_ => true).FirstAsync();
+            var documents = await collection.Find(_ => true).FirstOrDefaultAsync();
 
             return documents;
         }

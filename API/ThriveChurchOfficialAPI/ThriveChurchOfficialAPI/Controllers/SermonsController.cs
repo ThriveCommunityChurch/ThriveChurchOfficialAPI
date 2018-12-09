@@ -14,12 +14,11 @@ namespace ThriveChurchOfficialAPI.Controllers
     {
         private readonly ISermonsService _sermonsService;
 
-        public SermonsController(IConfiguration configuration,
-            IMemoryCache memoryCache)
+        public SermonsController(ISermonsService sermonsService)
         {
             // delay the init of the repo for when we go to the service, we will grab the connection 
             // string from the IConfiguration object there instead of init-ing the repo here
-            _sermonsService = new SermonsService(configuration, memoryCache);
+            _sermonsService = sermonsService;
         }
 
         // GET api/sermons
