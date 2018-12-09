@@ -13,14 +13,14 @@ namespace ThriveChurchOfficialAPI.Services
     public class SermonsService : BaseService, ISermonsService
     {
         private readonly ISermonsRepository _sermonsRepository;
-        private IMemoryCache _cache;
+        private readonly IMemoryCache _cache;
         private Timer _timer;
 
-        // the controller cannot have multiple inheritance so we must push it to the service layer
-        public SermonsService(ISermonsRepository sermonsRepo)
+        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache)
         {
-            // init the repo with the connection string
+            // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
+            _cache = cache;
         }
 
         /// <summary>
