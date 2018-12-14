@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -15,5 +15,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<LiveSermons> UpdateLiveSermons(LiveSermons request);
 
         Task<LiveSermons> UpdateLiveSermonsInactive();
+
+        Task<SermonSeries> AddMessagesToSermonSeries(AddMessagesToSeriesRequest request);
     }
 }

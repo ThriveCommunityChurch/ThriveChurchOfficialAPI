@@ -7,15 +7,9 @@ using System.Threading.Tasks;
 namespace ThriveChurchOfficialAPI.Repositories
 {
     public abstract class RepositoryBase
-    {
-        public RepositoryBase()
-        {
-
-        }
-
-        // This should probably return any type that the user requests, however if the API we are using ever breaks the contract
-        // 
-        public async Task<PassageTextInfo> GetPassages(string uri, string authenticationToken)
+    { 
+        // This should probably return any type that the user requests, however if the API we are using ever breaks the contract 
+        public static async Task<PassageTextInfo> GetPassages(string uri, string authenticationToken)
         {
             var authToken = string.Format("Token {0}", authenticationToken);
 

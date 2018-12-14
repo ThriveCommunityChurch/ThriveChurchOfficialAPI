@@ -64,9 +64,14 @@ namespace ThriveChurchOfficialAPI.Services
                 return seriesWithSameSlug.FirstOrDefault();
             }
 
-            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
+            // if any of the sermon series' currently have a null
+            if (request.EndDate == null)
+            {
+                var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
+                return currentlyActiveSeries.FirstOrDefault();
+            }
 
-            // do the business logic here friend
+            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
 
             return getAllSermonsResponse;
         }
@@ -310,6 +315,43 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return liveStreamCompletedResponse;
+        }
+
+        /// <summary>
+        /// Updates a sermon series to add a list of sermon messages
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> AddMessagesToSermonSeries(AddMessagesToSeriesRequest request)
+        {
+            var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
+
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            // make sure that the Id is valid
+            var validIdForSermonSeries = await _sermonsRepository.GetSeriesForId(request.SeriesId);
+
+            if (validIdForSermonSeries == null)
+            {
+                // we didn't find it
+                return null;
+            }
+
+            // update the one we found in memory to add the new messages
+            var currentMessages = validIdForSermonSeries.Messages.ToList();
+            foreach (var message in request.MessagesToAdd)
+            {
+                // validate this message first
+
+                currentMessages.Add(message);
+            }
+
+            var updatedSermonSeriesResponse = await _sermonsRepository.AddMessagesToSermonSeries(request);
+
+            return null;
         }
     }
 

@@ -42,6 +42,26 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
+        [HttpPut("series")]
+        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([FromBody] SermonSeries request)
+        {
+            //var response = await _sermonsService.CreateNewSermonSeries(request);
+
+            //var value = new ActionResult<SermonSeries>(response);
+
+            return null;
+        }
+
+        [HttpPost("series/message")]
+        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([FromBody] AddMessagesToSeriesRequest request)
+        {
+            var response = await _sermonsService.AddMessagesToSermonSeries(request);
+
+            //var value = new ActionResult<SermonSeries>(response);
+
+            return null;
+        }
+
         [HttpGet("live")]
         public async Task<ActionResult<LiveStreamingResponse>> GetLiveSermons()
         {

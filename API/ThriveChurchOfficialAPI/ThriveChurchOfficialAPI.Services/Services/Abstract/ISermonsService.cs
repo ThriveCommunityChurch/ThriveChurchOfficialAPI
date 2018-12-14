@@ -47,5 +47,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <returns></returns>
         Task<LiveSermons> UpdateLiveSermonsInactive();
+
+        /// <summary>
+        /// Updates a sermon series to add a list of sermon messages
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonSeries> AddMessagesToSermonSeries(AddMessagesToSeriesRequest request);
     }
 }
