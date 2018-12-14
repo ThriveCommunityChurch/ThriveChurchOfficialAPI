@@ -51,11 +51,65 @@ namespace ThriveChurchOfficialAPI.Repositories
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
             await collection.InsertOneAsync(request);
 
+            // updated time is now
+            request.LastUpdated = DateTime.UtcNow;
+
             // respond with the inserted object
             var inserted = await collection.FindAsync(
                     Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
 
             var response = inserted.FirstOrDefault();
+
+            if (response == default(SermonSeries))
+            {
+                return null;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Finds and replaces the old object for the replacement
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> UpdateSermonSeries(SermonSeries request)
+        {
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+
+            // updated time is now
+            request.LastUpdated = DateTime.UtcNow;
+
+            var singleSeries = await collection.FindOneAndReplaceAsync(
+                   Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id), request);
+
+            return singleSeries;
+        }
+
+        /// <summary>
+        /// Gets a series object for the specified Id
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> GetSermonSeriesForId(string SeriesId)
+        {
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+
+            var singleSeries = await collection.FindAsync(
+                   Builders<SermonSeries>.Filter.Eq(s => s.Id, SeriesId));
+
+            var response = singleSeries.FirstOrDefault();
+
+            if (response == default(SermonSeries))
+            {
+                return null;
+            }
 
             return response;
         }

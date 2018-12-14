@@ -43,6 +43,13 @@ namespace ThriveChurchOfficialAPI.Services
         Task<LiveSermonsPollingResponse> PollForLiveEventData();
 
         /// <summary>
+        /// Updates a sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonSeries> ModifySermonSeries(SermonSeriesUpdateRequest request);
+
+        /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
         /// </summary>
         /// <returns></returns>
@@ -53,6 +60,6 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SermonSeries> AddMessagesToSermonSeries(AddMessagesToSeriesRequest request);
+        Task<SermonSeries> AddMessageToSermonSeries(AddMessagesToSeriesRequest request);
     }
 }

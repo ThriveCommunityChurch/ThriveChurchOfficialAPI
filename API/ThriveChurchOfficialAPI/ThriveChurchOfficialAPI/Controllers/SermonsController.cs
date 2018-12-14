@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -42,24 +43,30 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
+        // this query string should contain an Id
         [HttpPut("series")]
-        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([FromBody] SermonSeries request)
+        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([FromBody] SermonSeriesUpdateRequest request)
         {
-            //var response = await _sermonsService.CreateNewSermonSeries(request);
+            var response = await _sermonsService.ModifySermonSeries(request);
 
-            //var value = new ActionResult<SermonSeries>(response);
+            if (response == null)
+            {
+                return StatusCode(400);
+            }
 
-            return null;
+            var value = new ActionResult<SermonSeries>(response);
+
+            return value;
         }
 
         [HttpPost("series/message")]
         public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([FromBody] AddMessagesToSeriesRequest request)
         {
-            var response = await _sermonsService.AddMessagesToSermonSeries(request);
+            var response = await _sermonsService.AddMessageToSermonSeries(request);
 
-            //var value = new ActionResult<SermonSeries>(response);
+            var value = new ActionResult<SermonSeries>(response);
 
-            return null;
+            return value;
         }
 
         [HttpGet("live")]

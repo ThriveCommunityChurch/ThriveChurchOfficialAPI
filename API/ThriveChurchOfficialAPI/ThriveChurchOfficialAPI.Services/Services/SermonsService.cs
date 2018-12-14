@@ -77,6 +77,70 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
+        /// Adds a new spoken message to a sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> AddMessageToSermonSeries(AddMessagesToSeriesRequest request)
+        {
+            var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            // if we can't find it then the Id is invalid
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(request.SeriesId);
+            if (getSermonSeriesResponse == null)
+            {
+                // didn't find it
+                return null;
+            }
+
+            // add the sermon message to the response object and re-update the Mongo doc
+            var currentMessages = getSermonSeriesResponse.Messages.ToList();
+            currentMessages.AddRange(request.MessagesToAdd);
+
+            // find and replace the one with the updated object
+            var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
+            if(updateResponse == null)
+            {
+                return null;
+            }
+
+            return updateResponse;
+        }
+
+        /// <summary>
+        /// Updates a sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> ModifySermonSeries(SermonSeriesUpdateRequest request)
+        {
+            var validRequest = SermonSeriesUpdateRequest.ValidateRequest(request);
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(request.SermonId);
+            if (getSermonSeriesResponse == null)
+            {
+                return null;
+            }
+
+            getSermonSeriesResponse.Name = request.Name;
+            getSermonSeriesResponse.EndDate = request.EndDate;
+            getSermonSeriesResponse.Thumbnail = request.Thumbnail;
+            getSermonSeriesResponse.ArtUrl = request.ArtUrl;
+
+            var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
+
+            return updateResponse;
+        }
+
+        /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
         public async Task<LiveStreamingResponse> GetLiveSermons()
@@ -270,20 +334,21 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// 
+        /// Async function that will determine if the stream is currently active
+        /// (Every 10 seconds, check the cache)
         /// </summary>
         /// <returns></returns>
         private void DetermineIfStreamIsInactive()
         {
             // we'll look every 10 seconds to see if the stream has expired
-            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            _timer = new Timer(CheckStreamingStatus, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
         }
 
         /// <summary>
         /// Do the things
         /// </summary>
         /// <param name="state"></param>
-        private async void DoWork(object state)
+        private async void CheckStreamingStatus(object state)
         {
             // look in mongo or cache this response until the time in the DB is finished
             // we just need to make sure we update the value in the database automaticaly when this is past the expiration time
@@ -315,43 +380,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return liveStreamCompletedResponse;
-        }
-
-        /// <summary>
-        /// Updates a sermon series to add a list of sermon messages
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public async Task<SermonSeries> AddMessagesToSermonSeries(AddMessagesToSeriesRequest request)
-        {
-            var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
-
-            if (!validRequest)
-            {
-                return null;
-            }
-
-            // make sure that the Id is valid
-            var validIdForSermonSeries = await _sermonsRepository.GetSeriesForId(request.SeriesId);
-
-            if (validIdForSermonSeries == null)
-            {
-                // we didn't find it
-                return null;
-            }
-
-            // update the one we found in memory to add the new messages
-            var currentMessages = validIdForSermonSeries.Messages.ToList();
-            foreach (var message in request.MessagesToAdd)
-            {
-                // validate this message first
-
-                currentMessages.Add(message);
-            }
-
-            var updatedSermonSeriesResponse = await _sermonsRepository.AddMessagesToSermonSeries(request);
-
-            return null;
         }
     }
 

@@ -20,6 +20,7 @@ namespace ThriveChurchOfficialAPI.Core
             Slug = null;
             Thumbnail = null;
             ArtUrl = null;
+            LastUpdated = null;
         }
 
         /// <summary>
@@ -66,6 +67,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string ArtUrl { get; set; }
 
         /// <summary>
+        /// Used as a timestamp to indicate the last time that this object was updated
+        /// </summary>
+        public DateTime? LastUpdated { get; set; }
+
+        /// <summary>
         /// A collection of Messages spoken / given by someone within this sermon series
         /// </summary>
         public IEnumerable<SermonMessage> Messages { get; set; }
@@ -87,10 +93,25 @@ namespace ThriveChurchOfficialAPI.Core
                 return false;
             }
 
+            // there's no guarantee that a requested value here will keep the same value
+            if (request.LastUpdated != null)
+            {
+                request.LastUpdated = null;
+            }
+
             // messages must at least be an object, it should not be null
             if (request.Messages == null)
             {
                 request.Messages = new List<SermonMessage>();
+            }
+
+            if (request.StartDate != null && request.EndDate != null)
+            {
+                // make sure that the dates are chronological
+                if (request.StartDate > request.EndDate)
+                {
+                    return false;
+                }
             }
 
             return true;

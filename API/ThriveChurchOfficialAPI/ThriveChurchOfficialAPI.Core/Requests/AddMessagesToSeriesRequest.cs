@@ -39,6 +39,16 @@ namespace ThriveChurchOfficialAPI.Core
                 return false;
             }
 
+            foreach (var message in request.MessagesToAdd)
+            {
+                var validateMessages = SermonMessage.ValidateRequest(message);
+                if (!validateMessages)
+                {
+                    // at least one message is invalid
+                    return false;
+                }
+            }
+
             return true;
         }
     }
