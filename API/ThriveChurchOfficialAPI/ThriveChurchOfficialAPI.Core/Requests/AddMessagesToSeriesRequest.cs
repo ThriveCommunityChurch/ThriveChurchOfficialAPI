@@ -8,14 +8,8 @@ namespace ThriveChurchOfficialAPI.Core
     {
         public AddMessagesToSeriesRequest()
         {
-            SeriesId = null;
-            MessagesToAdd = null;
+             MessagesToAdd = null;
         }
-
-        /// <summary>
-        /// Id of the series for which to add this message to
-        /// </summary>
-        public string SeriesId { get; set; }
 
         /// <summary>
         /// A collection of messages that should be added to this Sermon Series
@@ -34,7 +28,7 @@ namespace ThriveChurchOfficialAPI.Core
                 return false;
             }
 
-            if (request.MessagesToAdd == null || string.IsNullOrEmpty(request.SeriesId))
+            if (request.MessagesToAdd == null)
             {
                 return false;
             }

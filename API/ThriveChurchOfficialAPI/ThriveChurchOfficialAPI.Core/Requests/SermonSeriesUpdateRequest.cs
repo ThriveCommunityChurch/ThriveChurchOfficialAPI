@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Text;
 
 namespace ThriveChurchOfficialAPI.Core
@@ -8,10 +9,10 @@ namespace ThriveChurchOfficialAPI.Core
     {
         public SermonSeriesUpdateRequest()
         {
-            SermonId = null;
             Name = null;
             Thumbnail = null;
             ArtUrl = null;
+            Slug = null;
         }
 
         /// <summary>
@@ -45,6 +46,12 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         public string ArtUrl { get; set; }
 
+        /// <summary>
+        /// Updates the slug text for this sermon series
+        /// </summary>
+        [Required]
+        public string Slug { get; set; }
+
         public static bool ValidateRequest(SermonSeriesUpdateRequest request)
         {
             if (request == null)
@@ -55,8 +62,8 @@ namespace ThriveChurchOfficialAPI.Core
             if (request.ArtUrl == null ||
                 request.EndDate == null ||
                 request.StartDate == null ||
-                request.SermonId == null ||
-                request.Thumbnail == null)
+                request.Thumbnail == null ||
+                request.Slug == null)
             {
                 return false;
             }

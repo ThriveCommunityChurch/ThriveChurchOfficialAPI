@@ -8,6 +8,10 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public abstract class RepositoryBase
     { 
+        protected RepositoryBase()
+        {
+        }
+
         // This should probably return any type that the user requests, however if the API we are using ever breaks the contract 
         public static async Task<PassageTextInfo> GetPassages(string uri, string authenticationToken)
         {

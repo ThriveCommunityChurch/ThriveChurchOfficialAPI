@@ -44,10 +44,10 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         // this query string should contain an Id
-        [HttpPut("series")]
-        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([FromBody] SermonSeriesUpdateRequest request)
+        [HttpPut("series/{SeriesId}")]
+        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([FromQuery] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
         {
-            var response = await _sermonsService.ModifySermonSeries(request);
+            var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
 
             if (response == null)
             {
@@ -59,14 +59,24 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
-        [HttpPost("series/message")]
-        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([FromBody] AddMessagesToSeriesRequest request)
+        [HttpPost("series/{SeriesId}/message")]
+        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries(string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
-            var response = await _sermonsService.AddMessageToSermonSeries(request);
+            var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
 
             var value = new ActionResult<SermonSeries>(response);
 
             return value;
+        }
+
+        [HttpPut("series/{SeriesId}/message")]
+        public async Task<ActionResult<SermonSeries>> UpdateMessagesInSermonSeries(string SeriesId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
+        {
+            //var response = await _sermonsService.UpdateMessagesInSermonSeries(request);
+
+            //var value = new ActionResult<SermonSeries>(response);
+
+            return null;
         }
 
         [HttpGet("live")]

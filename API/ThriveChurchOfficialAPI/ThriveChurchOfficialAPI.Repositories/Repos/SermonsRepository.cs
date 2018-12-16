@@ -86,6 +86,8 @@ namespace ThriveChurchOfficialAPI.Repositories
             var singleSeries = await collection.FindOneAndReplaceAsync(
                    Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id), request);
 
+            // this does not return the updated object. 
+            // TODO: fix
             return singleSeries;
         }
 
@@ -103,6 +105,31 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             var singleSeries = await collection.FindAsync(
                    Builders<SermonSeries>.Filter.Eq(s => s.Id, SeriesId));
+
+            var response = singleSeries.FirstOrDefault();
+
+            if (response == default(SermonSeries))
+            {
+                return null;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Used to find a series for a particular unique slug
+        /// </summary>
+        /// <param name="slug"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> GetSermonSeriesForSlug(string slug)
+        {
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+
+            var singleSeries = await collection.FindAsync(
+                   Builders<SermonSeries>.Filter.Eq(s => s.Slug, slug));
 
             var response = singleSeries.FirstOrDefault();
 

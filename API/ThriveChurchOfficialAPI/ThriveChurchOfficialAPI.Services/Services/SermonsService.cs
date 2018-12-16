@@ -81,7 +81,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> AddMessageToSermonSeries(AddMessagesToSeriesRequest request)
+        public async Task<SermonSeries> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request)
         {
             var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
             if (!validRequest)
@@ -89,8 +89,13 @@ namespace ThriveChurchOfficialAPI.Services
                 return null;
             }
 
+            if (string.IsNullOrEmpty(SeriesId))
+            {
+                return null;
+            }
+
             // if we can't find it then the Id is invalid
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(request.SeriesId);
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(SeriesId);
             if (getSermonSeriesResponse == null)
             {
                 // didn't find it
@@ -101,6 +106,9 @@ namespace ThriveChurchOfficialAPI.Services
             var currentMessages = getSermonSeriesResponse.Messages.ToList();
             currentMessages.AddRange(request.MessagesToAdd);
 
+            // readd the messages back to the object, This is important (see SO for  Deep Copy vs shallow copy)
+            getSermonSeriesResponse.Messages = currentMessages;
+
             // find and replace the one with the updated object
             var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
             if(updateResponse == null)
@@ -108,7 +116,7 @@ namespace ThriveChurchOfficialAPI.Services
                 return null;
             }
 
-            return updateResponse;
+            return getSermonSeriesResponse;
         }
 
         /// <summary>
@@ -116,10 +124,15 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> ModifySermonSeries(SermonSeriesUpdateRequest request)
+        public async Task<SermonSeries> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request)
         {
             var validRequest = SermonSeriesUpdateRequest.ValidateRequest(request);
             if (!validRequest)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(SeriesId))
             {
                 return null;
             }
@@ -130,10 +143,20 @@ namespace ThriveChurchOfficialAPI.Services
                 return null;
             }
 
+            // make sure that no one can update the slug to something that already exists
+            // this is not allowed
+            var validateSlugResponse = await _sermonsRepository.GetSermonSeriesForSlug(request.Slug);
+            if (validateSlugResponse != null)
+            {
+                // cannot edit this series to contain the same response
+                return null;
+            }
+
             getSermonSeriesResponse.Name = request.Name;
             getSermonSeriesResponse.EndDate = request.EndDate;
             getSermonSeriesResponse.Thumbnail = request.Thumbnail;
             getSermonSeriesResponse.ArtUrl = request.ArtUrl;
+            getSermonSeriesResponse.Slug = request.Slug;
 
             var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
 
@@ -345,7 +368,7 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// Do the things
+        /// Fire and forget this
         /// </summary>
         /// <param name="state"></param>
         private async void CheckStreamingStatus(object state)

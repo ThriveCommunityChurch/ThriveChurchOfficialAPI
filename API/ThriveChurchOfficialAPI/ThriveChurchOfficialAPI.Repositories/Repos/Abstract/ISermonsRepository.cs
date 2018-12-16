@@ -19,5 +19,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<LiveSermons> UpdateLiveSermonsInactive();
 
         Task<SermonSeries> UpdateSermonSeries(SermonSeries request);
+
+        Task<SermonSeries> GetSermonSeriesForSlug(string slug);
     }
 }

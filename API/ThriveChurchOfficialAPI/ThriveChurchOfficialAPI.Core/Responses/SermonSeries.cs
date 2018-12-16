@@ -51,7 +51,7 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? EndDate { get; set; }
 
         /// <summary>
-        /// This is a reference to the url link on the website 
+        /// This is a reference to the url link on the website (so these need to stay unique)
         /// for example -> domain.org/{insert-slug-here}
         /// </summary>
         public string Slug { get; set; }
