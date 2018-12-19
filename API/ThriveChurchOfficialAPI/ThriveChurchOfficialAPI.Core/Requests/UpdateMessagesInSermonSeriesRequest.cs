@@ -8,12 +8,37 @@ namespace ThriveChurchOfficialAPI.Core
     {
         public UpdateMessagesInSermonSeriesRequest()
         {
-
+            Message = null;
         }
 
         /// <summary>
-        /// Id of the Sermon Series
+        /// Requested message update
         /// </summary>
-        public string SeriesId { get; set; }
+        public SermonMessage Message { get; set; }
+
+        /// <summary>
+        /// Validates the request object
+        /// </summary>
+        /// <param name="request"></param>
+        public static bool ValidateRequest(UpdateMessagesInSermonSeriesRequest request)
+        {
+            if (request == null)
+            {
+                return false;
+            }
+
+            if (request.Message == null)
+            {
+                return false;
+            }
+
+            var validMessage = SermonMessage.ValidateRequest(request.Message);
+            if (!validMessage)
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

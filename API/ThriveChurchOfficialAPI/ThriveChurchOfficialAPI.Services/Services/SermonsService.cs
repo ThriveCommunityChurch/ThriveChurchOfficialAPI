@@ -104,6 +104,13 @@ namespace ThriveChurchOfficialAPI.Services
 
             // add the sermon message to the response object and re-update the Mongo doc
             var currentMessages = getSermonSeriesResponse.Messages.ToList();
+
+            // add the Guid to the requested messages then add the messages
+            foreach (var message in request.MessagesToAdd)
+            {
+                message.MessageId = Guid.NewGuid().ToString();
+            }
+
             currentMessages.AddRange(request.MessagesToAdd);
 
             // readd the messages back to the object, This is important (see SO for  Deep Copy vs shallow copy)
@@ -117,6 +124,51 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return getSermonSeriesResponse;
+        }
+
+        /// <summary>
+        /// Updates a sermon message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonMessage> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
+        {
+            var validRequest = UpdateMessagesInSermonSeriesRequest.ValidateRequest(request);
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            var validGuid = Guid.TryParse(messageId, out Guid messageGuid);
+            if (!validGuid)
+            {
+                return null;
+            }
+
+            var messageResponse = await _sermonsRepository.GetMessageForId(messageId);
+            if (messageResponse == null)
+            {
+                return null;
+            }
+
+            return messageResponse;
+        }
+
+        /// <summary>
+        /// Gets a sermon series for its Id
+        /// </summary>
+        /// <param name="seriesId"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> GetSeriesForId(string seriesId)
+        {
+            var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
+            if (seriesResponse == null)
+            {
+                // the series Id that was requested is invalid
+            }
+
+            return seriesResponse;
         }
 
         /// <summary>

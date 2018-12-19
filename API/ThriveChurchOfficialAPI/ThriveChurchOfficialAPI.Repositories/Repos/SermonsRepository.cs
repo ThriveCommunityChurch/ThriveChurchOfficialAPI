@@ -142,6 +142,33 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
+        /// Gets a sermon message for its Id
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns></returns>
+        public async Task<SermonMessage> GetMessageForId(string messageId)
+        {
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+
+            // use a filter since we are looking for an Id which is a value in an array with n elements
+            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
+
+            var seriesResponse = await collection.FindAsync(filter);
+            var series = seriesResponse.FirstOrDefault();
+            var response = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
+
+            if (response == default(SermonMessage))
+            {
+                return null;
+            }
+
+            return response;
+        }
+
+        /// <summary>
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
         /// <param name="connectionString"></param>

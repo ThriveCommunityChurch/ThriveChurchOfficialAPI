@@ -51,6 +51,11 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? Date { get; set; }
 
         /// <summary>
+        /// String representation of a GUID (Cannot be modified)
+        /// </summary>
+        public string MessageId { get; set; }
+
+        /// <summary>
         /// Validates the object
         /// </summary>
         /// <param name="request"></param>
@@ -66,6 +71,12 @@ namespace ThriveChurchOfficialAPI.Core
             if (request.Date == null || 
                 request.Speaker == null || 
                 request.Title == null)
+            {
+                return false;
+            }
+
+            // requests cannot modify this field
+            if (request.MessageId != null)
             {
                 return false;
             }

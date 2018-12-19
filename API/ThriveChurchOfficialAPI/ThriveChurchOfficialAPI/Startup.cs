@@ -19,8 +19,6 @@ namespace ThriveChurchOfficialAPI
 {
     public class Startup
     {
-        public readonly string EsvApiKey;
-
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -46,11 +44,6 @@ namespace ThriveChurchOfficialAPI
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "Thrive Church Official API", Version = "v1" });
-
-                // Set the comments path for the Swagger JSON and UI.
-                //var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                //c.IncludeXmlComments(xmlPath);
             });
 
             services.AddMvc();
