@@ -1,4 +1,4 @@
-# ThriveChurchOfficialAPI 
+# Thrive Church Official API
 This API is primarily used by the Thrive Church Official App for serving users with content for both the Bible and our recorded / live sermons.
 
 ## Stack
