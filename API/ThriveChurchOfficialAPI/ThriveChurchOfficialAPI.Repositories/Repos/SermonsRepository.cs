@@ -8,9 +8,9 @@ using System.Linq;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
-    public class SermonsRepository : RepositoryBase, ISermonsRepository //MongoConnectionBase
+    public class SermonsRepository : RepositoryBase, ISermonsRepository
     {
-        public readonly string connectionString;
+        private readonly string connectionString;
 
         public SermonsRepository(IConfiguration configuration)
         {
