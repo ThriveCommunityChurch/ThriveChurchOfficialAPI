@@ -456,6 +456,33 @@ namespace ThriveChurchOfficialAPI.Services
 
             return liveStreamCompletedResponse;
         }
+
+        /// <summary>
+        /// Gets a collection of recently watched sermon messages
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<RecentlyWatchedMessagesResponse> GetRecentlyWatched(string userId)
+        {
+            var validGuid = Guid.TryParse(userId, out Guid userGuid);
+            if (!validGuid)
+            {
+                return null;
+            }
+
+            var recentlyWatchedResult = await _sermonsRepository.GetRecentlyWatched(userId);
+            if (recentlyWatchedResult == null)
+            {
+                return null;
+            }
+
+            var response = new RecentlyWatchedMessagesResponse
+            {
+                RecentMessages = recentlyWatchedResult
+            };
+
+            return response;
+        }
     }
 
     /// <summary>
