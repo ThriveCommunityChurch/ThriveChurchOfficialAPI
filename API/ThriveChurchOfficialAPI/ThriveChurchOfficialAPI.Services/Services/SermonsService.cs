@@ -6,23 +6,21 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
+using System.Linq;
 
 namespace ThriveChurchOfficialAPI.Services
 {
     public class SermonsService : BaseService, ISermonsService
     {
         private readonly ISermonsRepository _sermonsRepository;
-        private IMemoryCache _cache;
+        private readonly IMemoryCache _cache;
         private Timer _timer;
 
-        // the controller cannot have multiple inheritance so we must push it to the service layer
-        public SermonsService(IConfiguration Configuration,
-            IMemoryCache memoryCache)
-            : base(Configuration)
+        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache)
         {
-            // init the repo with the connection string
-            _sermonsRepository = new SermonsRepository(Configuration);
-            _cache = memoryCache;
+            // init the repo with the connection string via DI
+            _sermonsRepository = sermonsRepo;
+            _cache = cache;
         }
 
         /// <summary>
@@ -40,11 +38,196 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
+        public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
+        {
+            var validRequest = SermonSeries.ValidateRequest(request);
+
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            // the Slug on the series should be unique, so if we already have one with this slug
+            // return an error - because we want to avoid having bad data in our database
+            var allSermonSries = await _sermonsRepository.GetAllSermons();
+
+            if (allSermonSries == null || allSermonSries == default(AllSermonsResponse))
+            {
+                return null;
+            }
+
+            var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
+
+            if (seriesWithSameSlug.Any())
+            {
+                // there is already a sermon series with this slug, respond with one of those
+                return seriesWithSameSlug.FirstOrDefault();
+            }
+
+            // if any of the sermon series' currently have a null
+            if (request.EndDate == null)
+            {
+                var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
+                return currentlyActiveSeries.FirstOrDefault();
+            }
+
+            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
+
+            return getAllSermonsResponse;
+        }
+
+        /// <summary>
+        /// Adds a new spoken message to a sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request)
+        {
+            var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(SeriesId))
+            {
+                return null;
+            }
+
+            // if we can't find it then the Id is invalid
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(SeriesId);
+            if (getSermonSeriesResponse == null)
+            {
+                // didn't find it
+                return null;
+            }
+
+            // add the sermon message to the response object and re-update the Mongo doc
+            var currentMessages = getSermonSeriesResponse.Messages.ToList();
+
+            // add the Guid to the requested messages then add the messages
+            foreach (var message in request.MessagesToAdd)
+            {
+                message.MessageId = Guid.NewGuid().ToString();
+            }
+
+            currentMessages.AddRange(request.MessagesToAdd);
+
+            // readd the messages back to the object, This is important (see SO for  Deep Copy vs shallow copy)
+            getSermonSeriesResponse.Messages = currentMessages;
+
+            // find and replace the one with the updated object
+            var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
+            if(updateResponse == null)
+            {
+                return null;
+            }
+
+            return getSermonSeriesResponse;
+        }
+
+        /// <summary>
+        /// Updates a sermon message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonMessage> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
+        {
+            var validRequest = UpdateMessagesInSermonSeriesRequest.ValidateRequest(request);
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            var validGuid = Guid.TryParse(messageId, out Guid messageGuid);
+            if (!validGuid)
+            {
+                return null;
+            }
+
+            var messageResponse = await _sermonsRepository.GetMessageForId(messageId);
+            if (messageResponse == null)
+            {
+                return null;
+            }
+
+            return messageResponse;
+        }
+
+        /// <summary>
+        /// Gets a sermon series for its Id
+        /// </summary>
+        /// <param name="seriesId"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> GetSeriesForId(string seriesId)
+        {
+            var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
+            if (seriesResponse == null)
+            {
+                // the series Id that was requested is invalid
+            }
+
+            return seriesResponse;
+        }
+
+        /// <summary>
+        /// Updates a sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SermonSeries> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request)
+        {
+            var validRequest = SermonSeriesUpdateRequest.ValidateRequest(request);
+            if (!validRequest)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(SeriesId))
+            {
+                return null;
+            }
+
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(request.SermonId);
+            if (getSermonSeriesResponse == null)
+            {
+                return null;
+            }
+
+            // make sure that no one can update the slug to something that already exists
+            // this is not allowed
+            var validateSlugResponse = await _sermonsRepository.GetSermonSeriesForSlug(request.Slug);
+            if (validateSlugResponse != null)
+            {
+                // cannot edit this series to contain the same response
+                return null;
+            }
+
+            getSermonSeriesResponse.Name = request.Name;
+            getSermonSeriesResponse.EndDate = request.EndDate;
+            getSermonSeriesResponse.Thumbnail = request.Thumbnail;
+            getSermonSeriesResponse.ArtUrl = request.ArtUrl;
+            getSermonSeriesResponse.Slug = request.Slug;
+
+            var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
+
+            return updateResponse;
+        }
+
+        /// <summary>
+        /// returns a list of all Passage Objets
+        /// </summary>
         public async Task<LiveStreamingResponse> GetLiveSermons()
         {
             var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
-            LiveStreamingResponse response;
+            // we are not streaming so there's no need to include anything
+            var response = new LiveStreamingResponse
+            {
+                IsLive = false,
+                ExpirationTime = getLiveSermonsResponse.ExpirationTime
+            };
 
             // if we are currently streaming then we will need to add the slug to the middle of the Facebook link
             if (getLiveSermonsResponse.IsLive)
@@ -53,24 +236,11 @@ namespace ThriveChurchOfficialAPI.Services
                     getLiveSermonsResponse.VideoUrlSlug);
 
                 // do the business logic here friend
-                response = new LiveStreamingResponse()
-                {
-                    IsLive = true,
-                    Title = getLiveSermonsResponse.Title,
-                    VideoUrl = videoUrl,
-                    ExpirationTime = getLiveSermonsResponse.ExpirationTime,
-                    IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false,
-                    SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null
-                };
-            }
-            else
-            {
-                // we are not streaming so there's no need to include anything
-                response = new LiveStreamingResponse()
-                {
-                    IsLive = false,
-                    ExpirationTime = getLiveSermonsResponse.ExpirationTime
-                };
+                response.IsLive = true;
+                response.Title = getLiveSermonsResponse.Title;
+                response.VideoUrl = videoUrl;
+                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
+                response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
             }
 
             return response;
@@ -84,7 +254,7 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<LiveStreamingResponse> UpdateLiveSermons(LiveSermonsUpdateRequest request)
         {
             // validate the request
-            var validRequest = new LiveSermonsUpdateRequest().ValidateRequest(request);
+            var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
 
             if (!validRequest)
             {
@@ -92,11 +262,8 @@ namespace ThriveChurchOfficialAPI.Services
                 return default(LiveStreamingResponse);
             }
 
-            // generate the updated object so we can update everything at once in the repo
-            var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
-
             // Update this object for the requested fields
-            var updated = new LiveSermons()
+            var updated = new LiveSermons
             {
                 ExpirationTime = new DateTime(1990, 01, 01, 12, 20, 0, 0), // reset this on this update & give ourselves a little buffer (5 min)
                 IsLive = true, 
@@ -104,7 +271,7 @@ namespace ThriveChurchOfficialAPI.Services
                 SpecialEventTimes = null,
                 Title = request.Title,
                 VideoUrlSlug = request.Slug,
-                Id = getLiveSermonsResponse.Id
+                Id = request.Id
             };
 
             var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
@@ -118,7 +285,7 @@ namespace ThriveChurchOfficialAPI.Services
                     updateLiveSermonsResponse.VideoUrlSlug);
 
             // times have already been converted to UTC
-            var response = new LiveStreamingResponse()
+            var response = new LiveStreamingResponse
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
                 IsLive = updateLiveSermonsResponse.IsLive,
@@ -142,7 +309,7 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<LiveStreamingResponse> UpdateLiveForSpecialEvents(LiveSermonsSpecialEventUpdateRequest request)
         {
             // validate the request
-            var validRequest = new LiveSermonsSpecialEventUpdateRequest().ValidateRequest(request);
+            var validRequest = LiveSermonsSpecialEventUpdateRequest.ValidateRequest(request);
 
             if (!validRequest)
             {
@@ -154,7 +321,7 @@ namespace ThriveChurchOfficialAPI.Services
             var getAllSermonsResponse = await _sermonsRepository.GetLiveSermons();
 
             // Update this object for the requested fields
-            var updated = new LiveSermons()
+            var updated = new LiveSermons
             {
                 ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 15, 0, 0),
                 IsLive = true,
@@ -174,7 +341,7 @@ namespace ThriveChurchOfficialAPI.Services
             var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
                     updateLiveSermonsResponse.VideoUrlSlug);
 
-            var response = new LiveStreamingResponse()
+            var response = new LiveStreamingResponse
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime.ToUniversalTime(),
                 IsLive = updateLiveSermonsResponse.IsLive,
@@ -222,7 +389,7 @@ namespace ThriveChurchOfficialAPI.Services
                     _timer?.Dispose();
                 }
 
-                var pastTimeResponse = new LiveSermonsPollingResponse()
+                var pastTimeResponse = new LiveSermonsPollingResponse
                 {
                     IsLive = false
                     // we cannot set the ExpireTime because it will have been null here
@@ -232,36 +399,31 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // generate response
-            var response = new LiveSermonsPollingResponse()
+            var response = new LiveSermonsPollingResponse
             {
                 IsLive = liveSermons.IsLive,
                 StreamExpirationTime = liveSermons.ExpirationTime.ToUniversalTime()
             };
 
             return response;
-
-            // otherwise go to mongo and grab the object and return it
-            // once we have it here store it in the cache
-            // and then return it
-
-            // if an error ocurs then return with null
         }
 
         /// <summary>
-        /// 
+        /// Async function that will determine if the stream is currently active
+        /// (Every 10 seconds, check the cache)
         /// </summary>
         /// <returns></returns>
         private void DetermineIfStreamIsInactive()
         {
             // we'll look every 10 seconds to see if the stream has expired
-            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            _timer = new Timer(CheckStreamingStatus, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
         }
 
         /// <summary>
-        /// Do the things
+        /// Fire and forget this
         /// </summary>
         /// <param name="state"></param>
-        private async void DoWork(object state)
+        private async void CheckStreamingStatus(object state)
         {
             // look in mongo or cache this response until the time in the DB is finished
             // we just need to make sure we update the value in the database automaticaly when this is past the expiration time

@@ -49,5 +49,39 @@ namespace ThriveChurchOfficialAPI.Core
         /// The date that this message was given - we will ignore the time
         /// </summary>
         public DateTime? Date { get; set; }
+
+        /// <summary>
+        /// String representation of a GUID (Cannot be modified)
+        /// </summary>
+        public string MessageId { get; set; }
+
+        /// <summary>
+        /// Validates the object
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static bool ValidateRequest(SermonMessage request)
+        {
+            if (request == null)
+            {
+                return false;
+            }
+
+            // A/V urls, and PassageRef are allowed to be null, however others cannot
+            if (request.Date == null || 
+                request.Speaker == null || 
+                request.Title == null)
+            {
+                return false;
+            }
+
+            // requests cannot modify this field
+            if (request.MessageId != null)
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 }

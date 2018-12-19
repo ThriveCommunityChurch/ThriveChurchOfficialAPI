@@ -36,13 +36,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Configuration;
 using Swashbuckle.AspNetCore.Swagger;
+using ThriveChurchOfficialAPI.Services;
+using ThriveChurchOfficialAPI.Repositories;
 
 namespace ThriveChurchOfficialAPI
 {
     public class Startup
     {
-        public readonly string EsvApiKey;
-
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
@@ -68,11 +68,6 @@ namespace ThriveChurchOfficialAPI
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "Thrive Church Official API", Version = "v1" });
-
-                // Set the comments path for the Swagger JSON and UI.
-                //var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                //c.IncludeXmlComments(xmlPath);
             });
 
             services.AddMvc();
@@ -85,6 +80,11 @@ namespace ThriveChurchOfficialAPI
 
             services.AddSingleton(Configuration);
 
+            // Manually register DI dependencies
+            services.AddTransient(typeof(ISermonsService), typeof(SermonsService));
+            services.AddTransient(typeof(IPassagesRepository), typeof(PassagesRepository));
+            services.AddTransient(typeof(ISermonsRepository), typeof(SermonsRepository));
+            services.AddTransient(typeof(IPassagesService), typeof(PassagesService));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -107,7 +107,7 @@ namespace ThriveChurchOfficialAPI
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
-                c.RoutePrefix = "swagger"; // enable swagger at the root 
+                c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
             });
 
             app.UseHttpsRedirection();

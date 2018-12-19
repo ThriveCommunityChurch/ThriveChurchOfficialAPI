@@ -16,12 +16,10 @@ namespace ThriveChurchOfficialAPI.Controllers
     public class PassagesController : ControllerBase
     {
         private readonly IPassagesService _passagesService;
-        private readonly IPassagesRepository _passagesRepository;
 
-        public PassagesController(IConfiguration configuration)
+        public PassagesController(IPassagesService passageService)
         {
-            _passagesRepository = new PassagesRepository();
-            _passagesService = new PassagesService(configuration, _passagesRepository);
+            _passagesService = passageService;
         }
 
         // GET api/passage

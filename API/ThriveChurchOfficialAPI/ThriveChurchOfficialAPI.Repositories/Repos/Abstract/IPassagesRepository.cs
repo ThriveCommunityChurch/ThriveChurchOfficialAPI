@@ -5,6 +5,6 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public interface IPassagesRepository
     {
-        Task<PassageTextInfo> GetPassagesForSearch(string apiKey, string searchCriteria);
+        Task<PassageTextInfo> GetPassagesForSearch(string searchCriteria);
     }
 }

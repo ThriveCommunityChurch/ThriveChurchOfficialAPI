@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Services
@@ -9,6 +9,13 @@ namespace ThriveChurchOfficialAPI.Services
         /// returns a list of all Sermon Series'
         /// </summary>
         Task<AllSermonsResponse> GetAllSermons();
+
+        /// <summary>
+        /// Creates a new Sermon Series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonSeries> CreateNewSermonSeries(SermonSeries request);
 
         /// <summary>
         /// Return the information about a live sermon going on now - if it's live
@@ -36,9 +43,38 @@ namespace ThriveChurchOfficialAPI.Services
         Task<LiveSermonsPollingResponse> PollForLiveEventData();
 
         /// <summary>
+        /// Updates a sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonSeries> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request);
+        
+        /// <summary>
+        /// Gets a sermon series for its Id
+        /// </summary>
+        /// <param name="seriesId"></param>
+        /// <returns></returns>
+        Task<SermonSeries> GetSeriesForId(string seriesId);
+
+        /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
         /// </summary>
         /// <returns></returns>
         Task<LiveSermons> UpdateLiveSermonsInactive();
+
+        /// <summary>
+        /// Updates a sermon series to add a list of sermon messages
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonSeries> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request);
+
+        /// <summary>
+        /// Update a message within a sermon series
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SermonMessage> UpdateMessageInSermonSeries(string SeriesId, UpdateMessagesInSermonSeriesRequest request);
     }
 }

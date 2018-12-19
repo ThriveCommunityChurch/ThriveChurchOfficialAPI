@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -19,12 +20,15 @@ namespace ThriveChurchOfficialAPI.Core
             Slug = null;
             Thumbnail = null;
             ArtUrl = null;
+            LastUpdated = null;
         }
 
         /// <summary>
         /// ObjectId notation from Mongo
         /// </summary>
-        public ObjectId _id { get; set; }
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
 
         /// <summary>
         /// The name of the sermon series
@@ -47,7 +51,7 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? EndDate { get; set; }
 
         /// <summary>
-        /// This is a reference to the url link on the website 
+        /// This is a reference to the url link on the website (so these need to stay unique)
         /// for example -> domain.org/{insert-slug-here}
         /// </summary>
         public string Slug { get; set; }
@@ -63,8 +67,54 @@ namespace ThriveChurchOfficialAPI.Core
         public string ArtUrl { get; set; }
 
         /// <summary>
+        /// Used as a timestamp to indicate the last time that this object was updated
+        /// </summary>
+        public DateTime? LastUpdated { get; set; }
+
+        /// <summary>
         /// A collection of Messages spoken / given by someone within this sermon series
         /// </summary>
         public IEnumerable<SermonMessage> Messages { get; set; }
+
+        public static bool ValidateRequest(SermonSeries request)
+        {
+            if (request == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(request.ArtUrl) || 
+                request.StartDate == null || 
+                string.IsNullOrEmpty(request.Name) || 
+                string.IsNullOrEmpty(request.Slug) ||
+                string.IsNullOrEmpty(request.Thumbnail) ||
+                string.IsNullOrEmpty(request.Year))
+            {
+                return false;
+            }
+
+            // there's no guarantee that a requested value here will keep the same value
+            if (request.LastUpdated != null)
+            {
+                request.LastUpdated = null;
+            }
+
+            // messages must at least be an object, it should not be null
+            if (request.Messages == null)
+            {
+                request.Messages = new List<SermonMessage>();
+            }
+
+            if (request.StartDate != null && request.EndDate != null)
+            {
+                // make sure that the dates are chronological
+                if (request.StartDate > request.EndDate)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 }
