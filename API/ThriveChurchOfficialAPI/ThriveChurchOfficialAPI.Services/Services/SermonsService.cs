@@ -439,7 +439,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             // IT's now later than what the time is in the database
             if (DateTime.UtcNow.TimeOfDay > pollingResponse.StreamExpirationTime.ToUniversalTime().TimeOfDay)
-            {
+            { 
                 // update mongo to reflect that the sermon is inactive
                 var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
 
