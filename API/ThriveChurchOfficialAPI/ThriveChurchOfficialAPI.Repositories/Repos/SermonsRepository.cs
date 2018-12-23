@@ -90,7 +90,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             // this does not return the updated object. 
             // TODO: fix
-            return singleSeries;
+            return request;
         }
 
         /// <summary>

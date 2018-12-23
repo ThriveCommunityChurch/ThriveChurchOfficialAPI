@@ -41,6 +41,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
+        /// <
         //[HttpPost("{UserId}")]
         //public async Task<ActionResult<RecentlyWatchedMessagesResponse>> CreateRecentlyWatched([FromBody] CreateRecentlyWatchedMessagesRequest request)
         //{

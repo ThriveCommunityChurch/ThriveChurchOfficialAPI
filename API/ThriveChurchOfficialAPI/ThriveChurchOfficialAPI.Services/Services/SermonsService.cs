@@ -57,7 +57,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
-
             if (seriesWithSameSlug.Any())
             {
                 // there is already a sermon series with this slug, respond with one of those
@@ -70,6 +69,13 @@ namespace ThriveChurchOfficialAPI.Services
                 var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
                 return currentlyActiveSeries.FirstOrDefault();
             }
+            else
+            {
+                request.EndDate = request.StartDate.Value.Date.ToUniversalTime();
+            }
+
+            // sanitise the start dates
+            request.StartDate = request.StartDate.Value.Date.ToUniversalTime();
 
             var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
 
@@ -108,6 +114,8 @@ namespace ThriveChurchOfficialAPI.Services
             // add the Guid to the requested messages then add the messages
             foreach (var message in request.MessagesToAdd)
             {
+                // sanitise the message dates and get rid of the times
+                message.Date = message.Date.Value.Date.ToUniversalTime();
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
