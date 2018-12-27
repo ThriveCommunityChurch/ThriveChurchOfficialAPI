@@ -110,6 +110,7 @@ namespace ThriveChurchOfficialAPI
                 c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
             });
 
+            // TODO: Uncomment this
             //app.UseHttpsRedirection();
             app.UseMvc();
         }
