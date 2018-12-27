@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -24,13 +25,32 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<AllSermonsResponse> GetAllSermons()
+        public async Task<AllSermonsSummaryResponse> GetAllSermons()
         {
             var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
 
-            // do the business logic here friend
+            // we need to convert everything to the right response pattern
+            var sortedSeries = getAllSermonsResponse.Sermons.OrderByDescending(i => i.StartDate);
 
-            return getAllSermonsResponse;
+            // for each one add only the properties we want to the list
+            var responseList = new List<SermonSeriesSummary>();
+            foreach (var series in sortedSeries)
+            {
+                var elemToAdd = new SermonSeriesSummary
+                {
+                    ArtUrl = series.ArtUrl,
+                    Id = series.Id,
+                    StartDate = series.StartDate.Value,
+                    Title = series.Name
+                };
+            }
+
+            var response = new AllSermonsSummaryResponse
+            {
+                Summaries = responseList
+            };
+
+            return response;
         }
 
         /// <summary>
