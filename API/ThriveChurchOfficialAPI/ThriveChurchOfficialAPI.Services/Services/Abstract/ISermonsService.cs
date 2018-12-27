@@ -8,7 +8,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Sermon Series'
         /// </summary>
-        Task<AllSermonsResponse> GetAllSermons();
+        Task<AllSermonsSummaryResponse> GetAllSermons();
 
         /// <summary>
         /// Creates a new Sermon Series
