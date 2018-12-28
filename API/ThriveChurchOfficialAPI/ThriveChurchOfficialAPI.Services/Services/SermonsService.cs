@@ -43,6 +43,8 @@ namespace ThriveChurchOfficialAPI.Services
                     StartDate = series.StartDate.Value,
                     Title = series.Name
                 };
+
+                responseList.Add(elemToAdd);
             }
 
             var response = new AllSermonsSummaryResponse
