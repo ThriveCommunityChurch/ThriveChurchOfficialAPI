@@ -9,7 +9,7 @@ This API is primarily used by the Thrive Church Official App for serving users w
 Visiting `~/swagger/index.html` in your browser will allow you to view the Swagger UI for the API and easily send API requests as well as view response objects.
 
 ## Caching
-*Note, the Caching that this application uses is **NOT** persistant, and will expire thirty (30) seconds after an initial request.*
+*Note, the Caching that this application uses is **NOT** persistent, and will expire thirty (30) seconds after an initial request.*
 
 If you wish to poll this API for whether or not the `LiveSermon` object is still active, the response will contain the Expiration Time (in **UTC**) for the `LiveSermon` object. Using this you will be able to gague how much longer the stream will be active. This will prevent having to poll the route in a loop to determine if right now the time has passed.
 
