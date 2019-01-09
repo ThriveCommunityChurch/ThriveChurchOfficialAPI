@@ -91,6 +91,11 @@ namespace ThriveChurchOfficialAPI.Services
                 return currentlyActiveSeries.FirstOrDefault();
             }
 
+            foreach (var message in request.Messages)
+            {
+                message.MessageId = Guid.NewGuid().ToString();
+            }
+
             var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
 
             return getAllSermonsResponse;
@@ -187,6 +192,9 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // the series Id that was requested is invalid
             }
+
+            var orderedMessages = seriesResponse.Messages.OrderByDescending(i => i.Date.Value);
+            seriesResponse.Messages = orderedMessages;
 
             return seriesResponse;
         }
@@ -301,7 +309,7 @@ namespace ThriveChurchOfficialAPI.Services
                 return default(LiveStreamingResponse);
             }
 
-            var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
+            string videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
                     updateLiveSermonsResponse.VideoUrlSlug);
 
             // times have already been converted to UTC
