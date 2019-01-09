@@ -38,6 +38,7 @@ using System.Configuration;
 using Swashbuckle.AspNetCore.Swagger;
 using ThriveChurchOfficialAPI.Services;
 using ThriveChurchOfficialAPI.Repositories;
+using Newtonsoft.Json.Serialization;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -70,7 +71,10 @@ namespace ThriveChurchOfficialAPI
                 c.SwaggerDoc("v1", new Info { Title = "Thrive Church Official API", Version = "v1" });
             });
 
-            services.AddMvc();
+            // Preserve Casing of JSON Objects
+            services.AddMvc()
+            .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver());
+
             // Add functionality to inject IOptions<T>
             services.AddOptions();
 

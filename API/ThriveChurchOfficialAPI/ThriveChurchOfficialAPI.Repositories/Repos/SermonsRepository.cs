@@ -51,10 +51,11 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
-            await collection.InsertOneAsync(request);
 
             // updated time is now
             request.LastUpdated = DateTime.UtcNow;
+
+            await collection.InsertOneAsync(request);
 
             // respond with the inserted object
             var inserted = await collection.FindAsync(
