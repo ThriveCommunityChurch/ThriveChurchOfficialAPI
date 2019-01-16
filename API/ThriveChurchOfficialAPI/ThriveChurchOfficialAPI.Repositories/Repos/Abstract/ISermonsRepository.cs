@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
+using ThriveChurchOfficialAPI.Core.DTOs;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -23,5 +24,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<SermonSeries> GetSermonSeriesForSlug(string slug);
 
         Task<SermonMessage> GetMessageForId(string messageId);
+
+        Task<IEnumerable<RecentMessage>> GetRecentlyWatched(string userId);
     }
 }

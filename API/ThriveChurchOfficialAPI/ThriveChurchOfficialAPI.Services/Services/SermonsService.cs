@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -26,13 +27,34 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<AllSermonsResponse> GetAllSermons()
+        public async Task<AllSermonsSummaryResponse> GetAllSermons()
         {
             var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
 
-            // do the business logic here friend
+            // we need to convert everything to the right response pattern
+            var sortedSeries = getAllSermonsResponse.Sermons.OrderByDescending(i => i.StartDate);
 
-            return getAllSermonsResponse;
+            // for each one add only the properties we want to the list
+            var responseList = new List<SermonSeriesSummary>();
+            foreach (var series in sortedSeries)
+            {
+                var elemToAdd = new SermonSeriesSummary
+                {
+                    ArtUrl = series.ArtUrl,
+                    Id = series.Id,
+                    StartDate = series.StartDate.Value,
+                    Title = series.Name
+                };
+
+                responseList.Add(elemToAdd);
+            }
+
+            var response = new AllSermonsSummaryResponse
+            {
+                Summaries = responseList
+            };
+
+            return response;
         }
 
         /// <summary>
@@ -57,7 +79,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
-
             if (seriesWithSameSlug.Any())
             {
                 // there is already a sermon series with this slug, respond with one of those
@@ -69,6 +90,18 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
                 return currentlyActiveSeries.FirstOrDefault();
+            }
+            else
+            {
+                request.EndDate = request.StartDate.Value.Date.ToUniversalTime();
+            }
+
+            // sanitise the start dates
+            request.StartDate = request.StartDate.Value.Date.ToUniversalTime();
+
+            foreach (var message in request.Messages)
+            {
+                message.MessageId = Guid.NewGuid().ToString();
             }
 
             var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
@@ -108,6 +141,8 @@ namespace ThriveChurchOfficialAPI.Services
             // add the Guid to the requested messages then add the messages
             foreach (var message in request.MessagesToAdd)
             {
+                // sanitise the message dates and get rid of the times
+                message.Date = message.Date.Value.Date.ToUniversalTime();
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
@@ -167,6 +202,9 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // the series Id that was requested is invalid
             }
+
+            var orderedMessages = seriesResponse.Messages.OrderByDescending(i => i.Date.Value);
+            seriesResponse.Messages = orderedMessages;
 
             return seriesResponse;
         }
@@ -281,7 +319,7 @@ namespace ThriveChurchOfficialAPI.Services
                 return default(LiveStreamingResponse);
             }
 
-            var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
+            string videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
                     updateLiveSermonsResponse.VideoUrlSlug);
 
             // times have already been converted to UTC
@@ -431,7 +469,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             // IT's now later than what the time is in the database
             if (DateTime.UtcNow.TimeOfDay > pollingResponse.StreamExpirationTime.ToUniversalTime().TimeOfDay)
-            {
+            { 
                 // update mongo to reflect that the sermon is inactive
                 var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
 
@@ -455,6 +493,33 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return liveStreamCompletedResponse;
+        }
+
+        /// <summary>
+        /// Gets a collection of recently watched sermon messages
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
+        public async Task<RecentlyWatchedMessagesResponse> GetRecentlyWatched(string userId)
+        {
+            var validGuid = Guid.TryParse(userId, out Guid userGuid);
+            if (!validGuid)
+            {
+                return null;
+            }
+
+            var recentlyWatchedResult = await _sermonsRepository.GetRecentlyWatched(userId);
+            if (recentlyWatchedResult == null)
+            {
+                return null;
+            }
+
+            var response = new RecentlyWatchedMessagesResponse
+            {
+                RecentMessages = recentlyWatchedResult
+            };
+
+            return response;
         }
     }
 

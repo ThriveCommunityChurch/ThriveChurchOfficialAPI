@@ -24,7 +24,7 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // GET api/sermons
         [HttpGet]
-        public async Task<ActionResult<AllSermonsResponse>> GetAllSermons()
+        public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons()
         {
             var response = await _sermonsService.GetAllSermons();
 
@@ -33,7 +33,7 @@ namespace ThriveChurchOfficialAPI.Controllers
                 return StatusCode(400);
             }
 
-            var value = new ActionResult<AllSermonsResponse>(response);
+            var value = new ActionResult<AllSermonsSummaryResponse>(response);
 
             return value;
         }
