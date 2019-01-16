@@ -89,15 +89,19 @@ namespace ThriveChurchOfficialAPI.Services
             if (request.EndDate == null)
             {
                 var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
-                return currentlyActiveSeries.FirstOrDefault();
+
+                if (currentlyActiveSeries.Any())
+                {
+                    return currentlyActiveSeries.FirstOrDefault();
+                }
             }
             else
             {
-                request.EndDate = request.StartDate.Value.Date.ToUniversalTime();
+                request.EndDate = request.EndDate.Value.ToUniversalTime().Date;
             }
 
             // sanitise the start dates
-            request.StartDate = request.StartDate.Value.Date.ToUniversalTime();
+            request.StartDate = request.StartDate.Value.ToUniversalTime().Date;
 
             foreach (var message in request.Messages)
             {
@@ -214,7 +218,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request)
+        public async Task<SermonSeries> ModifySermonSeries(string seriesId, SermonSeriesUpdateRequest request)
         {
             var validRequest = SermonSeriesUpdateRequest.ValidateRequest(request);
             if (!validRequest)
@@ -222,12 +226,12 @@ namespace ThriveChurchOfficialAPI.Services
                 return null;
             }
 
-            if (string.IsNullOrEmpty(SeriesId))
+            if (string.IsNullOrEmpty(seriesId))
             {
                 return null;
             }
 
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(request.SermonId);
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
             if (getSermonSeriesResponse == null)
             {
                 return null;
@@ -235,15 +239,15 @@ namespace ThriveChurchOfficialAPI.Services
 
             // make sure that no one can update the slug to something that already exists
             // this is not allowed
-            var validateSlugResponse = await _sermonsRepository.GetSermonSeriesForSlug(request.Slug);
-            if (validateSlugResponse != null)
+            if (getSermonSeriesResponse.Slug != request.Slug)
             {
-                // cannot edit this series to contain the same response
+                // cannot change the slug -> make sure a slug is set when you create the series.
                 return null;
             }
 
             getSermonSeriesResponse.Name = request.Name;
-            getSermonSeriesResponse.EndDate = request.EndDate;
+            getSermonSeriesResponse.EndDate = request.EndDate.Date;
+            getSermonSeriesResponse.StartDate = request.StartDate.Date;
             getSermonSeriesResponse.Thumbnail = request.Thumbnail;
             getSermonSeriesResponse.ArtUrl = request.ArtUrl;
             getSermonSeriesResponse.Slug = request.Slug;
