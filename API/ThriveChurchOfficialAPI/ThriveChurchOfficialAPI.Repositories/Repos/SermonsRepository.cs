@@ -41,6 +41,114 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        {
+            // determine which number of sermon series to request & which ones to return
+            var responseCount = 10;
+            if (pageNumber == 1 || pageNumber == 2)
+            {
+                responseCount = 5;
+            }
+
+            // what indexes should we use as the beginning? However, if larger than this we'll need to do more cheeckyness
+            var beginningCount = pageNumber == 2 ? 5 : 0;
+
+            if (pageNumber >= 3)
+            {
+                beginningCount = (pageNumber * 10) - 20; // we subtract 20 because the first 10 pages we only return 5
+            }
+
+            var totalPageNumber = 1;
+
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+            var documents = await collection.Find(_ => true)
+                .SortByDescending(i => i.StartDate)
+                .Skip(beginningCount)
+                .Limit(responseCount)
+                .ToListAsync();
+
+            // use this response in the total Record count
+            var totalRecordDelegate = GetAllSermons();
+
+            // get the count from the async task above
+            var totalRecord = await totalRecordDelegate;
+
+            // converting this to an array first will allow us to not have to enumerate the collection multiple times
+            // ToArray() just converts the DataType via reflection through a Buffer -> O(n) BUT length reads are O(1) after this
+            var totalRecordCount = totalRecord.Sermons.ToArray().Length;
+
+            // since we know how many there are, in this method we can use that to indicate the total Pages in this method
+            // Remember that pages 1 & 2 return a response of only 5
+            // take out the first 2 sets of 5, and as long as the number isn't neg before we get there then we have 2 pages
+            var pageCountCalc = totalRecordCount - 10;
+
+            if (pageCountCalc <= 0)
+            {
+                totalPageNumber = 2;
+            }
+
+            // we already know that there are only 2 pages, so if there's only those 2 then continue,
+            // otherwise calculate the leftovers
+            if (totalRecordCount > 10)
+            {
+                // Now we divide the total count by the calc and if we have a remainder then we round up to the next highest whole number
+                double fullPages = pageCountCalc / 10;
+
+                long intPart = (long)fullPages;
+                double fractionalPart = fullPages - intPart;
+
+                totalPageNumber = (int)intPart;
+
+                // do we not have another 10 for a full page?
+                if (fullPages % 10 != 0)
+                {
+                    // we need to add another page
+                    totalPageNumber++;
+                }
+            }
+
+            if (pageNumber > totalPageNumber)
+            {
+                return null;
+            }
+
+            // construct the list of summaries
+            var summariesList = new List<SermonSeriesSummary>();
+            foreach (var series in documents)
+            {
+                var summary = new SermonSeriesSummary
+                {
+                    ArtUrl = series.ArtUrl,
+                    Id = series.Id,
+                    StartDate = series.StartDate.Value,
+                    Title = series.Name
+                };
+                summariesList.Add(summary);
+            }
+
+            // construct the final response
+            var response = new SermonsSummaryPagedResponse
+            {
+                Summaries = summariesList,
+                PagingInfo = new PageInfo
+                {
+                    PageNumber = pageNumber,
+                    TotalPageCount = totalPageNumber,
+                    TotalRecordCount = totalRecordCount
+                }
+            };
+
+            return response;
+        }
+
+        /// <summary>
         /// Adds a new SermonSeries to the Sermons Collection
         /// </summary>
         /// <param name="request"></param>

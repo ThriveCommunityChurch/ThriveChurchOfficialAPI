@@ -58,7 +58,20 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// returns a list of all Passage Objets
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        {
+            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+
+
+            return pagedSermonsResponse;
+        }
+
+        /// <summary>
+        /// returns a list of all SermonSeries Objets
         /// </summary>
         public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
         {
@@ -105,6 +118,8 @@ namespace ThriveChurchOfficialAPI.Services
 
             foreach (var message in request.Messages)
             {
+                // sanitise the message dates and get rid of the times
+                message.Date = message.Date.Value.Date.ToUniversalTime();
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
