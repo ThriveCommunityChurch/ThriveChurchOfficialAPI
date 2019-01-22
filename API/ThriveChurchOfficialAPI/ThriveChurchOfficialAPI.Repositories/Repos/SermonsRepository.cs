@@ -102,8 +102,6 @@ namespace ThriveChurchOfficialAPI.Repositories
                 double fullPages = pageCountCalc / 10;
 
                 long intPart = (long)fullPages;
-                double fractionalPart = fullPages - intPart;
-
                 totalPageNumber = (int)intPart;
 
                 // do we not have another 10 for a full page?
