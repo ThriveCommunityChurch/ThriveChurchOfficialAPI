@@ -366,25 +366,5 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             return updatedLiveSermon;
         }
-
-        /// <summary>
-        /// Returns a collection of recently viewed sermon messages
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<RecentMessage>> GetRecentlyWatched(string userId)
-        {
-            var client = new MongoClient(connectionString);
-
-            IMongoDatabase db = client.GetDatabase("SermonSeries");
-            IMongoCollection<RecentlyPlayedMessages> collection = db.GetCollection<RecentlyPlayedMessages>("RecentlyPlayed");
-
-            var singleSeries = await collection.FindAsync(
-                   Builders<RecentlyPlayedMessages>.Filter.Eq(s => s.UserId, userId));
-
-            var recentPlayedDocument = singleSeries.FirstOrDefault();
-
-            return recentPlayedDocument.RecentMessages;
-        }
     }
 }
