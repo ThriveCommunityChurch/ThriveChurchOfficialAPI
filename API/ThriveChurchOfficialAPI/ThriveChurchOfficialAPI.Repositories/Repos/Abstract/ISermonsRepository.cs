@@ -24,8 +24,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<SermonSeries> GetSermonSeriesForSlug(string slug);
 
         Task<SermonMessage> GetMessageForId(string messageId);
-
-        Task<IEnumerable<RecentMessage>> GetRecentlyWatched(string userId);
         
         Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber);
     }
