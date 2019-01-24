@@ -83,11 +83,5 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request"></param>
         /// <returns></returns>
         Task<SermonMessage> UpdateMessageInSermonSeries(string SeriesId, UpdateMessagesInSermonSeriesRequest request);
-
-        /// <summary>
-        /// Returns a collection of the last 3 sermon series' that a user is watching
-        /// </summary>
-        /// <returns></returns>
-        Task<RecentlyWatchedMessagesResponse> GetRecentlyWatched(string userId);
     }
 }
