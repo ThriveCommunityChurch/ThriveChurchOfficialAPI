@@ -16,11 +16,6 @@ namespace ThriveChurchOfficialAPI.Core
         }
 
         /// <summary>
-        /// Id of the sermon object in MongoDB
-        /// </summary>
-        public string SermonId { get; set; }
-
-        /// <summary>
         /// Requested update for the series name
         /// </summary>
         public string Name { get; set; }

@@ -5,6 +5,7 @@ using MongoDB.Bson;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -36,6 +37,123 @@ namespace ThriveChurchOfficialAPI.Repositories
             };
 
             return allSermonsResponse;
+        }
+
+        /// <summary>
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        {
+            // determine which number of sermon series to request & which ones to return
+            var responseCount = 10;
+            if (pageNumber < 3)
+            {
+                responseCount = 5;
+            }
+
+            // what indexes should we use as the beginning? However, if larger than this we'll need to do more cheeckyness
+            var beginningCount = pageNumber == 2 ? 5 : 0;
+
+            if (pageNumber >= 3)
+            {
+                beginningCount = (pageNumber * 10) - 20; // we subtract 20 because the first 10 pages we only return 5
+            }
+
+            var totalPageNumber = 1;
+
+            var client = new MongoClient(connectionString);
+
+            IMongoDatabase db = client.GetDatabase("SermonSeries");
+            IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
+            var documents = await collection.Find(_ => true)
+                .SortByDescending(i => i.StartDate)
+                .Skip(beginningCount)
+                .Limit(responseCount)
+                .ToListAsync();
+
+            // use this response in the total Record count
+            var totalRecordDelegate = GetAllSermons();
+
+            // get the count from the async task above
+            var totalRecord = await totalRecordDelegate;
+
+            // converting this to an array first will allow us to not have to enumerate the collection multiple times
+            // ToArray() just converts the DataType via reflection through a Buffer -> O(n) BUT length reads are O(1) after this
+            var totalRecordCount = totalRecord.Sermons.ToArray().Length;
+
+            // since we know how many there are, in this method we can use that to indicate the total Pages in this method
+            // Remember that pages 1 & 2 return a response of only 5
+            // take out the first 2 sets of 5, and as long as the number isn't neg before we get there then we have 2 pages
+            var remainingRecords = totalRecordCount - 10;
+
+            if (remainingRecords <= 0)
+            {
+                totalPageNumber = 2;
+            }
+
+            // we already know that there are only 2 pages, so if there's only those 2 then continue,
+            // otherwise calculate the leftovers
+            if (totalRecordCount > 10)
+            {
+                // we know that there are at least 2 pages if we are here
+                totalPageNumber = 2;
+
+                // Now we divide the total count by the calc and if we have a remainder then we round up to the next highest whole number
+                double remainingPages = remainingRecords / 10.0;
+
+                // this technichally is similiar to modulo, except we want the remainder and the integer,
+                // so that we can add whole pages that are included as the int and any leftovers that are not quite a full page yet in the remainder
+                long intPart = (long)remainingPages;
+                double fractionalPart = remainingPages - intPart;
+
+                var value = (int)intPart;
+                if (value > 0)
+                {
+                    // Append whatever number of records are left based on our paging scheme
+                    totalPageNumber += value;
+                }
+
+                // We don't have another page
+                if (fractionalPart <= 1 && fractionalPart > 0)
+                {
+                    totalPageNumber++;
+                }
+            }
+
+            if (pageNumber > totalPageNumber)
+            {
+                return null;
+            }
+
+            // construct the list of summaries
+            var summariesList = new List<SermonSeriesSummary>();
+            foreach (var series in documents)
+            {
+                var summary = new SermonSeriesSummary
+                {
+                    ArtUrl = series.ArtUrl,
+                    Id = series.Id,
+                    StartDate = series.StartDate.Value,
+                    Title = series.Name
+                };
+                summariesList.Add(summary);
+            }
+
+            // construct the final response
+            var response = new SermonsSummaryPagedResponse
+            {
+                Summaries = summariesList,
+                PagingInfo = new PageInfo
+                {
+                    PageNumber = pageNumber,
+                    TotalPageCount = totalPageNumber,
+                    TotalRecordCount = totalRecordCount
+                }
+            };
+
+            return response;
         }
 
         /// <summary>
@@ -89,7 +207,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             // this does not return the updated object. 
             // TODO: fix
-            return singleSeries;
+            return request;
         }
 
         /// <summary>

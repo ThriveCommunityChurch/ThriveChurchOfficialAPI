@@ -58,7 +58,25 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// returns a list of all Passage Objets
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        {
+            // Page num canonot be 0, and neg page numbers make no sense
+            if (pageNumber <= 0)
+            {
+                return null;
+            }
+
+            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+
+            return pagedSermonsResponse;
+        }
+
+        /// <summary>
+        /// returns a list of all SermonSeries Objets
         /// </summary>
         public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
         {
@@ -79,7 +97,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
-
             if (seriesWithSameSlug.Any())
             {
                 // there is already a sermon series with this slug, respond with one of those
@@ -90,11 +107,24 @@ namespace ThriveChurchOfficialAPI.Services
             if (request.EndDate == null)
             {
                 var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
-                return currentlyActiveSeries.FirstOrDefault();
+
+                if (currentlyActiveSeries.Any())
+                {
+                    return currentlyActiveSeries.FirstOrDefault();
+                }
             }
+            else
+            {
+                request.EndDate = request.EndDate.Value.ToUniversalTime().Date;
+            }
+
+            // sanitise the start dates
+            request.StartDate = request.StartDate.Value.ToUniversalTime().Date;
 
             foreach (var message in request.Messages)
             {
+                // sanitise the message dates and get rid of the times
+                message.Date = message.Date.Value.Date.ToUniversalTime().Date;
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
@@ -135,6 +165,8 @@ namespace ThriveChurchOfficialAPI.Services
             // add the Guid to the requested messages then add the messages
             foreach (var message in request.MessagesToAdd)
             {
+                // sanitise the message dates and get rid of the times
+                message.Date = message.Date.Value.Date.ToUniversalTime();
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
@@ -206,7 +238,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request)
+        public async Task<SermonSeries> ModifySermonSeries(string seriesId, SermonSeriesUpdateRequest request)
         {
             var validRequest = SermonSeriesUpdateRequest.ValidateRequest(request);
             if (!validRequest)
@@ -214,12 +246,12 @@ namespace ThriveChurchOfficialAPI.Services
                 return null;
             }
 
-            if (string.IsNullOrEmpty(SeriesId))
+            if (string.IsNullOrEmpty(seriesId))
             {
                 return null;
             }
 
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(request.SermonId);
+            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
             if (getSermonSeriesResponse == null)
             {
                 return null;
@@ -227,15 +259,15 @@ namespace ThriveChurchOfficialAPI.Services
 
             // make sure that no one can update the slug to something that already exists
             // this is not allowed
-            var validateSlugResponse = await _sermonsRepository.GetSermonSeriesForSlug(request.Slug);
-            if (validateSlugResponse != null)
+            if (getSermonSeriesResponse.Slug != request.Slug)
             {
-                // cannot edit this series to contain the same response
+                // cannot change the slug -> make sure a slug is set when you create the series.
                 return null;
             }
 
             getSermonSeriesResponse.Name = request.Name;
-            getSermonSeriesResponse.EndDate = request.EndDate;
+            getSermonSeriesResponse.EndDate = request.EndDate.Date;
+            getSermonSeriesResponse.StartDate = request.StartDate.Date;
             getSermonSeriesResponse.Thumbnail = request.Thumbnail;
             getSermonSeriesResponse.ArtUrl = request.ArtUrl;
             getSermonSeriesResponse.Slug = request.Slug;
@@ -461,7 +493,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             // IT's now later than what the time is in the database
             if (DateTime.UtcNow.TimeOfDay > pollingResponse.StreamExpirationTime.ToUniversalTime().TimeOfDay)
-            {
+            { 
                 // update mongo to reflect that the sermon is inactive
                 var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
 

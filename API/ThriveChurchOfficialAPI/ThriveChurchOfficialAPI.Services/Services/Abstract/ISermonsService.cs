@@ -57,6 +57,13 @@ namespace ThriveChurchOfficialAPI.Services
         Task<SermonSeries> GetSeriesForId(string seriesId);
 
         /// <summary>
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber);
+
+        /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
         /// </summary>
         /// <returns></returns>

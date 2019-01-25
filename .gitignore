@@ -10,6 +10,12 @@ launchSettings.json
 *.cache
 *.db
 
+# Release Files & folders
+*Release/
+*.pubxml*
+*.user
+*.exe
+
 # Random other ignores that might end up in here
 *.png
 *.jpeg
