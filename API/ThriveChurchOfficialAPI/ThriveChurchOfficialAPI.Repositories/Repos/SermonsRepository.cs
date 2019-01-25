@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
-using ThriveChurchOfficialAPI.Core.DTOs;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -49,7 +48,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             // determine which number of sermon series to request & which ones to return
             var responseCount = 10;
-            if (pageNumber == 1 || pageNumber == 2)
+            if (pageNumber < 3)
             {
                 responseCount = 5;
             }
@@ -87,9 +86,9 @@ namespace ThriveChurchOfficialAPI.Repositories
             // since we know how many there are, in this method we can use that to indicate the total Pages in this method
             // Remember that pages 1 & 2 return a response of only 5
             // take out the first 2 sets of 5, and as long as the number isn't neg before we get there then we have 2 pages
-            var pageCountCalc = totalRecordCount - 10;
+            var remainingRecords = totalRecordCount - 10;
 
-            if (pageCountCalc <= 0)
+            if (remainingRecords <= 0)
             {
                 totalPageNumber = 2;
             }
@@ -98,16 +97,27 @@ namespace ThriveChurchOfficialAPI.Repositories
             // otherwise calculate the leftovers
             if (totalRecordCount > 10)
             {
+                // we know that there are at least 2 pages if we are here
+                totalPageNumber = 2;
+
                 // Now we divide the total count by the calc and if we have a remainder then we round up to the next highest whole number
-                double fullPages = pageCountCalc / 10;
+                double remainingPages = remainingRecords / 10.0;
 
-                long intPart = (long)fullPages;
-                totalPageNumber = (int)intPart;
+                // this technichally is similiar to modulo, except we want the remainder and the integer,
+                // so that we can add whole pages that are included as the int and any leftovers that are not quite a full page yet in the remainder
+                long intPart = (long)remainingPages;
+                double fractionalPart = remainingPages - intPart;
 
-                // do we not have another 10 for a full page?
-                if (fullPages % 10 != 0)
+                var value = (int)intPart;
+                if (value > 0)
                 {
-                    // we need to add another page
+                    // Append whatever number of records are left based on our paging scheme
+                    totalPageNumber += value;
+                }
+
+                // We don't have another page
+                if (fractionalPart <= 1 && fractionalPart > 0)
+                {
                     totalPageNumber++;
                 }
             }

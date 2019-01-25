@@ -64,8 +64,13 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
         {
-            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+            // Page num canonot be 0, and neg page numbers make no sense
+            if (pageNumber <= 0)
+            {
+                return null;
+            }
 
+            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
 
             return pagedSermonsResponse;
         }
@@ -119,7 +124,7 @@ namespace ThriveChurchOfficialAPI.Services
             foreach (var message in request.Messages)
             {
                 // sanitise the message dates and get rid of the times
-                message.Date = message.Date.Value.Date.ToUniversalTime();
+                message.Date = message.Date.Value.Date.ToUniversalTime().Date;
                 message.MessageId = Guid.NewGuid().ToString();
             }
 

@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
-using ThriveChurchOfficialAPI.Core.DTOs;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
