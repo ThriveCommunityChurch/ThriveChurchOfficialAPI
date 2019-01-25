@@ -38,6 +38,39 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
+        /// <summary>
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <remarks>
+        /// This will return the sermon series' in a paged format. 
+        /// <br />
+        /// 
+        /// NOTE: 
+        /// <br />
+        /// &#8901; The first page will contain the 5 first messagess.
+        /// &#8901; Every subsequent page will contain up to 10 messages.
+        /// &#8901; The response will contain the total number of pages.
+        /// 
+        /// </remarks>
+        /// <param name="PageNumber"></param>
+        /// <param name="PageCount"></param>
+        /// <returns></returns>
+        // GET api/sermons
+        [HttpGet("paged")]
+        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons(int PageNumber)
+        {
+            SermonsSummaryPagedResponse response = await _sermonsService.GetPagedSermons(PageNumber);
+
+            if (response == null)
+            {
+                return StatusCode(400);
+            }
+
+            var value = new ActionResult<SermonsSummaryPagedResponse>(response);
+
+            return value;
+        }
+
         [HttpPost("series")]
         public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] SermonSeries request)
         {

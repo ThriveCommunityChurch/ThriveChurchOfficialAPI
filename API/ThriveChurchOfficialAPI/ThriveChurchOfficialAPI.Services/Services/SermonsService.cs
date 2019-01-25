@@ -58,7 +58,25 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// returns a list of all Passage Objets
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        {
+            // Page num canonot be 0, and neg page numbers make no sense
+            if (pageNumber <= 0)
+            {
+                return null;
+            }
+
+            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+
+            return pagedSermonsResponse;
+        }
+
+        /// <summary>
+        /// returns a list of all SermonSeries Objets
         /// </summary>
         public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
         {
@@ -105,6 +123,8 @@ namespace ThriveChurchOfficialAPI.Services
 
             foreach (var message in request.Messages)
             {
+                // sanitise the message dates and get rid of the times
+                message.Date = message.Date.Value.Date.ToUniversalTime().Date;
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
@@ -497,33 +517,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return liveStreamCompletedResponse;
-        }
-
-        /// <summary>
-        /// Gets a collection of recently watched sermon messages
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <returns></returns>
-        public async Task<RecentlyWatchedMessagesResponse> GetRecentlyWatched(string userId)
-        {
-            var validGuid = Guid.TryParse(userId, out Guid userGuid);
-            if (!validGuid)
-            {
-                return null;
-            }
-
-            var recentlyWatchedResult = await _sermonsRepository.GetRecentlyWatched(userId);
-            if (recentlyWatchedResult == null)
-            {
-                return null;
-            }
-
-            var response = new RecentlyWatchedMessagesResponse
-            {
-                RecentMessages = recentlyWatchedResult
-            };
-
-            return response;
         }
     }
 

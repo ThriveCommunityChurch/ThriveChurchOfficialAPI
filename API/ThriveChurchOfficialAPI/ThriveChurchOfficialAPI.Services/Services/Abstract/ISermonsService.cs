@@ -57,6 +57,13 @@ namespace ThriveChurchOfficialAPI.Services
         Task<SermonSeries> GetSeriesForId(string seriesId);
 
         /// <summary>
+        /// Recieve Sermon Series in a paged format
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber);
+
+        /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
         /// </summary>
         /// <returns></returns>
@@ -76,11 +83,5 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request"></param>
         /// <returns></returns>
         Task<SermonMessage> UpdateMessageInSermonSeries(string SeriesId, UpdateMessagesInSermonSeriesRequest request);
-
-        /// <summary>
-        /// Returns a collection of the last 3 sermon series' that a user is watching
-        /// </summary>
-        /// <returns></returns>
-        Task<RecentlyWatchedMessagesResponse> GetRecentlyWatched(string userId);
     }
 }
