@@ -40,7 +40,9 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 var elemToAdd = new SermonSeriesSummary
                 {
-                    ArtUrl = series.ArtUrl,
+                    // Use the thumbnail URL for these summaries, 
+                    // because we will be loading many of them at once
+                    ArtUrl = series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate.Value,
                     Title = series.Name
@@ -327,7 +329,7 @@ namespace ThriveChurchOfficialAPI.Services
             // Update this object for the requested fields
             var updated = new LiveSermons
             {
-                ExpirationTime = new DateTime(1990, 01, 01, 12, 20, 0, 0), // reset this on this update & give ourselves a little buffer (5 min)
+                ExpirationTime = new DateTime(1990, 01, 01, 11, 20, 0, 0), // reset this on this update & give ourselves a little buffer (5 min)
                 IsLive = true, 
                 LastUpdated = DateTime.UtcNow,
                 SpecialEventTimes = null,
