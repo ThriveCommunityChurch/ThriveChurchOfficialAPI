@@ -168,7 +168,7 @@ namespace ThriveChurchOfficialAPI.Services
             foreach (var message in request.MessagesToAdd)
             {
                 // sanitise the message dates and get rid of the times
-                message.Date = message.Date.Value.Date.ToUniversalTime();
+                message.Date = message.Date.Value.Date.ToUniversalTime().Date;
                 message.MessageId = Guid.NewGuid().ToString();
             }
 
@@ -223,10 +223,16 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SermonSeries> GetSeriesForId(string seriesId)
         {
+            if (string.IsNullOrEmpty(seriesId))
+            {
+                return null;
+            }
+
             var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
             if (seriesResponse == null)
             {
                 // the series Id that was requested is invalid
+                return null;
             }
 
             var orderedMessages = seriesResponse.Messages.OrderByDescending(i => i.Date.Value);

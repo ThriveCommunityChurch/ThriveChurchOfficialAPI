@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
@@ -88,7 +89,7 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // this query string should contain an Id
         [HttpGet("series/{SeriesId}")]
-        public async Task<ActionResult<SermonSeries>> GetSeriesForId(string SeriesId)
+        public async Task<ActionResult<SermonSeries>> GetSeriesForId([BindRequired, FromQuery] string SeriesId)
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
 
@@ -104,7 +105,7 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // this query string should contain an Id
         [HttpPut("series/{SeriesId}")]
-        public async Task<ActionResult<SermonSeries>> ModifySermonSeries(string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
+        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([BindRequired, FromQuery] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
 
@@ -119,7 +120,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         [HttpPost("series/{SeriesId}/message")]
-        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries(string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
+        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([BindRequired, FromQuery] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
 
@@ -134,7 +135,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         [HttpPut("series/message/{MessageId}")]
-        public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries(string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
+        public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries([BindRequired, FromQuery] string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
 

@@ -217,6 +217,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SermonSeries> GetSermonSeriesForId(string SeriesId)
         {
+            var invalidId = ObjectId.TryParse(SeriesId, out ObjectId id);
+
+            if (!invalidId)
+            {
+                return null;
+            }
+
             var client = new MongoClient(connectionString);
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");
@@ -267,6 +274,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SermonMessage> GetMessageForId(string messageId)
         {
+            var invalidId = Guid.TryParse(messageId, out Guid id);
+
+            if (!invalidId)
+            {
+                return null;
+            }
+
             var client = new MongoClient(connectionString);
 
             IMongoDatabase db = client.GetDatabase("SermonSeries");
