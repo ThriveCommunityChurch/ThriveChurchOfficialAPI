@@ -87,12 +87,6 @@ namespace ThriveChurchOfficialAPI.Core
                 return false;
             }
 
-            // requests cannot modify this field
-            if (request.MessageId != null)
-            {
-                return false;
-            }
-
             return true;
         }
     }

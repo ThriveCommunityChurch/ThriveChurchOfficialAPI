@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -33,6 +34,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// The name of the sermon series
         /// </summary>
+        [Required(AllowEmptyStrings = false, ErrorMessage = "")]
         public string Name { get; set; }
 
         /// <summary>
