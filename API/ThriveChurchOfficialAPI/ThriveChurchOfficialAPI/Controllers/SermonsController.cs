@@ -58,7 +58,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns></returns>
         // GET api/sermons
         [HttpGet("paged")]
-        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons(int PageNumber)
+        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber)
         {
             SermonsSummaryPagedResponse response = await _sermonsService.GetPagedSermons(PageNumber);
 
@@ -89,7 +89,7 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // this query string should contain an Id
         [HttpGet("series/{SeriesId}")]
-        public async Task<ActionResult<SermonSeries>> GetSeriesForId([BindRequired, FromQuery] string SeriesId)
+        public async Task<ActionResult<SermonSeries>> GetSeriesForId([BindRequired] string SeriesId)
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
 
@@ -105,7 +105,7 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // this query string should contain an Id
         [HttpPut("series/{SeriesId}")]
-        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([BindRequired, FromQuery] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
+        public async Task<ActionResult<SermonSeries>> ModifySermonSeries([BindRequired] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
 
@@ -120,7 +120,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         [HttpPost("series/{SeriesId}/message")]
-        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([BindRequired, FromQuery] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
+        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([BindRequired] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
 
@@ -135,7 +135,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         [HttpPut("series/message/{MessageId}")]
-        public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries([BindRequired, FromQuery] string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
+        public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries([BindRequired] string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
 
