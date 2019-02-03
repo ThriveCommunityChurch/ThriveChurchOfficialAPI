@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MongoDB.Bson;
+using System.ComponentModel.DataAnnotations;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -16,16 +15,22 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// The requested title 
         /// </summary>
+        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Title'. This property is required.")]
+        [DataType(DataType.Text)]
         public string Title { get; set; }
 
         /// <summary>
         /// The requested Video url Slug
         /// </summary>
+        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Slug'. This property is required.")]
+        [DataType(DataType.Text)]
         public string Slug { get; set; }
 
         /// <summary>
         /// The Id of the LiveSermon object in Mongo
         /// </summary>
+        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Id'. This property is required.")]
+        [DataType(DataType.Custom)]
         public string Id { get; set; }
         
         /// <summary>
@@ -46,6 +51,11 @@ namespace ThriveChurchOfficialAPI.Core
             }
 
             if (string.IsNullOrWhiteSpace(request.Id))
+            {
+                return false;
+            }
+
+            if (!ObjectId.TryParse(request.Id, out ObjectId id))
             {
                 return false;
             }
