@@ -6,6 +6,11 @@ namespace ThriveChurchOfficialAPI.Core
 {
     public static class AppMessages
     {
-        public readonly const string PropertyRequired = "No value given for property {0}. This property is required.";
+        // Making these all static read-only
+        
+        public static string PropertyRequired
+        {
+          get { return "No value given for property {0}. This property is required."; }
+        }
     }
 }
