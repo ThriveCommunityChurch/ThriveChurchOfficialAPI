@@ -274,8 +274,8 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             getSermonSeriesResponse.Name = request.Name;
-            getSermonSeriesResponse.EndDate = request.EndDate.Date;
-            getSermonSeriesResponse.StartDate = request.StartDate.Date;
+            getSermonSeriesResponse.EndDate = request.EndDate.ToUniversalTime().Date;
+            getSermonSeriesResponse.StartDate = request.StartDate.ToUniversalTime().Date;
             getSermonSeriesResponse.Thumbnail = request.Thumbnail;
             getSermonSeriesResponse.ArtUrl = request.ArtUrl;
             getSermonSeriesResponse.Slug = request.Slug;
