@@ -63,7 +63,13 @@ namespace ThriveChurchOfficialAPI
             // enable in-memory caching
             services.AddMemoryCache();
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc(options =>
+            {
+                // if we ever get to 50 Model Validation errors, ignore subsequent ones
+                // more on this here https://docs.microsoft.com/en-us/aspnet/core/mvc/models/validation?view=aspnetcore-2.2#top-level-node-validation
+                options.MaxModelValidationErrors = 50;
+            })
+            .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
