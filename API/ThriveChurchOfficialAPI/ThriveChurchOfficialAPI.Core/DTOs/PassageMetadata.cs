@@ -18,9 +18,9 @@ namespace ThriveChurchOfficialAPI
 
         public IEnumerable<int> chapter_end { get; set; }
 
-        public int prev_verse { get; set; }
+        public int? prev_verse { get; set; }
 
-        public int next_verse { get; set; }
+        public int? next_verse { get; set; }
 
         public IEnumerable<int> prev_chapter { get; set; }
 
