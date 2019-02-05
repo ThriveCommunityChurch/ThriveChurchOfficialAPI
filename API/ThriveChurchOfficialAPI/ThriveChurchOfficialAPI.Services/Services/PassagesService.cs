@@ -114,8 +114,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return passage;
-        {
-
         }
     }
 }

@@ -48,7 +48,7 @@ namespace ThriveChurchOfficialAPI
             var footnotes = GetBetween(passage, "Footnotes", "(ESV)");
             if (!string.IsNullOrEmpty(footnotes))
             {
-                passage = passage.Replace(footnotes, "").Replace("\n\nFootnotes(ESV)", "");
+                passage = passage.Replace(footnotes, "").Replace("\n\nFootnotes(ESV)", "").TrimEnd('\n').TrimEnd();
             }
             
             return passage;
