@@ -22,23 +22,32 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<PassagesResponse> GetPassagesForSearch(string searchCriteria)
+        public async Task<string> GetSinglePassageForSearch(string searchCriteria)
         {
             if (string.IsNullOrEmpty(searchCriteria))
             {
-                return default(PassagesResponse);
+                return null;
             }
-
-            searchCriteria = "Psalm 119";
 
             // since ESV returns everything as one massive string, I need to convert everything to objects
             // Then to strings if I wish
             var getPassagesResponse = await _passagesRepository.GetPassagesForSearch(searchCriteria);
 
-            // this may or may not need to be called several times so this would make sense to move this into the base service
-            var convertObjectResponse = ConvertESVTextIntoConsumibleObjects(getPassagesResponse);
+            if (getPassagesResponse == null)
+            {
+                return null;
+            }
 
-            return convertObjectResponse;
+            var passageResponse = getPassagesResponse.passages.FirstOrDefault();
+            var footerRemovalResponse = RemoveFooterFromResponse(passageResponse);
+            var finalPassage = RemoveFooterTags(footerRemovalResponse);
+
+            return finalPassage;
+        }
+
+        private string RemoveFooterTags(string passage)
+        {
+
         }
     }
 }
