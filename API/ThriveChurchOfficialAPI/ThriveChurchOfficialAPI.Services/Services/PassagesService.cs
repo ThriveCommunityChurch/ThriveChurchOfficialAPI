@@ -40,12 +40,80 @@ namespace ThriveChurchOfficialAPI.Services
 
             var passageResponse = getPassagesResponse.passages.FirstOrDefault();
             var footerRemovalResponse = RemoveFooterFromResponse(passageResponse);
-            var finalPassage = RemoveFooterTags(footerRemovalResponse);
+            var finalPassage = RemoveFooterTagsAndFormatVerseNumbers(footerRemovalResponse);
+
+            // replace the canonical with what was requested
+
+            finalPassage = finalPassage.Replace(string.Format("{0}\n\n", getPassagesResponse.canonical), "");
 
             return finalPassage;
         }
 
-        private string RemoveFooterTags(string passage)
+        private string RemoveFooterTagsAndFormatVerseNumbers(string passage)
+        {
+            var number = "";
+            var opened = false;
+            var footerNumberList = new List<string>();
+            var verseNumberList = new List<string>();
+            string SuperscriptDigits = "\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079";
+
+            foreach (char c in passage)
+            {
+                if (c == '(')
+                {
+                    opened = true;
+                    continue;
+                }
+                else if (c == ')')
+                {
+                    opened = false;
+
+                    var validNumber = int.TryParse(number, out int result);
+                    if (validNumber) {
+                        footerNumberList.Add(number);
+                    }
+
+                    number = "";
+                    continue;
+                }
+                else if (c == '[')
+                {
+                    opened = true;
+                    continue;
+                }
+                else if (c == ']')
+                {
+                    opened = false;
+
+                    var validNumber = int.TryParse(number, out int result);
+                    if (validNumber)
+                    {
+                        verseNumberList.Add(number);
+                    }
+
+                    number = "";
+                    continue;
+                }
+
+                if (opened)
+                {
+                    number += c.ToString();
+                }
+            }
+
+            foreach (var footnoteTag in footerNumberList)
+            {
+                passage = passage.Replace(string.Format("({0})", footnoteTag), "");
+            }
+
+            foreach (var verseNumberText in verseNumberList)
+            {
+                string superscript = new string(verseNumberText.Select(i => SuperscriptDigits[i - '0']).ToArray());
+
+                passage = passage.Replace(string.Format("[{0}] ", verseNumberText), superscript);
+            }
+
+            return passage;
         {
 
         }
