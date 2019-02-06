@@ -18,8 +18,17 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         public async Task<PassageTextInfo> GetPassagesForSearch(string searchCriteria)
         {
+            if (EsvApiKey == null)
+            {
+                throw new Exception("'EsvApiKey' is a required within your appsettings.json in order to continue");
+            }
+
             // setup the request
-            var uri = string.Format("https://api.esv.org/v3/passage/text/?q={0}", searchCriteria);
+            var escapedString = Uri.EscapeUriString(searchCriteria);
+
+            // Apparently Colons are ignored by the RFC or something
+            escapedString = escapedString.Replace(":", "%3A");
+            var uri = string.Format("https://api.esv.org/v3/passage/text/?q={0}", escapedString);
 
             var response = await GetPassages(uri, EsvApiKey);
 
