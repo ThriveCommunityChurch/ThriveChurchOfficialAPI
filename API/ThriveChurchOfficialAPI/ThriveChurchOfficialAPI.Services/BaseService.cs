@@ -49,7 +49,11 @@ namespace ThriveChurchOfficialAPI
             {
                 passage = passage.Replace(footnotes, "").Replace("\n\nFootnotes(ESV)", "").TrimEnd('\n').TrimEnd();
             }
-            
+            else
+            {
+                passage = passage.Replace(" (ESV)", "").TrimEnd('\n').TrimEnd();
+            }
+
             return passage;
         }
     }
