@@ -24,18 +24,16 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // GET api/passage
         [HttpGet]
-        public async Task<ActionResult<PassagesResponse>> Get(string searchCriteria)
+        public async Task<ActionResult<string>> Get([FromQuery] string searchCriteria)
         {
-            searchCriteria = "Psalm 119";
+            var response = await _passagesService.GetSinglePassageForSearch(searchCriteria);
 
-            var response = await _passagesService.GetPassagesForSearch(searchCriteria);
-
-            if (response == default(PassagesResponse))
+            if (response == null)
             {
-                return new ActionResult<PassagesResponse>(new PassagesResponse());
+                return StatusCode(400);
             }
 
-            var value = new ActionResult<PassagesResponse>(response);
+            var value = new ActionResult<string>(response);
 
             return value;
         }

@@ -11,6 +11,6 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        Task<PassagesResponse> GetPassagesForSearch(string searchCriteria);
+        Task<string> GetSinglePassageForSearch(string searchCriteria);
     }
 }
