@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,10 +24,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
 
             // setup the request
-            var escapedString = Uri.EscapeUriString(searchCriteria);
-
-            // Apparently Colons are ignored by the RFC or something
-            escapedString = escapedString.Replace(":", "%3A");
+            var escapedString = Uri.EscapeDataString(searchCriteria);
             var uri = string.Format("https://api.esv.org/v3/passage/text/?q={0}", escapedString);
 
             var response = await GetPassages(uri, EsvApiKey);

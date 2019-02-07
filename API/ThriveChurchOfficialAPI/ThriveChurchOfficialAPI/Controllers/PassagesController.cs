@@ -24,7 +24,7 @@ namespace ThriveChurchOfficialAPI.Controllers
 
         // GET api/passage
         [HttpGet]
-        public async Task<ActionResult<string>> Get([FromQuery] string searchCriteria)
+        public async Task<ActionResult<SermonPassageResponse>> Get([FromQuery] string searchCriteria)
         {
             var response = await _passagesService.GetSinglePassageForSearch(searchCriteria);
 
@@ -33,7 +33,7 @@ namespace ThriveChurchOfficialAPI.Controllers
                 return StatusCode(400);
             }
 
-            var value = new ActionResult<string>(response);
+            var value = new ActionResult<SermonPassageResponse>(response);
 
             return value;
         }
