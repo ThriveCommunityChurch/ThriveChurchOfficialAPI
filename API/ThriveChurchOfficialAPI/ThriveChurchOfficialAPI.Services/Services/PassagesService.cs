@@ -22,7 +22,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<string> GetSinglePassageForSearch(string searchCriteria)
+        public async Task<SermonPassageResponse> GetSinglePassageForSearch(string searchCriteria)
         {
             if (string.IsNullOrEmpty(searchCriteria))
             {
@@ -43,10 +43,14 @@ namespace ThriveChurchOfficialAPI.Services
             var finalPassage = RemoveFooterTagsAndFormatVerseNumbers(footerRemovalResponse);
 
             // replace the canonical with what was requested
-
             finalPassage = finalPassage.Replace(string.Format("{0}\n\n", getPassagesResponse.canonical), "");
 
-            return finalPassage;
+            var response = new SermonPassageResponse
+            {
+                Passage = finalPassage
+            };
+
+            return response;
         }
 
         private string RemoveFooterTagsAndFormatVerseNumbers(string passage)
