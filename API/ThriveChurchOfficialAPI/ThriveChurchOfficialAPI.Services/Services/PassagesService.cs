@@ -114,7 +114,8 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 string superscript = new string(verseNumberText.Select(i => SuperscriptDigits[i - '0']).ToArray());
 
-                passage = passage.Replace(string.Format("[{0}] ", verseNumberText), superscript);
+                // replace the numbers here with the uincode strings we found above, but add a space at the end
+                passage = passage.Replace(string.Format("[{0}] ", verseNumberText), superscript + " ");
             }
 
             return passage;
