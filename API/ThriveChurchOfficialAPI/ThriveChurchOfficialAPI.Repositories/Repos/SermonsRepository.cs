@@ -133,7 +133,8 @@ namespace ThriveChurchOfficialAPI.Repositories
             {
                 var summary = new SermonSeriesSummary
                 {
-                    ArtUrl = series.ArtUrl,
+                    // things load MUCH faster if we use the Thumbnail
+                    ArtUrl = series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate.Value,
                     Title = series.Name
