@@ -386,10 +386,7 @@ namespace ThriveChurchOfficialAPI.Services
                 // an error ocurred here
                 return default(LiveStreamingResponse);
             }
-
-            // generate the updated object so we can update everything at once in the repo
-            var getAllSermonsResponse = await _sermonsRepository.GetLiveSermons();
-
+            
             // Update this object for the requested fields
             var updated = new LiveSermons
             {
@@ -433,8 +430,8 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<LiveSermonsPollingResponse> PollForLiveEventData()
         {
-            LiveSermons liveSermons = new LiveSermons();
-            MemoryCacheEntryOptions cacheEntryOptions = new MemoryCacheEntryOptions();
+            LiveSermons liveSermons;
+            MemoryCacheEntryOptions cacheEntryOptions;
 
             // check the cache first -> if there's a value there grab it
             if (!_cache.TryGetValue(CacheKeys.GetSermons, out liveSermons))
@@ -503,7 +500,7 @@ namespace ThriveChurchOfficialAPI.Services
             if (DateTime.UtcNow.TimeOfDay > pollingResponse.StreamExpirationTime.ToUniversalTime().TimeOfDay)
             { 
                 // update mongo to reflect that the sermon is inactive
-                var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
+                await _sermonsRepository.UpdateLiveSermonsInactive();
 
                 // when it's done kill the timer
                 _timer?.Dispose();
