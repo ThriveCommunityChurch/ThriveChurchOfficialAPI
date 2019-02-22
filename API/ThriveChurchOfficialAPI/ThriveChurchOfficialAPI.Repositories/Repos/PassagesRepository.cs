@@ -20,7 +20,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             if (EsvApiKey == null)
             {
-                throw new Exception("'EsvApiKey' is a required within your appsettings.json in order to continue");
+                throw new ArgumentNullException("'EsvApiKey' is a required within your appsettings.json in order to continue");
             }
 
             // setup the request
