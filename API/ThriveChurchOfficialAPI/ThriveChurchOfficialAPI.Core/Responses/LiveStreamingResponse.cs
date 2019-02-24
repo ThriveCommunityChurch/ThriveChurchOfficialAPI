@@ -12,7 +12,6 @@ namespace ThriveChurchOfficialAPI.Core
         public LiveStreamingResponse()
         {
             IsLive = false;
-            VideoUrl = null;
             Title = null;
             SpecialEventTimes = null;
             IsSpecialEvent = false;

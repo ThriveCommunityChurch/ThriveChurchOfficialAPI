@@ -339,8 +339,6 @@ namespace ThriveChurchOfficialAPI.Services
                 IsLive = true, 
                 LastUpdated = DateTime.UtcNow,
                 SpecialEventTimes = null,
-                Title = request.Title,
-                VideoUrlSlug = request.Slug,
                 Id = request.Id
             };
 
