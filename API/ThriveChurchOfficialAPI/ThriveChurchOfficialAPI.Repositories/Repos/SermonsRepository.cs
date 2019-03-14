@@ -130,7 +130,9 @@ namespace ThriveChurchOfficialAPI.Repositories
             {
                 var summary = new SermonSeriesSummary
                 {
-                    ArtUrl = series.ArtUrl,
+                    // Use the thumbnail URL for these summaries, 
+                    // because we will be loading many of them at once
+                    ArtUrl = series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate.Value,
                     Title = series.Name
@@ -319,8 +321,6 @@ namespace ThriveChurchOfficialAPI.Repositories
                     .Set(l => l.LastUpdated, DateTime.UtcNow)
                     .Set(l => l.IsLive, request.IsLive)
                     .Set(l => l.SpecialEventTimes, request.SpecialEventTimes)
-                    .Set(l => l.Title, request.Title)
-                    .Set(l => l.VideoUrlSlug, request.VideoUrlSlug)
                     .Set(l => l.ExpirationTime, request.ExpirationTime.ToUniversalTime())
                 );
 
@@ -361,8 +361,6 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             // make the change to reflect that this sermon was just updated
             liveSermonsResponse.IsLive = false;
-            liveSermonsResponse.Title = null;
-            liveSermonsResponse.VideoUrlSlug = null;
             liveSermonsResponse.SpecialEventTimes = null;
 
             var updatedLiveSermon = await UpdateLiveSermons(liveSermonsResponse);

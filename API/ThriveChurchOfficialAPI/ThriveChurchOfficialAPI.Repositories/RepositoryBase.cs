@@ -24,14 +24,16 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         public string EsvApiKey { get; }
 
-        #endregion Public Vars Set At Runtime
+        #endregion
+
+        #region Public Vars Set At Runtime
 
         /// <summary>
         /// Initialize a new MongoClient for the connection to mongo
         /// </summary>
         public MongoClient Client;
 
-        #region 
+        #endregion 
 
         // only allow this to be accessible within its class and by derived class instances
         protected RepositoryBase(IConfiguration Configuration)
@@ -69,5 +71,28 @@ namespace ThriveChurchOfficialAPI.Repositories
                     string.Format("EsvApiKey", SystemMessages.ConnectionMissingFromAppSettings));
             }
         }
+
+
+        #region Generic REST Methods
+
+        public async Task<HttpResponseMessage> GetAsync(string url, string authToken)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("User-Agent", "HttpClient");
+
+            // we may not ever have an auth token in the request
+            if (!string.IsNullOrEmpty(authToken))
+            {
+                request.Headers.Add("Authorization", authToken);
+            }
+
+            HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.SendAsync(request);
+
+            return response;
+        }
+
+        #endregion
     }
 }
