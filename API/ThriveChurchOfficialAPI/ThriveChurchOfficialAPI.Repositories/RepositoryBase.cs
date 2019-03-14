@@ -33,7 +33,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         public MongoClient Client;
 
-        #endregion 
+        #endregion
 
         // only allow this to be accessible within its class and by derived class instances
         protected RepositoryBase(IConfiguration Configuration)
