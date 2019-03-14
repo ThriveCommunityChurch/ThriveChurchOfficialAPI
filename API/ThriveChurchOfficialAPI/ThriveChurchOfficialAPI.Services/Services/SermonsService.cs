@@ -40,9 +40,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 var elemToAdd = new SermonSeriesSummary
                 {
-                    // Use the thumbnail URL for these summaries, 
-                    // because we will be loading many of them at once
-                    ArtUrl = series.Thumbnail,
+                    ArtUrl = series.ArtUrl,
                     Id = series.Id,
                     StartDate = series.StartDate.Value,
                     Title = series.Name
@@ -72,7 +70,17 @@ namespace ThriveChurchOfficialAPI.Services
                 return null;
             }
 
-            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+            // since this is going to get called a ton of times we should cache this
+
+            // check the cache first -> if there's a value there grab it
+            if (!_cache.TryGetValue(string.Format(CacheKeys.GetPagedSermons, pageNumber), out SermonsSummaryPagedResponse pagedSermonsResponse))
+            {
+                // Key not in cache, so get data.
+                pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+
+                // Save data in cache.
+                _cache.Set(string.Format(CacheKeys.GetPagedSermons, pageNumber), pagedSermonsResponse, CacheEntryOptions);
+            }
 
             return pagedSermonsResponse;
         }
@@ -302,13 +310,8 @@ namespace ThriveChurchOfficialAPI.Services
             // if we are currently streaming then we will need to add the slug to the middle of the Facebook link
             if (getLiveSermonsResponse.IsLive)
             {
-                var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
-                    getLiveSermonsResponse.VideoUrlSlug);
-
                 // do the business logic here friend
                 response.IsLive = true;
-                response.Title = getLiveSermonsResponse.Title;
-                response.VideoUrl = videoUrl;
                 response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
                 response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
             }
@@ -349,18 +352,13 @@ namespace ThriveChurchOfficialAPI.Services
                 return default(LiveStreamingResponse);
             }
 
-            string videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
-                    updateLiveSermonsResponse.VideoUrlSlug);
-
             // times have already been converted to UTC
             var response = new LiveStreamingResponse
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
                 IsLive = updateLiveSermonsResponse.IsLive,
                 IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null ? true : false,
-                SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null,
-                Title = updateLiveSermonsResponse.Title,
-                VideoUrl = videoUrl
+                SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null
             };
 
             // we are updating this so we should watch for when it expires, when it does we will need to update Mongo
@@ -391,9 +389,7 @@ namespace ThriveChurchOfficialAPI.Services
                 ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 15, 0, 0),
                 IsLive = true,
                 LastUpdated = DateTime.UtcNow,
-                SpecialEventTimes = request.SpecialEventTimes,
-                Title = request.Title,
-                VideoUrlSlug = request.Slug
+                SpecialEventTimes = request.SpecialEventTimes
             };
 
             var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
@@ -403,17 +399,12 @@ namespace ThriveChurchOfficialAPI.Services
                 return default(LiveStreamingResponse);
             }
 
-            var videoUrl = string.Format("https://facebook.com/thriveFL/videos/{0}/",
-                    updateLiveSermonsResponse.VideoUrlSlug);
-
             var response = new LiveStreamingResponse
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime.ToUniversalTime(),
                 IsLive = updateLiveSermonsResponse.IsLive,
                 IsSpecialEvent = true,
-                SpecialEventTimes = request.SpecialEventTimes,
-                Title = updateLiveSermonsResponse.Title,
-                VideoUrl = videoUrl
+                SpecialEventTimes = request.SpecialEventTimes
             };
 
             // we are updating this so we should watch for when it expires, when it does we will need to update Mongo
@@ -428,22 +419,15 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<LiveSermonsPollingResponse> PollForLiveEventData()
         {
-            LiveSermons liveSermons;
-            MemoryCacheEntryOptions cacheEntryOptions;
 
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(CacheKeys.GetSermons, out liveSermons))
+            if (!_cache.TryGetValue(CacheKeys.GetSermons, out LiveSermons liveSermons))
             {
                 // Key not in cache, so get data.
                 liveSermons = await _sermonsRepository.GetLiveSermons();
 
-                // Set cache options.
-                cacheEntryOptions = new MemoryCacheEntryOptions()
-                    // Keep in cache for this time, reset time if accessed.
-                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
-
                 // Save data in cache.
-                _cache.Set(CacheKeys.GetSermons, liveSermons, cacheEntryOptions);
+                _cache.Set(CacheKeys.GetSermons, liveSermons, CacheEntryOptions);
             }
 
             // if we are not live then we should remove the timer and stop looking
@@ -529,5 +513,7 @@ namespace ThriveChurchOfficialAPI.Services
     public static class CacheKeys
     {
         public static string GetSermons { get { return "LiveSermonsCache"; } }
+
+        public static string GetPagedSermons { get { return "PagedSermonsCache:{0}"; } }
     }
 }
