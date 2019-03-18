@@ -14,7 +14,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// The Id of the LiveSermon object in Mongo
         /// </summary>
         [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Id'. This property is required.")]
-        [DataType(DataType.Custom)]
         public string Id { get; set; }
         
         /// <summary>
