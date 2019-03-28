@@ -6,19 +6,22 @@ using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 
-namespace ThriveChurchOfficialAPI.Core.Extensions
+namespace ThriveChurchOfficialAPI.Core
 {
+    /// <summary>
+    /// Generic system response messages that can be used for any reason
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class SystemResponse<T>
     {
-        private T _data;
-        private bool _success = true;
+        private bool _errored = false;
         private string _message;
 
         [DataMember()]
-        public bool WasSuccessful
+        public bool HasErrors
         {
-            get { return _success; }
-            set { _success = value; }
+            get { return _errored; }
+            set { _errored = value; }
         }
 
         [DataMember()]
@@ -28,16 +31,21 @@ namespace ThriveChurchOfficialAPI.Core.Extensions
             set { _message = value; }
         }
 
-        [DataMember()]
-        public T Response
+        /// <summary>
+        /// The data from the response, which is of generic type
+        /// </summary>
+        public T Result { get; set; }
+
+        public SystemResponse(bool DidError, string ErrorMessage)
         {
-            get { return _data; }
-            set { _data = value; }
+            HasErrors = DidError;
+            Message = ErrorMessage;
         }
 
-        public void RecordResponseObject(ref T data)
+        public SystemResponse(T Value, string SuccessMessage)
         {
-            _data = data;
+            Result = Value;
+            Message = SuccessMessage;
         }
     }
 }

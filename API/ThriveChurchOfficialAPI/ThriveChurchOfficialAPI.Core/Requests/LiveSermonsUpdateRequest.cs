@@ -21,19 +21,19 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(LiveSermonsUpdateRequest request)
+        public static SystemResponse<bool> ValidateRequest(LiveSermonsUpdateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Id))
             {
-                return false;
+                return new SystemResponse<bool>(true, string.Format(SystemMessages.NullProperty, "Id"));
             }
 
             if (!ObjectId.TryParse(request.Id, out ObjectId id))
             {
-                return false;
+                return new SystemResponse<bool>(true, string.Format(SystemMessages.InvalidPropertyType, "Id", "ObjectId"));
             }
 
-            return true;
+            return new SystemResponse<bool>(true, "Success!");
         }
     }
 }

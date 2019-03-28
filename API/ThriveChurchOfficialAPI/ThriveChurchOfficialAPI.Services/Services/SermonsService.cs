@@ -324,15 +324,14 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<LiveStreamingResponse> UpdateLiveSermons(LiveSermonsUpdateRequest request)
+        public async Task<SystemResponse<LiveStreamingResponse>> UpdateLiveSermons(LiveSermonsUpdateRequest request)
         {
             // validate the request
             var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
-
-            if (!validRequest)
+            if (validRequest.HasErrors)
             {
                 // an error ocurred here
-                return default(LiveStreamingResponse);
+                return new SystemResponse<LiveStreamingResponse>(true, validRequest.Message);
             }
 
             // Update this object for the requested fields
