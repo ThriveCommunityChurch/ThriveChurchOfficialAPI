@@ -24,6 +24,12 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         public string EsvApiKey { get; }
 
+        /// <summary>
+        /// Use this flag to override a check for the EsvApiKey in your appsettings.json,
+        /// This setting should also however be located in your settings
+        /// </summary>
+        public string OverrideEsvApiKey { get; }
+
         #endregion
 
         #region Public Vars Set At Runtime
@@ -31,7 +37,12 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <summary>
         /// Initialize a new MongoClient for the connection to mongo
         /// </summary>
-        public MongoClient Client;
+        private readonly MongoClient _mongoClient;
+
+        /// <summary>
+        /// Public access to the Mongo Client
+        /// </summary>
+        public MongoClient Client { get => _mongoClient; }
 
         #endregion
 
@@ -41,34 +52,40 @@ namespace ThriveChurchOfficialAPI.Repositories
             // set our keys and connections here in our Base Class
             MongoConnectionString = Configuration["MongoConnectionString"];
             EsvApiKey = Configuration["EsvApiKey"];
+            OverrideEsvApiKey = Configuration["OverrideEsvApiKey"];
 
             // in the event our configs are null, throw a Null Exception
             ValidateConfigs();
 
             // assuming the configs are valid, create a MongoClient we can use for everything, we only need one.
-            GetMongoClient();
-        }
-
-        /// <summary>
-        /// Sets the Client object for a given connection string
-        /// </summary>
-        public void GetMongoClient()
-        {
-            Client = new MongoClient(MongoConnectionString);
+            // Sets the Client object for a given connection string
+            _mongoClient = new MongoClient(MongoConnectionString);
         }
 
         private void ValidateConfigs()
         {
             if (string.IsNullOrEmpty(MongoConnectionString))
             {
-                throw new ArgumentNullException("IConnection.MongoConnectionString", 
-                    string.Format("MongoConnectionString", SystemMessages.ConnectionMissingFromAppSettings));
+                throw new ArgumentNullException("IConfiguration.MongoConnectionString", 
+                    string.Format(SystemMessages.ConnectionMissingFromAppSettings, "MongoConnectionString"));
             }
 
-            if (string.IsNullOrEmpty(EsvApiKey))
+            var successful = bool.TryParse(OverrideEsvApiKey, out bool EsvKeyOverride);
+
+            // if the setting is false, and there is no key -> throw an exception
+            if (!EsvKeyOverride)
             {
-                throw new ArgumentNullException("IConnection.EsvApiKey",
-                    string.Format("EsvApiKey", SystemMessages.ConnectionMissingFromAppSettings));
+                if (string.IsNullOrEmpty(EsvApiKey))
+                {
+                    throw new ArgumentNullException("IConfiguration.EsvApiKey",
+                        string.Format(SystemMessages.ConnectionMissingFromAppSettings, "EsvApiKey"));
+                }
+            }
+
+            if (!successful)
+            {
+                throw new ArgumentNullException("IConfiguration.OverrideEsvApiKey",
+                        string.Format(SystemMessages.OverrideMissingFromAppSettings));
             }
         }
 

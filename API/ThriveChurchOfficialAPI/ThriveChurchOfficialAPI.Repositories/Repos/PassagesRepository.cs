@@ -36,7 +36,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             var authToken = string.Format("Token {0}", authenticationToken);
 
-            var response = await GetAsync(uri, authenticationToken);
+            var response = await GetAsync(uri, authToken);
             PassageTextInfo passageAndInfo = null;
 
             if (response.IsSuccessStatusCode)

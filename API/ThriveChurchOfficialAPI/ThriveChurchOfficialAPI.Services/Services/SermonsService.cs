@@ -8,6 +8,7 @@ using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
 using System.Collections.Generic;
+using MongoDB.Bson;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -62,21 +63,26 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="pageNumber"></param>
         /// <returns></returns>
-        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber)
         {
             // Page num canonot be 0, and neg page numbers make no sense
             if (pageNumber <= 0)
             {
-                return null;
+                return new SystemResponse<SermonsSummaryPagedResponse>(true, string.Format(SystemMessages.IllogicalPagingNumber, pageNumber));
             }
 
             // since this is going to get called a ton of times we should cache this
 
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(string.Format(CacheKeys.GetPagedSermons, pageNumber), out SermonsSummaryPagedResponse pagedSermonsResponse))
+            if (!_cache.TryGetValue(string.Format(CacheKeys.GetPagedSermons, pageNumber), out SystemResponse<SermonsSummaryPagedResponse> pagedSermonsResponse))
             {
                 // Key not in cache, so get data.
                 pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+
+                if (pagedSermonsResponse.HasErrors)
+                {
+                    return new SystemResponse<SermonsSummaryPagedResponse>(true, pagedSermonsResponse.ErrorMessage);
+                }
 
                 // Save data in cache.
                 _cache.Set(string.Format(CacheKeys.GetPagedSermons, pageNumber), pagedSermonsResponse, CacheEntryOptions);
@@ -88,19 +94,17 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all SermonSeries Objets
         /// </summary>
-        public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
+        public async Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request)
         {
             var validRequest = SermonSeries.ValidateRequest(request);
-
-            if (!validRequest)
+            if (validRequest.HasErrors)
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
             }
 
             // the Slug on the series should be unique, so if we already have one with this slug
             // return an error - because we want to avoid having bad data in our database
             var allSermonSries = await _sermonsRepository.GetAllSermons();
-
             if (allSermonSries == null || allSermonSries == default(AllSermonsResponse))
             {
                 return null;
@@ -109,18 +113,21 @@ namespace ThriveChurchOfficialAPI.Services
             var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
             if (seriesWithSameSlug.Any())
             {
+                var foundSeries = seriesWithSameSlug.FirstOrDefault();
+
                 // there is already a sermon series with this slug, respond with one of those
-                return seriesWithSameSlug.FirstOrDefault();
+                return new SystemResponse<SermonSeries>(foundSeries, "202");
             }
 
             // if any of the sermon series' currently have a null
             if (request.EndDate == null)
             {
                 var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
-
                 if (currentlyActiveSeries.Any())
                 {
-                    return currentlyActiveSeries.FirstOrDefault();
+                    // one of the series' is already active
+                    var currentlyActive = currentlyActiveSeries.FirstOrDefault();
+                    return new SystemResponse<SermonSeries>(currentlyActive, "202");
                 }
             }
             else
@@ -139,8 +146,12 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
+            if (getAllSermonsResponse.HasErrors)
+            {
+                return new SystemResponse<SermonSeries>(true, getAllSermonsResponse.ErrorMessage); 
+            }
 
-            return getAllSermonsResponse;
+            return new SystemResponse<SermonSeries>(getAllSermonsResponse.Result, "Success!");
         }
 
         /// <summary>
@@ -148,12 +159,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request)
+        public async Task<SystemResponse<SermonSeries>> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request)
         {
             var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
-            if (!validRequest)
+            if (validRequest.HasErrors)
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
             }
 
             if (string.IsNullOrEmpty(SeriesId))
@@ -163,10 +174,9 @@ namespace ThriveChurchOfficialAPI.Services
 
             // if we can't find it then the Id is invalid
             var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(SeriesId);
-            if (getSermonSeriesResponse == null)
+            if (getSermonSeriesResponse == null || getSermonSeriesResponse == default(SermonSeries))
             {
-                // didn't find it
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindValueInCollection, SeriesId, "Sermons"));
             }
 
             // add the sermon message to the response object and re-update the Mongo doc
@@ -187,12 +197,12 @@ namespace ThriveChurchOfficialAPI.Services
 
             // find and replace the one with the updated object
             var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
-            if(updateResponse == null)
+            if(updateResponse.HasErrors)
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, updateResponse.ErrorMessage);
             }
 
-            return getSermonSeriesResponse;
+            return new SystemResponse<SermonSeries>(updateResponse.Result, "Success!");
         }
 
         /// <summary>
@@ -201,27 +211,27 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="messageId"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonMessage> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
+        public async Task<SystemResponse<SermonMessage>> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
         {
             var validRequest = UpdateMessagesInSermonSeriesRequest.ValidateRequest(request);
-            if (!validRequest)
+            if (validRequest.HasErrors)
             {
-                return null;
+                return new SystemResponse<SermonMessage>(true, validRequest.ErrorMessage);
             }
 
             var validGuid = Guid.TryParse(messageId, out Guid messageGuid);
             if (!validGuid)
             {
-                return null;
+                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.InvalidPropertyType, "messageId", "Guid"));
             }
 
             var messageResponse = await _sermonsRepository.GetMessageForId(messageId);
-            if (messageResponse == null)
+            if (messageResponse == null || messageResponse == default(SermonMessage))
             {
-                return null;
+                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.UnableToFindSermonMessageWithId, messageId));
             }
 
-            return messageResponse;
+            return new SystemResponse<SermonMessage>(messageResponse, "Success!");
         }
 
         /// <summary>
@@ -229,24 +239,23 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="seriesId"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> GetSeriesForId(string seriesId)
+        public async Task<SystemResponse<SermonSeries>> GetSeriesForId(string seriesId)
         {
             if (string.IsNullOrEmpty(seriesId))
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "seriesId"));
             }
 
             var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-            if (seriesResponse == null)
+            if (seriesResponse == null || seriesResponse == default(SermonSeries))
             {
-                // the series Id that was requested is invalid
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindValueInCollection, seriesId, "Sermons"));
             }
 
             var orderedMessages = seriesResponse.Messages.OrderByDescending(i => i.Date.Value);
             seriesResponse.Messages = orderedMessages;
 
-            return seriesResponse;
+            return new SystemResponse<SermonSeries>(seriesResponse, "Success!");
         }
 
         /// <summary>
@@ -254,17 +263,23 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> ModifySermonSeries(string seriesId, SermonSeriesUpdateRequest request)
+        public async Task<SystemResponse<SermonSeries>> ModifySermonSeries(string seriesId, SermonSeriesUpdateRequest request)
         {
             var validRequest = SermonSeriesUpdateRequest.ValidateRequest(request);
-            if (!validRequest)
+            if (validRequest.HasErrors)
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
             }
 
             if (string.IsNullOrEmpty(seriesId))
             {
                 return null;
+            }
+
+            var invalidId = ObjectId.TryParse(seriesId, out ObjectId id);
+            if (!invalidId)
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.InvalidPropertyType, "SeriesId", "ObjectId"));
             }
 
             var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
@@ -289,8 +304,14 @@ namespace ThriveChurchOfficialAPI.Services
             getSermonSeriesResponse.Slug = request.Slug;
 
             var updateResponse = await _sermonsRepository.UpdateSermonSeries(getSermonSeriesResponse);
+            if (updateResponse.HasErrors)
+            {
+                return new SystemResponse<SermonSeries>(true, updateResponse.ErrorMessage);
+            }
 
-            return updateResponse;
+            var response = updateResponse.Result;
+
+            return new SystemResponse<SermonSeries>(response, "Success!");
         }
 
         /// <summary>
@@ -331,7 +352,7 @@ namespace ThriveChurchOfficialAPI.Services
             if (validRequest.HasErrors)
             {
                 // an error ocurred here
-                return new SystemResponse<LiveStreamingResponse>(true, validRequest.Message);
+                return new SystemResponse<LiveStreamingResponse>(true, validRequest.ErrorMessage);
             }
 
             // Update this object for the requested fields
@@ -348,7 +369,7 @@ namespace ThriveChurchOfficialAPI.Services
             if (updateLiveSermonsResponse == null)
             {
                 // something bad happened here
-                return default(LiveStreamingResponse);
+                return new SystemResponse<LiveStreamingResponse>(true, string.Format(SystemMessages.UnableToFindLiveSermonForId, request.Id));
             }
 
             // times have already been converted to UTC
@@ -363,7 +384,7 @@ namespace ThriveChurchOfficialAPI.Services
             // we are updating this so we should watch for when it expires, when it does we will need to update Mongo
             DetermineIfStreamIsInactive();
 
-            return response;
+            return new SystemResponse<LiveStreamingResponse>(response, "Success!");
         }
 
         /// <summary>

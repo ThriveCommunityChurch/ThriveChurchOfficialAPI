@@ -20,25 +20,25 @@ namespace ThriveChurchOfficialAPI.Core
         /// Validates the request object
         /// </summary>
         /// <param name="request"></param>
-        public static bool ValidateRequest(UpdateMessagesInSermonSeriesRequest request)
+        public static ValidationResponse ValidateRequest(UpdateMessagesInSermonSeriesRequest request)
         {
             if (request == null)
             {
-                return false;
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
             if (request.Message == null)
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Message"));
             }
 
-            var validMessage = SermonMessage.ValidateRequest(request.Message);
-            if (!validMessage)
+            var messageValidationResponse = SermonMessage.ValidateRequest(request.Message);
+            if (messageValidationResponse.HasErrors)
             {
-                return false;
+                return new ValidationResponse(true, messageValidationResponse.ErrorMessage);
             }
 
-            return true;
+            return new ValidationResponse("Success!");
         }
     }
 }

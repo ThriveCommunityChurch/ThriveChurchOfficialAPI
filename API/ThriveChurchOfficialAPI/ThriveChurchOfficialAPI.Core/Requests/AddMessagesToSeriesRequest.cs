@@ -21,29 +21,28 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(AddMessagesToSeriesRequest request)
+        public static ValidationResponse ValidateRequest(AddMessagesToSeriesRequest request)
         {
             if (request == null)
             {
-                return false;
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
             if (request.MessagesToAdd == null)
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "MessagesToAdd"));
             }
 
             foreach (var message in request.MessagesToAdd)
             {
                 var validateMessages = SermonMessage.ValidateRequest(message);
-                if (!validateMessages)
+                if (validateMessages.HasErrors)
                 {
-                    // at least one message is invalid
-                    return false;
+                    return new ValidationResponse(true, validateMessages.ErrorMessage);
                 }
             }
 
-            return true;
+            return new ValidationResponse("Success!");
         }
     }
 }

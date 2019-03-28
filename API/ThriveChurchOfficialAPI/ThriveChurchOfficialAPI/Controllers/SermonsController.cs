@@ -60,16 +60,14 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("paged")]
         public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber)
         {
-            SermonsSummaryPagedResponse response = await _sermonsService.GetPagedSermons(PageNumber);
+            var response = await _sermonsService.GetPagedSermons(PageNumber);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonsSummaryPagedResponse>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpPost("series")]
@@ -82,9 +80,15 @@ namespace ThriveChurchOfficialAPI.Controllers
                 return StatusCode(400);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
+            if (response.SuccessMessage == "202")
+            {
+                // Return a 202 here because this is valid, however there is something else active and nothing was done
+                // "The request has been received but not yet acted upon" is what I would expect to be a correct response
+                // More on that here https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202
+                return StatusCode(202, response.Result);
+            }
 
-            return value;
+            return response.Result;
         }
 
         // this query string should contain an Id
@@ -93,14 +97,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
-
-            return value;
+            return response.Result;
         }
 
         // this query string should contain an Id
@@ -109,14 +111,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpPost("series/{SeriesId}/message")]
@@ -124,14 +124,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpPut("series/message/{MessageId}")]
@@ -139,14 +137,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonMessage>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpGet("live")]
@@ -169,12 +165,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateLiveSermons(request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            return response;
+            return response.Result;
         }
 
         [HttpPut("live/special")]

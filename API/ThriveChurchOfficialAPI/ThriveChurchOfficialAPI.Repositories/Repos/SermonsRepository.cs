@@ -12,11 +12,13 @@ namespace ThriveChurchOfficialAPI.Repositories
     public class SermonsRepository : RepositoryBase, ISermonsRepository
     {
         private readonly string connectionString;
+        private readonly IMongoDatabase db;
 
         public SermonsRepository(IConfiguration Configuration)
             : base(Configuration)
         {
             connectionString = MongoConnectionString;
+            db = Client.GetDatabase("SermonSeries");
         }
 
         /// <summary>
@@ -26,7 +28,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<AllSermonsResponse> GetAllSermons()
         {
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
             var documents = await collection.Find(_ => true).ToListAsync();
 
@@ -43,7 +44,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="pageNumber"></param>
         /// <returns></returns>
-        public async Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber)
+        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber)
         {
             // determine which number of sermon series to request & which ones to return
             var responseCount = 10;
@@ -62,7 +63,6 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             var totalPageNumber = 1;
 
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
             var documents = await collection.Find(_ => true)
                 .SortByDescending(i => i.StartDate)
@@ -121,7 +121,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (pageNumber > totalPageNumber)
             {
-                return null;
+                return new SystemResponse<SermonsSummaryPagedResponse>(true, string.Format(SystemMessages.InvalidPagingNumber, pageNumber, totalPageNumber));
             }
 
             // construct the list of summaries
@@ -152,7 +152,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                 }
             };
 
-            return response;
+            return new SystemResponse<SermonsSummaryPagedResponse>(response, "Success!");
         }
 
         /// <summary>
@@ -160,9 +160,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> CreateNewSermonSeries(SermonSeries request)
+        public async Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request)
         {
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
 
             // updated time is now
@@ -175,13 +174,12 @@ namespace ThriveChurchOfficialAPI.Repositories
                     Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
 
             var response = inserted.FirstOrDefault();
-
             if (response == default(SermonSeries))
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.ErrorOcurredInsertingIntoCollection, "Sermons"));
             }
 
-            return response;
+            return new SystemResponse<SermonSeries>(response, "Success!");
         }
 
         /// <summary>
@@ -189,9 +187,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> UpdateSermonSeries(SermonSeries request)
+        public async Task<SystemResponse<SermonSeries>> UpdateSermonSeries(SermonSeries request)
         {
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
 
             // updated time is now
@@ -200,9 +197,12 @@ namespace ThriveChurchOfficialAPI.Repositories
             var singleSeries = await collection.FindOneAndReplaceAsync(
                    Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id), request);
 
-            // this does not return the updated object. 
-            // TODO: fix
-            return request;
+            if (singleSeries == null)
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindValueInCollection, request.Id, "Sermons"));
+            }
+
+            return new SystemResponse<SermonSeries>(request, "Success!");
         }
 
         /// <summary>
@@ -212,25 +212,12 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SermonSeries> GetSermonSeriesForId(string SeriesId)
         {
-            var invalidId = ObjectId.TryParse(SeriesId, out ObjectId id);
-
-            if (!invalidId)
-            {
-                return null;
-            }
-
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
 
             var singleSeries = await collection.FindAsync(
                    Builders<SermonSeries>.Filter.Eq(s => s.Id, SeriesId));
 
             var response = singleSeries.FirstOrDefault();
-
-            if (response == default(SermonSeries))
-            {
-                return null;
-            }
 
             return response;
         }
@@ -240,22 +227,20 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="slug"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> GetSermonSeriesForSlug(string slug)
+        public async Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug)
         {
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
 
             var singleSeries = await collection.FindAsync(
                    Builders<SermonSeries>.Filter.Eq(s => s.Slug, slug));
 
             var response = singleSeries.FirstOrDefault();
-
             if (response == default(SermonSeries))
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindSermonWithSlug, slug));
             }
 
-            return response;
+            return new SystemResponse<SermonSeries>(response, "Success!");
         }
 
         /// <summary>
@@ -265,14 +250,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SermonMessage> GetMessageForId(string messageId)
         {
-            var invalidId = Guid.TryParse(messageId, out Guid id);
-
-            if (!invalidId)
-            {
-                return null;
-            }
-
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<SermonSeries> collection = db.GetCollection<SermonSeries>("Sermons");
 
             // use a filter since we are looking for an Id which is a value in an array with n elements
@@ -281,11 +258,6 @@ namespace ThriveChurchOfficialAPI.Repositories
             var seriesResponse = await collection.FindAsync(filter);
             var series = seriesResponse.FirstOrDefault();
             var response = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
-
-            if (response == default(SermonMessage))
-            {
-                return null;
-            }
 
             return response;
         }
@@ -297,7 +269,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<LiveSermons> GetLiveSermons()
         {
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<LiveSermons> collection = db.GetCollection<LiveSermons>("Livestream");
             var documents = await collection.Find(_ => true).FirstOrDefaultAsync();
 
@@ -311,7 +282,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<LiveSermons> UpdateLiveSermons(LiveSermons request)
         {
-            IMongoDatabase db = Client.GetDatabase("SermonSeries");
             IMongoCollection<LiveSermons> collection = db.GetCollection<LiveSermons>("Livestream");
 
             var document = await collection.FindOneAndUpdateAsync(
@@ -352,7 +322,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         public async Task<LiveSermons> UpdateLiveSermonsInactive()
         {
             var liveSermonsResponse = await GetLiveSermons();
-
             if (liveSermonsResponse == null || liveSermonsResponse == default(LiveSermons))
             {
                 // something bad happened here
@@ -364,7 +333,6 @@ namespace ThriveChurchOfficialAPI.Repositories
             liveSermonsResponse.SpecialEventTimes = null;
 
             var updatedLiveSermon = await UpdateLiveSermons(liveSermonsResponse);
-
             if (updatedLiveSermon == null || updatedLiveSermon == default(LiveSermons))
             {
                 // something bad happened here

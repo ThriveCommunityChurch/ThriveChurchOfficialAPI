@@ -9,10 +9,10 @@ using System.Runtime.Serialization;
 namespace ThriveChurchOfficialAPI.Core
 {
     /// <summary>
-    /// Generic system response messages that can be used for any reason
+    /// Generic validation response used to validate request objects
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class SystemResponse<T>
+    public class ValidationResponse
     {
         private bool _errored;
         private string _errorMessage;
@@ -40,19 +40,22 @@ namespace ThriveChurchOfficialAPI.Core
         }
 
         /// <summary>
-        /// The data from the response, which is of generic type
+        /// Failure C'tor
         /// </summary>
-        public T Result { get; set; }
-
-        public SystemResponse(bool DidError, string ErrorMsg)
+        /// <param name="DidError"></param>
+        /// <param name="ErrorMsg"></param>
+        public ValidationResponse(bool DidError, string ErrorMsg)
         {
             HasErrors = DidError;
             ErrorMessage = ErrorMsg;
         }
 
-        public SystemResponse(T Value, string SuccessMsg)
+        /// <summary>
+        /// Success C'tor
+        /// </summary>
+        /// <param name="SuccessMsg"></param>
+        public ValidationResponse(string SuccessMsg)
         {
-            Result = Value;
             SuccessMessage = SuccessMsg;
         }
     }
