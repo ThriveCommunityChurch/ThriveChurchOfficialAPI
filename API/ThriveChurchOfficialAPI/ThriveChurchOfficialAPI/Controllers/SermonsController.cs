@@ -29,14 +29,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.GetAllSermons();
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<AllSermonsSummaryResponse>(response);
-
-            return value;
+            return response.Result;
         }
 
         /// <summary>

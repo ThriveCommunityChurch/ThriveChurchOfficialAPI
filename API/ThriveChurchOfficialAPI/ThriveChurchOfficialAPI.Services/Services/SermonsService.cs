@@ -28,7 +28,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<AllSermonsSummaryResponse> GetAllSermons()
+        public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons()
         {
             var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
 
@@ -55,7 +55,7 @@ namespace ThriveChurchOfficialAPI.Services
                 Summaries = responseList
             };
 
-            return response;
+            return new SystemResponse<AllSermonsSummaryResponse>(response, "Success!");
         }
 
         /// <summary>
