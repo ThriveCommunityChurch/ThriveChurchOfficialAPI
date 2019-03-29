@@ -62,6 +62,21 @@
             get { return "An error ocurred while inserting a document into the {0} collection."; }
         }
 
+        public static string ErrorOcurredUpdatingDocumentForKey
+        {
+            get { return "An error ocurred while updating the document with requested key of {0}."; }
+        }
+
+        public static string UnableToModifySlugForExistingSermonSeries
+        {
+            get { return "Unable to modify slug for sermon series."; }
+        }
+
+        public static string SeriesWithSlugAlreadyExists
+        {
+            get { return "A series with the slug {0} already exists."; }
+        }
+
         public static string UnableToFindLiveSermonForId
         {
             get { return "Unable to find LiveSermon for Id {0}."; }

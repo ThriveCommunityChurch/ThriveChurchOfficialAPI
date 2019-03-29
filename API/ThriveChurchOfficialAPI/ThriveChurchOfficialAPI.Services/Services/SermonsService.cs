@@ -169,7 +169,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             if (string.IsNullOrEmpty(SeriesId))
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
             }
 
             // if we can't find it then the Id is invalid
@@ -273,7 +273,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             if (string.IsNullOrEmpty(seriesId))
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
             }
 
             var invalidId = ObjectId.TryParse(seriesId, out ObjectId id);
@@ -285,7 +285,7 @@ namespace ThriveChurchOfficialAPI.Services
             var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
             if (getSermonSeriesResponse == null)
             {
-                return null;
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.ErrorOcurredUpdatingDocumentForKey, seriesId));
             }
 
             // make sure that no one can update the slug to something that already exists
@@ -293,7 +293,7 @@ namespace ThriveChurchOfficialAPI.Services
             if (getSermonSeriesResponse.Slug != request.Slug)
             {
                 // cannot change the slug -> make sure a slug is set when you create the series.
-                return null;
+                return new SystemResponse<SermonSeries>(true, SystemMessages.UnableToModifySlugForExistingSermonSeries);
             }
 
             getSermonSeriesResponse.Name = request.Name;
@@ -368,7 +368,6 @@ namespace ThriveChurchOfficialAPI.Services
             var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
             if (updateLiveSermonsResponse == null)
             {
-                // something bad happened here
                 return new SystemResponse<LiveStreamingResponse>(true, string.Format(SystemMessages.UnableToFindLiveSermonForId, request.Id));
             }
 
@@ -484,8 +483,8 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         private void DetermineIfStreamIsInactive()
         {
-            // we'll look every 10 seconds to see if the stream has expired
-            _timer = new Timer(CheckStreamingStatus, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            // we'll look every 15 seconds to see if the stream has expired
+            _timer = new Timer(CheckStreamingStatus, null, TimeSpan.Zero, TimeSpan.FromSeconds(15));
         }
 
         /// <summary>
