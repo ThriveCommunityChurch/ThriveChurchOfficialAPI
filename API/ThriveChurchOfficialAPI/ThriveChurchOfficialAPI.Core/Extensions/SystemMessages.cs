@@ -4,11 +4,6 @@
     {
         #region Validations
 
-        public static string PropertyRequired
-        {
-            get { return "The {0} property is required."; }
-        }
-
         public static string NullProperty
         {
             get { return "Property named {0} cannot be null or empty."; }
@@ -84,6 +79,15 @@
         public static string IllogicalPagingNumber
         {
             get { return "Unable to request results for page number {0}."; }
+        }
+
+        #endregion
+
+        #region Passages
+
+        public static string ErrorWithESVApi
+        {
+            get { return "An error ocurred while using the ESV API."; }
         }
 
         #endregion

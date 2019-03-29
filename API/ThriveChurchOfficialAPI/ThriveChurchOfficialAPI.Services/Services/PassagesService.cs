@@ -22,23 +22,27 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<SermonPassageResponse> GetSinglePassageForSearch(string searchCriteria)
+        public async Task<SystemResponse<SermonPassageResponse>> GetSinglePassageForSearch(string searchCriteria)
         {
             if (string.IsNullOrEmpty(searchCriteria))
             {
-                return null;
+                return new SystemResponse<SermonPassageResponse>(true, string.Format(SystemMessages.NullProperty, "searchCriteria"));
             }
 
             // since ESV returns everything as one massive string, I need to convert everything to objects
             // Then to strings if I wish
             var getPassagesResponse = await _passagesRepository.GetPassagesForSearch(searchCriteria);
-
             if (getPassagesResponse == null)
             {
-                return null;
+                return new SystemResponse<SermonPassageResponse>(true, SystemMessages.ErrorWithESVApi);
             }
 
             var passageResponse = getPassagesResponse.passages.FirstOrDefault();
+            if (passageResponse == null)
+            {
+                return new SystemResponse<SermonPassageResponse>(true, SystemMessages.ErrorWithESVApi);
+            }
+
             var footerRemovalResponse = RemoveFooterFromResponse(passageResponse);
             var finalPassage = RemoveFooterTagsAndFormatVerseNumbers(footerRemovalResponse);
 
@@ -50,7 +54,7 @@ namespace ThriveChurchOfficialAPI.Services
                 Passage = finalPassage
             };
 
-            return response;
+            return new SystemResponse<SermonPassageResponse>(response, "Success!");
         }
 
         private string RemoveFooterTagsAndFormatVerseNumbers(string passage)

@@ -28,14 +28,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _passagesService.GetSinglePassageForSearch(searchCriteria);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonPassageResponse>(response);
-
-            return value;
+            return response.Result;
         }
     }
 }

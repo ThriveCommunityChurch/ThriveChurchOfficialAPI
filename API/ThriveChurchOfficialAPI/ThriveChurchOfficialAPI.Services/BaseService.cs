@@ -32,6 +32,11 @@ namespace ThriveChurchOfficialAPI
         /// <returns></returns>
         public string GetBetween(string strSource, string strStart, string strEnd)
         {
+            if (string.IsNullOrEmpty(strSource))
+            {
+                return "";
+            }
+
             int Start, End;
             if (strSource.Contains(strStart) && strSource.Contains(strEnd))
             {

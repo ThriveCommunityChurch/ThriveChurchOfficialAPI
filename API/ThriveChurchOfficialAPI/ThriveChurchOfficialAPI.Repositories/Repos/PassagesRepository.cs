@@ -17,9 +17,9 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         public async Task<PassageTextInfo> GetPassagesForSearch(string searchCriteria)
         {
-            if (EsvApiKey == null)
+            if (string.IsNullOrEmpty(EsvApiKey))
             {
-                throw new ArgumentNullException("'EsvApiKey' is a required within your appsettings.json in order to continue");
+                throw new ArgumentNullException("'EsvApiKey' is a required within your appsettings.json in order to continue.");
             }
 
             // setup the request
