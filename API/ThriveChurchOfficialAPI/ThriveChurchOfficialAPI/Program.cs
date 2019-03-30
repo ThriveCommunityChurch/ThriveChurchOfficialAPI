@@ -27,6 +27,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
@@ -44,6 +45,9 @@ namespace ThriveChurchOfficialAPI
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .UseKestrel(options => {
+                    options.Listen(IPAddress.Loopback, 8080); //HTTP port
+                })
                 .UseStartup<Startup>();
 
     }

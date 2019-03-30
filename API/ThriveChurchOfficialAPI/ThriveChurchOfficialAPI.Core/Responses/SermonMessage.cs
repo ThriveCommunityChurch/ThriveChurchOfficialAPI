@@ -72,22 +72,30 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(SermonMessage request)
+        public static ValidationResponse ValidateRequest(SermonMessage request)
         {
             if (request == null)
             {
-                return false;
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
             // A/V urls, and PassageRef are allowed to be null, however others cannot
-            if (request.Date == null || 
-                request.Speaker == null || 
-                request.Title == null)
+            if (request.Date == null)
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Date"));
+            }
+            
+            if (request.Speaker == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Speaker"));
             }
 
-            return true;
+            if (request.Title == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
+            }
+
+            return new ValidationResponse("Success!");
         }
     }
 }

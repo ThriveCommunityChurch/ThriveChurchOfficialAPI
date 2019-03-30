@@ -12,8 +12,6 @@ namespace ThriveChurchOfficialAPI.Core
         public LiveStreamingResponse()
         {
             IsLive = false;
-            VideoUrl = null;
-            Title = null;
             SpecialEventTimes = null;
             IsSpecialEvent = false;
         }
@@ -22,16 +20,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// Flag determining whether or not a stream is currently active
         /// </summary>
         public bool IsLive { get; set; }
-
-        /// <summary>
-        /// Full path to the video that is currently streaming
-        /// </summary>
-        public string VideoUrl { get; set; }
-
-        /// <summary>
-        /// The title of the video / message
-        /// </summary>
-        public string Title { get; set; }
 
         /// <summary>
         /// Set a time when a livestream notification will disappear,

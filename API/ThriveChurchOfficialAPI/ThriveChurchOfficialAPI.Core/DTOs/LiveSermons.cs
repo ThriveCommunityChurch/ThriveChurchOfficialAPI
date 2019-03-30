@@ -12,8 +12,6 @@ namespace ThriveChurchOfficialAPI.Core
         public LiveSermons()
         {
             IsLive = false;
-            VideoUrlSlug = null;
-            Title = null;
             SpecialEventTimes = null;
         }
 
@@ -28,17 +26,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// Flag determining whether or not a stream is currently active
         /// </summary>
         public bool IsLive { get; set; }
-
-        /// <summary>
-        /// Slug to be used for facebook
-        /// EX) facebook.com/{pageName}/videos/{insert-slug-here}
-        /// </summary>
-        public string VideoUrlSlug { get; set; }
-
-        /// <summary>
-        /// The title of the video / message
-        /// </summary>
-        public string Title { get; set; }
 
         /// <summary>
         /// Set a time when a livestream notification will disappear,

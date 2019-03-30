@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,18 @@ namespace ThriveChurchOfficialAPI
 {
     public abstract class BaseService
     {
+        /// <summary>
+        /// Global Cache options for IMemoryCache
+        /// </summary>
+        public MemoryCacheEntryOptions CacheEntryOptions { get
+            {
+                // set a reusible cache options object
+                return new MemoryCacheEntryOptions()
+                // Keep in cache for this time, reset time if accessed.
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
+            }
+        }
+
 
         /// <summary>
         /// Get a substring between 2 other substrings
@@ -19,6 +32,11 @@ namespace ThriveChurchOfficialAPI
         /// <returns></returns>
         public string GetBetween(string strSource, string strStart, string strEnd)
         {
+            if (string.IsNullOrEmpty(strSource))
+            {
+                return "";
+            }
+
             int Start, End;
             if (strSource.Contains(strStart) && strSource.Contains(strEnd))
             {

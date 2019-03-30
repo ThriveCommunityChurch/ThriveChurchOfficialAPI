@@ -7,30 +7,13 @@ namespace ThriveChurchOfficialAPI.Core
     {
         public LiveSermonsUpdateRequest()
         {
-            Title = null;
-            Slug = null;
             Id = null;
         }
-
-        /// <summary>
-        /// The requested title 
-        /// </summary>
-        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Title'. This property is required.")]
-        [DataType(DataType.Text)]
-        public string Title { get; set; }
-
-        /// <summary>
-        /// The requested Video url Slug
-        /// </summary>
-        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Slug'. This property is required.")]
-        [DataType(DataType.Text)]
-        public string Slug { get; set; }
 
         /// <summary>
         /// The Id of the LiveSermon object in Mongo
         /// </summary>
         [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Id'. This property is required.")]
-        [DataType(DataType.Custom)]
         public string Id { get; set; }
         
         /// <summary>
@@ -38,29 +21,19 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(LiveSermonsUpdateRequest request)
+        public static SystemResponse<bool> ValidateRequest(LiveSermonsUpdateRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Title))
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Slug))
-            {
-                return false;
-            }
-
             if (string.IsNullOrWhiteSpace(request.Id))
             {
-                return false;
+                return new SystemResponse<bool>(true, string.Format(SystemMessages.NullProperty, "Id"));
             }
 
             if (!ObjectId.TryParse(request.Id, out ObjectId id))
             {
-                return false;
+                return new SystemResponse<bool>(true, string.Format(SystemMessages.InvalidPropertyType, "Id", "ObjectId"));
             }
 
-            return true;
+            return new SystemResponse<bool>(true, "Success!");
         }
     }
 }

@@ -1,26 +1,25 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
     public class PassagesRepository: RepositoryBase, IPassagesRepository
     {
-        private readonly string EsvApiKey;
-
         public PassagesRepository(IConfiguration Configuration)
+            : base(Configuration)
         {
-            // get the API key from appsettings.json
-            EsvApiKey = Configuration["EsvApiKey"];
         }
 
         public async Task<PassageTextInfo> GetPassagesForSearch(string searchCriteria)
         {
-            if (EsvApiKey == null)
+            if (string.IsNullOrEmpty(EsvApiKey))
             {
-                throw new ArgumentNullException("'EsvApiKey' is a required within your appsettings.json in order to continue");
+                throw new ArgumentNullException("'EsvApiKey' is a required within your appsettings.json in order to continue.");
             }
 
             // setup the request
@@ -30,6 +29,23 @@ namespace ThriveChurchOfficialAPI.Repositories
             var response = await GetPassages(uri, EsvApiKey);
 
             return response;
+        }
+
+        // This should probably return any type that the user requests, however if the API we are using ever breaks the contract 
+        public async Task<PassageTextInfo> GetPassages(string uri, string authenticationToken)
+        {
+            var authToken = string.Format("Token {0}", authenticationToken);
+
+            var response = await GetAsync(uri, authToken);
+            PassageTextInfo passageAndInfo = null;
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonString = await response.Content.ReadAsStringAsync();
+                passageAndInfo = JsonConvert.DeserializeObject<PassageTextInfo>(jsonString);
+            }
+
+            return passageAndInfo;
         }
     }
 }

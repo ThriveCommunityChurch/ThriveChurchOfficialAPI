@@ -60,29 +60,41 @@ namespace ThriveChurchOfficialAPI.Core
         [DataType(DataType.Text)]
         public string Slug { get; set; }
 
-        public static bool ValidateRequest(SermonSeriesUpdateRequest request)
+        public static ValidationResponse ValidateRequest(SermonSeriesUpdateRequest request)
         {
             if (request == null)
             {
-                return false;
+                new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
-            if (request.ArtUrl == null ||
-                request.EndDate == null ||
-                request.StartDate == null ||
-                request.Thumbnail == null ||
-                request.Slug == null)
+            if (request.ArtUrl == null)
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "ArtUrl"));
+            }
+            if (request.EndDate == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "EndDate"));
+            }
+            if (request.StartDate == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "StartDate"));
+            }
+            if (request.Thumbnail == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Thumbnail"));
+            }
+            if (request.Slug == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Slug"));
             }
 
             // make sure that the dates are chronological
             if (request.StartDate > request.EndDate)
             {
-                return false;
+                return new ValidationResponse(true, SystemMessages.EndDateMustBeAfterStartDate);
             }
 
-            return true;
+            return new ValidationResponse("Success!");
         }
     }
 }

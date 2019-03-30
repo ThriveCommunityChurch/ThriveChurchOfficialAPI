@@ -78,21 +78,36 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         public IEnumerable<SermonMessage> Messages { get; set; }
 
-        public static bool ValidateRequest(SermonSeries request)
+        public static ValidationResponse ValidateRequest(SermonSeries request)
         {
             if (request == null)
             {
-                return false;
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
-            if (string.IsNullOrEmpty(request.ArtUrl) || 
-                request.StartDate == null || 
-                string.IsNullOrEmpty(request.Name) || 
-                string.IsNullOrEmpty(request.Slug) ||
-                string.IsNullOrEmpty(request.Thumbnail) ||
-                string.IsNullOrEmpty(request.Year))
+            if (string.IsNullOrEmpty(request.Name))
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Name"));
+            }
+            if (string.IsNullOrEmpty(request.ArtUrl))
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "ArtUrl"));
+            }
+            if (string.IsNullOrEmpty(request.Year))
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Year"));
+            }
+            if (request.StartDate == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "StartDate"));
+            }
+            if (string.IsNullOrEmpty(request.Thumbnail))
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Thumbnail"));
+            }
+            if (string.IsNullOrEmpty(request.Slug))
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Slug"));
             }
 
             // there's no guarantee that a requested value here will keep the same value
@@ -112,11 +127,11 @@ namespace ThriveChurchOfficialAPI.Core
                 // make sure that the dates are chronological
                 if (request.StartDate > request.EndDate)
                 {
-                    return false;
+                    return new ValidationResponse(true, SystemMessages.EndDateMustBeAfterStartDate);
                 }
             }
 
-            return true;
+            return new ValidationResponse("Success!");
         }
     }
 }
