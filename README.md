@@ -25,4 +25,8 @@ Please create your own .NET Core 2.1 application on your machine. Once your appl
 
 You will need to make sure you have the following settings in your `AppSettings.json`. 
   1. `EsvApiKey` - If you wish to connect to the ESV Api, you will need to request an Auth Token from [the ESV API website](https://api.esv.org/). Simply include this token without "Token" for this setting.
-  2. `MongoConnectionString` - Use this for connecting to your MongoDB instance; should contain the prefix "mongodb://"
+  2. `MongoConnectionString` - Use this for connecting to your MongoDB instance; should contain the prefix "mongodb://".
+  3. `OverrideEsvApiKEy` - Use this `boolean` setting to override a check for your ESV API Key. 
+      - _Set to_ `true` _if you want to skip the ckeck for your API Key._
+      - _Set to_ `false` _if you want to use the PassagesController and make requests. NOTE: If this setting is set to false and no API Key is found, the application will throw an exception._
+  4. `IpRateLimiting` - Use this for setting your configurable Rate Limiting settings. See [RateLimits.md](https://github.com/ThriveCommunityChurch/ThriveChurchOfficialAPI/blob/master/RateLimits.md) for more information.
