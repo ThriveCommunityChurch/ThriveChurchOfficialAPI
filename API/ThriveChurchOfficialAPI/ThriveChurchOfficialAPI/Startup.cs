@@ -39,6 +39,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using ThriveChurchOfficialAPI.Services;
 using ThriveChurchOfficialAPI.Repositories;
 using Newtonsoft.Json.Serialization;
+using AspNetCoreRateLimit;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -84,6 +85,20 @@ namespace ThriveChurchOfficialAPI
             // Add functionality to inject IOptions<T>
             services.AddOptions();
 
+            #region Rate Limiting
+
+            // load configuration from appsettings.json
+            services.Configure<IpRateLimitOptions>(Configuration.GetSection("IpRateLimiting"));
+
+            // load IP rules from appsettings.json
+            services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
+
+            // inject counter and rules stores
+            services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+            services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+
+            #endregion
+
             // Add our Config object so it can be injected later
             services.Configure<AppSettings>(options => Configuration.GetSection("EsvApiKey").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("MongoConnectionString").Bind(options));
@@ -121,6 +136,7 @@ namespace ThriveChurchOfficialAPI
             });
 
             app.UseHttpsRedirection();
+            app.UseIpRateLimiting(); // enable rate limits
             app.UseMvc();
         }
     }
