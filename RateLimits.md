@@ -22,7 +22,7 @@ Any client that makes **more than 1000** requests in under 1 day will be denied.
 Within your _appsettings.json_ you will need the following configuration.
 
 You can adjust the settings within this object to suit your needs. To enforce the rules for ALL clients, simply remove the elements from the `WhiteList` arrays, so they remain empty. 
-```
+```json
 "IpRateLimiting": {
   "EnableEndpointRateLimiting": false,
   "StackBlockedRequests": true,
