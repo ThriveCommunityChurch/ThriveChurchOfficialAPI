@@ -11,20 +11,17 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public class SermonsRepository : RepositoryBase, ISermonsRepository
     {
-        private readonly string connectionString;
         private readonly IMongoDatabase db;
 
         public SermonsRepository(IConfiguration Configuration)
             : base(Configuration)
         {
-            connectionString = MongoConnectionString;
             db = Client.GetDatabase("SermonSeries");
         }
 
         /// <summary>
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
-        /// <param name="connectionString"></param>
         /// <returns></returns>
         public async Task<AllSermonsResponse> GetAllSermons()
         {
@@ -265,7 +262,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <summary>
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
-        /// <param name="connectionString"></param>
         /// <returns></returns>
         public async Task<LiveSermons> GetLiveSermons()
         {

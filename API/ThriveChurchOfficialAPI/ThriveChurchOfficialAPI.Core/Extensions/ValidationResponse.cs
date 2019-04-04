@@ -18,21 +18,21 @@ namespace ThriveChurchOfficialAPI.Core
         private string _errorMessage;
         private string _successMessage;
 
-        [DataMember()]
+        [DataMember]
         public bool HasErrors
         {
             get { return _errored; }
             set { _errored = value; }
         }
 
-        [DataMember()]
+        [DataMember]
         public string ErrorMessage
         {
             get { return _errorMessage; }
             set { _errorMessage = value; }
         }
 
-        [DataMember()]
+        [DataMember]
         public string SuccessMessage
         {
             get { return _successMessage; }

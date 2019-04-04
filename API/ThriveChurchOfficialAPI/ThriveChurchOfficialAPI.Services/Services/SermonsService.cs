@@ -12,7 +12,7 @@ using MongoDB.Bson;
 
 namespace ThriveChurchOfficialAPI.Services
 {
-    public class SermonsService : BaseService, ISermonsService
+    public class SermonsService : BaseService, ISermonsService, IDisposable
     {
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMemoryCache _cache;
@@ -504,7 +504,7 @@ namespace ThriveChurchOfficialAPI.Services
                 await _sermonsRepository.UpdateLiveSermonsInactive();
 
                 // when it's done kill the timer
-                _timer?.Dispose();
+                Dispose();
             }
         }
 
@@ -519,10 +519,15 @@ namespace ThriveChurchOfficialAPI.Services
             // we want to stop all async tasks because this will for sure lead to a memory leak
             if (_timer != null)
             {
-                _timer?.Dispose();
+                Dispose();
             }
 
             return liveStreamCompletedResponse;
+        }
+
+        public void Dispose()
+        {
+            _timer.Dispose();
         }
     }
 

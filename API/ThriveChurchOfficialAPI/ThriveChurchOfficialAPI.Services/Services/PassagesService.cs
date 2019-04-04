@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
@@ -11,7 +12,6 @@ namespace ThriveChurchOfficialAPI.Services
     public class PassagesService : BaseService, IPassagesService
     {
         private readonly IPassagesRepository _passagesRepository;
-        
 
         // the controller cannot have multiple inheritance so we must push it to the service layer
         public PassagesService(IPassagesRepository passagesRepository)
@@ -59,7 +59,7 @@ namespace ThriveChurchOfficialAPI.Services
 
         private string RemoveFooterTagsAndFormatVerseNumbers(string passage)
         {
-            var number = "";
+            var builder = new StringBuilder();
             var opened = false;
             var footerNumberList = new List<string>();
             var verseNumberList = new List<string>();
@@ -67,45 +67,50 @@ namespace ThriveChurchOfficialAPI.Services
 
             foreach (char c in passage)
             {
-                if (c == '(')
+                var validNumber = false;
+                var firstChar = false;
+
+                switch (c)
                 {
-                    opened = true;
-                    continue;
+                    case '(':
+                    case '[':
+                        opened = true;
+                        firstChar = true;
+                        break;
+
+                    case ')':
+                        opened = false;
+                        var text = builder.ToString();
+
+                        validNumber = int.TryParse(text, out int result);
+                        if (validNumber)
+                        {
+                            footerNumberList.Add(text);
+                        }
+
+                        builder = new StringBuilder();
+                        break;
+
+                    case ']':
+                        opened = false;
+                        var builderText = builder.ToString();
+
+                        validNumber = int.TryParse(builderText, out int parsedResult);
+                        if (validNumber)
+                        {
+                            verseNumberList.Add(builderText);
+                        }
+
+                        builder = new StringBuilder();
+                        break;
+
+                    default:
+                        break;
                 }
-                else if (c == ')')
+
+                if (opened && !firstChar)
                 {
-                    opened = false;
-
-                    var validNumber = int.TryParse(number, out int result);
-                    if (validNumber) {
-                        footerNumberList.Add(number);
-                    }
-
-                    number = "";
-                    continue;
-                }
-                else if (c == '[')
-                {
-                    opened = true;
-                    continue;
-                }
-                else if (c == ']')
-                {
-                    opened = false;
-
-                    var validNumber = int.TryParse(number, out int result);
-                    if (validNumber)
-                    {
-                        verseNumberList.Add(number);
-                    }
-
-                    number = "";
-                    continue;
-                }
-
-                if (opened)
-                {
-                    number += c.ToString();
+                    builder.Append(c.ToString());
                 }
             }
 
