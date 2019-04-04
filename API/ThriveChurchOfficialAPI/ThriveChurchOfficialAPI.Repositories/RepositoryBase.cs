@@ -11,7 +11,6 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public abstract class RepositoryBase
     {
-
         #region Read-Only Configs
 
         /// <summary>
