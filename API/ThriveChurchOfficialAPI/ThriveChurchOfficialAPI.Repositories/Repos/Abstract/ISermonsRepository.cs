@@ -14,6 +14,8 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         Task<LiveSermons> GetLiveSermons();
 
+        Task<LiveSermons> GoLive(LiveSermonsUpdateRequest request);
+
         Task<LiveSermons> UpdateLiveSermons(LiveSermons request);
 
         Task<LiveSermons> UpdateLiveSermonsInactive();

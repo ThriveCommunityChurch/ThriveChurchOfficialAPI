@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Data;
-using System.Diagnostics;
-using System.Collections.ObjectModel;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -12,33 +6,8 @@ namespace ThriveChurchOfficialAPI.Core
     /// Generic system response messages that can be used for any reason
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class SystemResponse<T>
+    public class SystemResponse<T>: SystemResponseBase
     {
-        private bool _errored;
-        private string _errorMessage;
-        private string _successMessage;
-
-        [DataMember]
-        public bool HasErrors
-        {
-            get { return _errored; }
-            set { _errored = value; }
-        }
-
-        [DataMember]
-        public string ErrorMessage
-        {
-            get { return _errorMessage; }
-            set { _errorMessage = value; }
-        }
-
-        [DataMember]
-        public string SuccessMessage
-        {
-            get { return _successMessage; }
-            set { _successMessage = value; }
-        }
-
         /// <summary>
         /// The data from the response, which is of generic type
         /// </summary>

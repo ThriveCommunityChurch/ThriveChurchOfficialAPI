@@ -345,7 +345,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<LiveStreamingResponse>> UpdateLiveSermons(LiveSermonsUpdateRequest request)
+        public async Task<SystemResponse<LiveStreamingResponse>> GoLive(LiveSermonsUpdateRequest request)
         {
             // validate the request
             var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
@@ -355,20 +355,10 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<LiveStreamingResponse>(true, validRequest.ErrorMessage);
             }
 
-            // Update this object for the requested fields
-            var updated = new LiveSermons
-            {
-                ExpirationTime = new DateTime(1990, 01, 01, 11, 20, 0, 0), // reset this on this update & give ourselves a little buffer (5 min)
-                IsLive = true, 
-                LastUpdated = DateTime.UtcNow,
-                SpecialEventTimes = null,
-                Id = request.Id
-            };
-
-            var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
+            var updateLiveSermonsResponse = await _sermonsRepository.GoLive(request);
             if (updateLiveSermonsResponse == null)
             {
-                return new SystemResponse<LiveStreamingResponse>(true, string.Format(SystemMessages.UnableToFindLiveSermonForId, request.Id));
+                return new SystemResponse<LiveStreamingResponse>(true, SystemMessages.UnableToFindLiveSermon);
             }
 
             // times have already been converted to UTC
@@ -454,7 +444,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 if (_timer != null)
                 {
-                    _timer?.Dispose();
+                    Dispose();
                 }
 
                 var pastTimeResponse = new LiveSermonsPollingResponse

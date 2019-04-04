@@ -57,6 +57,13 @@ namespace ThriveChurchOfficialAPI.Core
         public string Title { get; set; }
 
         /// <summary>
+        /// A numeric value representing the number of seconds of the message audio file
+        /// </summary>
+        [Required(ErrorMessage = "No value given for property 'Duration'. This property is required.")]
+        [DataType(DataType.Text)]
+        public double AudioDuration { get; set; }
+
+        /// <summary>
         /// The date that this message was given - we will ignore the time
         /// </summary>
         [DataType(DataType.Date)]
@@ -93,6 +100,11 @@ namespace ThriveChurchOfficialAPI.Core
             if (request.Title == null)
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
+            }
+
+            if (request.AudioDuration <= 0)
+            {
+                return new ValidationResponse(true, SystemMessages.AudioDurationTooShort);
             }
 
             return new ValidationResponse("Success!");

@@ -158,10 +158,10 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
-        [HttpPut("live")]
-        public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveSermons([FromBody] LiveSermonsUpdateRequest request)
+        [HttpPost("live")]
+        public async Task<ActionResult<LiveStreamingResponse>> GoLive([FromBody] LiveSermonsUpdateRequest request)
         {
-            var response = await _sermonsService.UpdateLiveSermons(request);
+            var response = await _sermonsService.GoLive(request);
 
             if (response.HasErrors)
             {
