@@ -517,7 +517,11 @@ namespace ThriveChurchOfficialAPI.Services
 
         public void Dispose()
         {
-            _timer.Dispose();
+            // if the timer has been initialized, dispose of it
+            if (_timer != null)
+            {
+                _timer.Dispose();
+            }
         }
     }
 

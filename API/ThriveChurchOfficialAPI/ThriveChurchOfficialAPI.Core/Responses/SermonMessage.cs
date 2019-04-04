@@ -27,6 +27,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string AudioUrl { get; set; }
 
         /// <summary>
+        /// A numeric value representing the number of seconds of the message audio file
+        /// </summary>
+        public double AudioDuration { get; set; }
+
+        /// <summary>
         /// The full Url for the youtube video for the sermon recording.
         /// If null then this may not have been recorded
         /// </summary>
@@ -55,11 +60,6 @@ namespace ThriveChurchOfficialAPI.Core
         [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Title'. This property is required.")]
         [DataType(DataType.Text)]
         public string Title { get; set; }
-
-        /// <summary>
-        /// A numeric value representing the number of seconds of the message audio file
-        /// </summary>
-        public double AudioDuration { get; set; }
 
         /// <summary>
         /// The date that this message was given - we will ignore the time
