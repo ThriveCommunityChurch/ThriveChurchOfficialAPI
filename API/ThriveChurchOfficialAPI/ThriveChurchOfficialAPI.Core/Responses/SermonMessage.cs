@@ -59,8 +59,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// A numeric value representing the number of seconds of the message audio file
         /// </summary>
-        [Required(ErrorMessage = "No value given for property 'Duration'. This property is required.")]
-        [DataType(DataType.Text)]
         public double AudioDuration { get; set; }
 
         /// <summary>
