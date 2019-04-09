@@ -395,7 +395,7 @@ namespace ThriveChurchOfficialAPI.Services
             // Update this object for the requested fields
             var updated = new LiveSermons
             {
-                ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 15, 0, 0),
+                ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 20, 0, 0),
                 IsLive = true,
                 LastUpdated = DateTime.UtcNow,
                 SpecialEventTimes = request.SpecialEventTimes

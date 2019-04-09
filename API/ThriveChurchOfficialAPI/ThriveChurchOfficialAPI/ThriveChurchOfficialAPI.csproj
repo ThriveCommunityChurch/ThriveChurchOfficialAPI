@@ -8,6 +8,10 @@
     <StartupObject>ThriveChurchOfficialAPI.Program</StartupObject>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
