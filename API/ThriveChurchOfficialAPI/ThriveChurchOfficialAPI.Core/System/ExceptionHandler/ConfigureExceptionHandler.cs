@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 
-namespace ThriveChurchOfficialAPI.Core.Core.ExceptionHandler
+namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
 {
     public static class ConfigureExceptionHandler
     {

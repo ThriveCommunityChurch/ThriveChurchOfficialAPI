@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ThriveChurchOfficialAPI.Core.Core.ExceptionHandler
+namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
 {
     /// <summary>
     /// Exception handler response

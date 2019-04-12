@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ThriveChurchOfficialAPI.Core.Core.ExceptionHandler
+namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
 {
     /// <summary>
     /// Exception Handler Middleware. Logs to file if an exception ocurrs.

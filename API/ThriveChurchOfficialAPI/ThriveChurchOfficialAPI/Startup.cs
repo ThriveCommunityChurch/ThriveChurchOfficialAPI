@@ -23,18 +23,12 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System.Configuration;
 using Swashbuckle.AspNetCore.Swagger;
 using ThriveChurchOfficialAPI.Services;
 using ThriveChurchOfficialAPI.Repositories;
@@ -42,13 +36,12 @@ using Newtonsoft.Json.Serialization;
 using AspNetCoreRateLimit;
 using System.Reflection;
 using System.IO;
-using ThriveChurchOfficialAPI.Core.Core.ExceptionHandler;
-using Microsoft.AspNetCore.Http;
-using System.Net;
-using Microsoft.AspNetCore.Diagnostics;
+using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 
 namespace ThriveChurchOfficialAPI
 {
+    #pragma warning disable CS1591
+
     public class Startup
     {
         public Startup(IHostingEnvironment env)
@@ -164,4 +157,6 @@ namespace ThriveChurchOfficialAPI
             app.UseMvc();
         }
     }
+
+    #pragma warning restore CS1591
 }
