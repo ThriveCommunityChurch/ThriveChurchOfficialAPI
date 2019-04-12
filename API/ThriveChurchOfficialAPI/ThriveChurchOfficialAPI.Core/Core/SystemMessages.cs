@@ -101,6 +101,16 @@
             get { return "Unable to request results for page number {0}."; }
         }
 
+        public static string ExceptionMessage
+        {
+            get { return "UNKNOWN EXCEPTION: {0}\n{1}."; }
+        }
+
+        public static string UnknownExceptionOcurred
+        {
+            get { return "An unknown error ocurred. Please refer to Id {0}."; }
+        }
+
         #endregion
 
         #region Passages

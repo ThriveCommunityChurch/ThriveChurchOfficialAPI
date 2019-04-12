@@ -9,6 +9,7 @@ using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
 using System.Collections.Generic;
 using MongoDB.Bson;
+using Microsoft.Extensions.Logging;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -17,12 +18,14 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMemoryCache _cache;
         private Timer _timer;
+        private readonly ILogger _logger;
 
-        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache)
+        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache, ILogger<SermonsService> logger)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
             _cache = cache;
+            _logger = logger;
         }
 
         /// <summary>

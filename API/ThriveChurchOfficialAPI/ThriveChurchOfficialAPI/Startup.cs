@@ -42,6 +42,10 @@ using Newtonsoft.Json.Serialization;
 using AspNetCoreRateLimit;
 using System.Reflection;
 using System.IO;
+using ThriveChurchOfficialAPI.Core.Core.ExceptionHandler;
+using Microsoft.AspNetCore.Http;
+using System.Net;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -106,6 +110,16 @@ namespace ThriveChurchOfficialAPI
 
             #endregion
 
+            #region File Logging
+
+            services.AddLogging(builder =>
+            {
+                builder.AddConfiguration(Configuration.GetSection("Logging"));
+                builder.AddFile(o => o.RootPath = AppContext.BaseDirectory);
+            });
+
+            #endregion
+
             // Add our Config object so it can be injected later
             services.Configure<AppSettings>(options => Configuration.GetSection("EsvApiKey").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("MongoConnectionString").Bind(options));
@@ -133,6 +147,9 @@ namespace ThriveChurchOfficialAPI
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
+
+            // add exception filtering 
+            app.ConfigureCustomExceptionMiddleware();
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
             // specifying the Swagger JSON endpoint.
