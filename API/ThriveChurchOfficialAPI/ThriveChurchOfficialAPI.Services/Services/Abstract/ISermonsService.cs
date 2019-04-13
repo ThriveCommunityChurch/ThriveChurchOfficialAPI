@@ -8,14 +8,14 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Sermon Series'
         /// </summary>
-        Task<AllSermonsSummaryResponse> GetAllSermons();
+        Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons();
 
         /// <summary>
         /// Creates a new Sermon Series
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SermonSeries> CreateNewSermonSeries(SermonSeries request);
+        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
 
         /// <summary>
         /// Return the information about a live sermon going on now - if it's live
@@ -27,7 +27,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// Updates the LiveSermons Object and updates mongo
         /// </summary>
         /// <returns></returns>
-        Task<LiveStreamingResponse> UpdateLiveSermons(LiveSermonsUpdateRequest request);
+        Task<SystemResponse<LiveStreamingResponse>> GoLive(LiveSermonsUpdateRequest request);
 
         /// <summary>
         /// Updates the LiveSermon for a special event
@@ -47,21 +47,21 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SermonSeries> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request);
+        Task<SystemResponse<SermonSeries>> ModifySermonSeries(string SeriesId, SermonSeriesUpdateRequest request);
         
         /// <summary>
         /// Gets a sermon series for its Id
         /// </summary>
         /// <param name="seriesId"></param>
         /// <returns></returns>
-        Task<SermonSeries> GetSeriesForId(string seriesId);
+        Task<SystemResponse<SermonSeries>> GetSeriesForId(string seriesId);
 
         /// <summary>
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
         /// <returns></returns>
-        Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber);
+        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber);
 
         /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
@@ -74,7 +74,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SermonSeries> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request);
+        Task<SystemResponse<SermonSeries>> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request);
 
         /// <summary>
         /// Update a message within a sermon series
@@ -82,6 +82,6 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="SeriesId"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SermonMessage> UpdateMessageInSermonSeries(string SeriesId, UpdateMessagesInSermonSeriesRequest request);
+        Task<SystemResponse<SermonMessage>> UpdateMessageInSermonSeries(string SeriesId, UpdateMessagesInSermonSeriesRequest request);
     }
 }

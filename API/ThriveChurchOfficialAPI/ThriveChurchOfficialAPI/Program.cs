@@ -46,8 +46,12 @@ namespace ThriveChurchOfficialAPI
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseKestrel(options => {
-                    options.Listen(IPAddress.Loopback, 5000); //HTTP port
-                    options.Listen(IPAddress.Loopback, 5001); //HTTPS port
+                    options.Listen(IPAddress.Loopback, 8080); //HTTP port
+                })
+                .ConfigureLogging((ctx, builder) =>
+                {
+                    builder.AddConfiguration(ctx.Configuration.GetSection("Logging"));
+                    builder.AddFile(o => o.RootPath = AppContext.BaseDirectory);
                 })
                 .UseStartup<Startup>();
 

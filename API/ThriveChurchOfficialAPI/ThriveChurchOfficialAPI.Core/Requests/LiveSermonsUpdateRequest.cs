@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace ThriveChurchOfficialAPI.Core
@@ -7,60 +8,29 @@ namespace ThriveChurchOfficialAPI.Core
     {
         public LiveSermonsUpdateRequest()
         {
-            Title = null;
-            Slug = null;
-            Id = null;
+            // init a new object to contain our default end time of 11:20 EST which will become UTC
+            ExpirationTime = new DateTime(1990, 01, 01, 11, 20, 0, 0);
         }
 
         /// <summary>
-        /// The requested title 
+        /// Set an expiration time for the sermon series. 
+        /// The only significant piece here is the TIME, not the date
         /// </summary>
-        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Title'. This property is required.")]
-        [DataType(DataType.Text)]
-        public string Title { get; set; }
-
-        /// <summary>
-        /// The requested Video url Slug
-        /// </summary>
-        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Slug'. This property is required.")]
-        [DataType(DataType.Text)]
-        public string Slug { get; set; }
-
-        /// <summary>
-        /// The Id of the LiveSermon object in Mongo
-        /// </summary>
-        [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Id'. This property is required.")]
-        [DataType(DataType.Custom)]
-        public string Id { get; set; }
+        public DateTime? ExpirationTime { get; set; }
         
         /// <summary>
         /// Validates the requested object
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(LiveSermonsUpdateRequest request)
+        public static SystemResponse<bool> ValidateRequest(LiveSermonsUpdateRequest request)
         {
-            if (string.IsNullOrWhiteSpace(request.Title))
+            if (request == null)
             {
-                return false;
+                return new SystemResponse<bool>(true, SystemMessages.EmptyRequest);
             }
 
-            if (string.IsNullOrWhiteSpace(request.Slug))
-            {
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(request.Id))
-            {
-                return false;
-            }
-
-            if (!ObjectId.TryParse(request.Id, out ObjectId id))
-            {
-                return false;
-            }
-
-            return true;
+            return new SystemResponse<bool>(true, "Success!");
         }
     }
 }

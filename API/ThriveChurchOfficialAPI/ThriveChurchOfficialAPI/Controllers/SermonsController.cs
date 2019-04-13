@@ -29,14 +29,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.GetAllSermons();
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<AllSermonsSummaryResponse>(response);
-
-            return value;
+            return response.Result;
         }
 
         /// <summary>
@@ -45,31 +43,30 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <remarks>
         /// This will return the sermon series' in a paged format. 
         /// <br />
-        /// 
         /// NOTE: 
         /// <br />
         /// &#8901; The first page will contain the 5 first messagess.
         /// &#8901; Every subsequent page will contain up to 10 messages.
         /// &#8901; The response will contain the total number of pages.
-        /// 
         /// </remarks>
         /// <param name="PageNumber"></param>
-        /// <param name="PageCount"></param>
-        /// <returns></returns>
-        // GET api/sermons
+        /// <returns>Paged Sermon Data</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpGet("paged")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber)
         {
-            SermonsSummaryPagedResponse response = await _sermonsService.GetPagedSermons(PageNumber);
+            var response = await _sermonsService.GetPagedSermons(PageNumber);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonsSummaryPagedResponse>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpPost("series")]
@@ -82,9 +79,15 @@ namespace ThriveChurchOfficialAPI.Controllers
                 return StatusCode(400);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
+            if (response.SuccessMessage == "202")
+            {
+                // Return a 202 here because this is valid, however there is something else active and nothing was done
+                // "The request has been received but not yet acted upon" is what I would expect to be a correct response
+                // More on that here https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202
+                return StatusCode(202, response.Result);
+            }
 
-            return value;
+            return response.Result;
         }
 
         // this query string should contain an Id
@@ -93,14 +96,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
-
-            return value;
+            return response.Result;
         }
 
         // this query string should contain an Id
@@ -109,14 +110,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpPost("series/{SeriesId}/message")]
@@ -124,14 +123,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonSeries>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpPut("series/message/{MessageId}")]
@@ -139,14 +136,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonMessage>(response);
-
-            return value;
+            return response.Result;
         }
 
         [HttpGet("live")]
@@ -164,17 +159,17 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
-        [HttpPut("live")]
-        public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveSermons([FromBody] LiveSermonsUpdateRequest request)
+        [HttpPost("live")]
+        public async Task<ActionResult<LiveStreamingResponse>> GoLive([FromBody] LiveSermonsUpdateRequest request)
         {
-            var response = await _sermonsService.UpdateLiveSermons(request);
+            var response = await _sermonsService.GoLive(request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            return response;
+            return response.Result;
         }
 
         [HttpPut("live/special")]

@@ -27,6 +27,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string AudioUrl { get; set; }
 
         /// <summary>
+        /// A numeric value representing the number of seconds of the message audio file
+        /// </summary>
+        public double AudioDuration { get; set; }
+
+        /// <summary>
         /// The full Url for the youtube video for the sermon recording.
         /// If null then this may not have been recorded
         /// </summary>
@@ -72,22 +77,35 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(SermonMessage request)
+        public static ValidationResponse ValidateRequest(SermonMessage request)
         {
             if (request == null)
             {
-                return false;
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
             // A/V urls, and PassageRef are allowed to be null, however others cannot
-            if (request.Date == null || 
-                request.Speaker == null || 
-                request.Title == null)
+            if (request.Date == null)
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Date"));
+            }
+            
+            if (request.Speaker == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Speaker"));
             }
 
-            return true;
+            if (request.Title == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
+            }
+
+            if (request.AudioDuration <= 0)
+            {
+                return new ValidationResponse(true, SystemMessages.AudioDurationTooShort);
+            }
+
+            return new ValidationResponse("Success!");
         }
     }
 }

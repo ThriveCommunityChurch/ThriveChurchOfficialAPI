@@ -8,22 +8,29 @@ namespace ThriveChurchOfficialAPI.Repositories
     {
         Task<AllSermonsResponse> GetAllSermons();
 
-        Task<SermonSeries> CreateNewSermonSeries(SermonSeries request);
+        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
 
         Task<SermonSeries> GetSermonSeriesForId(string SeriesId);
 
         Task<LiveSermons> GetLiveSermons();
 
+        Task<LiveSermons> GoLive(LiveSermonsUpdateRequest request);
+
         Task<LiveSermons> UpdateLiveSermons(LiveSermons request);
 
         Task<LiveSermons> UpdateLiveSermonsInactive();
 
-        Task<SermonSeries> UpdateSermonSeries(SermonSeries request);
+        Task<SystemResponse<SermonSeries>> UpdateSermonSeries(SermonSeries request);
 
-        Task<SermonSeries> GetSermonSeriesForSlug(string slug);
+        Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug);
 
         Task<SermonMessage> GetMessageForId(string messageId);
-        
-        Task<SermonsSummaryPagedResponse> GetPagedSermons(int pageNumber);
+
+        /// <summary>
+        /// Returns a paged collection of summarized sermon data
+        /// </summary>
+        /// <param name="pageNumber"></param>
+        /// <returns></returns>
+        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber);
     }
 }

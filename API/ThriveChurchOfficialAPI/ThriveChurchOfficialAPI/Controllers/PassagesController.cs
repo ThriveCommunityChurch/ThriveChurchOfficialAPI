@@ -17,25 +17,30 @@ namespace ThriveChurchOfficialAPI.Controllers
     {
         private readonly IPassagesService _passagesService;
 
+        /// <summary>
+        /// </summary>
+        /// <param name="passageService"></param>
         public PassagesController(IPassagesService passageService)
         {
             _passagesService = passageService;
         }
 
-        // GET api/passage
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="searchCriteria"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<ActionResult<SermonPassageResponse>> Get([FromQuery] string searchCriteria)
         {
             var response = await _passagesService.GetSinglePassageForSearch(searchCriteria);
 
-            if (response == null)
+            if (response.HasErrors)
             {
-                return StatusCode(400);
+                return StatusCode(400, response.ErrorMessage);
             }
 
-            var value = new ActionResult<SermonPassageResponse>(response);
-
-            return value;
+            return response.Result;
         }
     }
 }
