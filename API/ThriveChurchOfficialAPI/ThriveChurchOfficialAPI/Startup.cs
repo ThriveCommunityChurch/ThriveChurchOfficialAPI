@@ -23,26 +23,25 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System.Configuration;
 using Swashbuckle.AspNetCore.Swagger;
 using ThriveChurchOfficialAPI.Services;
 using ThriveChurchOfficialAPI.Repositories;
 using Newtonsoft.Json.Serialization;
 using AspNetCoreRateLimit;
+using System.Reflection;
+using System.IO;
+using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 
 namespace ThriveChurchOfficialAPI
 {
+    #pragma warning disable CS1591
+
     public class Startup
     {
         public Startup(IHostingEnvironment env)
@@ -76,6 +75,11 @@ namespace ThriveChurchOfficialAPI
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "Thrive Church Official API", Version = "v1" });
+
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
 
             // Preserve Casing of JSON Objects
@@ -96,6 +100,16 @@ namespace ThriveChurchOfficialAPI
             // inject counter and rules stores
             services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
             services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+
+            #endregion
+
+            #region File Logging
+
+            services.AddLogging(builder =>
+            {
+                builder.AddConfiguration(Configuration.GetSection("Logging"));
+                builder.AddFile(o => o.RootPath = AppContext.BaseDirectory);
+            });
 
             #endregion
 
@@ -127,6 +141,9 @@ namespace ThriveChurchOfficialAPI
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
 
+            // add exception filtering 
+            app.ConfigureCustomExceptionMiddleware();
+
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
@@ -140,4 +157,6 @@ namespace ThriveChurchOfficialAPI
             app.UseMvc();
         }
     }
+
+    #pragma warning restore CS1591
 }

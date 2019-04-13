@@ -310,6 +310,49 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             return response;
         }
+        
+        /// <summary>
+        /// Updates the LiveStreaming object in Mongo
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<LiveSermons> GoLive(LiveSermonsUpdateRequest request)
+        {
+            IMongoCollection<LiveSermons> collection = db.GetCollection<LiveSermons>("Livestream");
+
+            // get the live sermon, we will only ever have 1 object in this collection
+            var liveObject = await GetLiveSermons();
+
+            var document = await collection.FindOneAndUpdateAsync(
+                    Builders<LiveSermons>.Filter
+                        .Eq(l => l.Id, liveObject.Id),
+                    Builders<LiveSermons>.Update
+                    .Set(l => l.LastUpdated, DateTime.UtcNow)
+                    .Set(l => l.IsLive, true)
+                    .Set(l => l.SpecialEventTimes, null)
+                    .Set(l => l.ExpirationTime, request.ExpirationTime.Value.ToUniversalTime())
+                );
+
+            if (document == null || document == default(LiveSermons))
+            {
+                // something bad happened here
+                return null;
+            }
+
+            // get the object again because it's not updated in memory
+            var updatedDocument = await collection.FindAsync(
+                    Builders<LiveSermons>.Filter.Eq(l => l.Id, liveObject.Id));
+
+            var response = updatedDocument.FirstOrDefault();
+
+            if (response == null || response == default(LiveSermons))
+            {
+                // something bad happened here
+                return null;
+            }
+
+            return response;
+        }
 
         /// <summary>
         /// Update LiveSermons to inactive once the stream has concluded

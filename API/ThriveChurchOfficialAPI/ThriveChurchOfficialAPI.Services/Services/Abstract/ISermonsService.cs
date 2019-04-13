@@ -27,7 +27,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// Updates the LiveSermons Object and updates mongo
         /// </summary>
         /// <returns></returns>
-        Task<SystemResponse<LiveStreamingResponse>> UpdateLiveSermons(LiveSermonsUpdateRequest request);
+        Task<SystemResponse<LiveStreamingResponse>> GoLive(LiveSermonsUpdateRequest request);
 
         /// <summary>
         /// Updates the LiveSermon for a special event

@@ -12,33 +12,8 @@ namespace ThriveChurchOfficialAPI.Core
     /// Generic validation response used to validate request objects
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ValidationResponse
+    public class ValidationResponse: SystemResponseBase
     {
-        private bool _errored;
-        private string _errorMessage;
-        private string _successMessage;
-
-        [DataMember]
-        public bool HasErrors
-        {
-            get { return _errored; }
-            set { _errored = value; }
-        }
-
-        [DataMember]
-        public string ErrorMessage
-        {
-            get { return _errorMessage; }
-            set { _errorMessage = value; }
-        }
-
-        [DataMember]
-        public string SuccessMessage
-        {
-            get { return _successMessage; }
-            set { _successMessage = value; }
-        }
-
         /// <summary>
         /// Failure C'tor
         /// </summary>

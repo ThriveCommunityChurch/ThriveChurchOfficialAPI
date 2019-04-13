@@ -9,6 +9,7 @@ using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
 using System.Collections.Generic;
 using MongoDB.Bson;
+using Microsoft.Extensions.Logging;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -17,12 +18,14 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMemoryCache _cache;
         private Timer _timer;
+        private readonly ILogger _logger;
 
-        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache)
+        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache, ILogger<SermonsService> logger)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
             _cache = cache;
+            _logger = logger;
         }
 
         /// <summary>
@@ -345,7 +348,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<LiveStreamingResponse>> UpdateLiveSermons(LiveSermonsUpdateRequest request)
+        public async Task<SystemResponse<LiveStreamingResponse>> GoLive(LiveSermonsUpdateRequest request)
         {
             // validate the request
             var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
@@ -355,20 +358,10 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<LiveStreamingResponse>(true, validRequest.ErrorMessage);
             }
 
-            // Update this object for the requested fields
-            var updated = new LiveSermons
-            {
-                ExpirationTime = new DateTime(1990, 01, 01, 11, 20, 0, 0), // reset this on this update & give ourselves a little buffer (5 min)
-                IsLive = true, 
-                LastUpdated = DateTime.UtcNow,
-                SpecialEventTimes = null,
-                Id = request.Id
-            };
-
-            var updateLiveSermonsResponse = await _sermonsRepository.UpdateLiveSermons(updated);
+            var updateLiveSermonsResponse = await _sermonsRepository.GoLive(request);
             if (updateLiveSermonsResponse == null)
             {
-                return new SystemResponse<LiveStreamingResponse>(true, string.Format(SystemMessages.UnableToFindLiveSermonForId, request.Id));
+                return new SystemResponse<LiveStreamingResponse>(true, SystemMessages.UnableToFindLiveSermon);
             }
 
             // times have already been converted to UTC
@@ -405,7 +398,7 @@ namespace ThriveChurchOfficialAPI.Services
             // Update this object for the requested fields
             var updated = new LiveSermons
             {
-                ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 15, 0, 0),
+                ExpirationTime = request.SpecialEventTimes.End ?? new DateTime(1990, 01, 01, 11, 20, 0, 0),
                 IsLive = true,
                 LastUpdated = DateTime.UtcNow,
                 SpecialEventTimes = request.SpecialEventTimes
@@ -454,7 +447,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 if (_timer != null)
                 {
-                    _timer?.Dispose();
+                    Dispose();
                 }
 
                 var pastTimeResponse = new LiveSermonsPollingResponse
@@ -527,7 +520,11 @@ namespace ThriveChurchOfficialAPI.Services
 
         public void Dispose()
         {
-            _timer.Dispose();
+            // if the timer has been initialized, dispose of it
+            if (_timer != null)
+            {
+                _timer.Dispose();
+            }
         }
     }
 

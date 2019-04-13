@@ -77,9 +77,14 @@
             get { return "A series with the slug {0} already exists."; }
         }
 
-        public static string UnableToFindLiveSermonForId
+        public static string UnableToFindLiveSermon
         {
-            get { return "Unable to find LiveSermon for Id {0}."; }
+            get { return "Unable to find LiveSermon."; }
+        }
+
+        public static string AudioDurationTooShort
+        {
+            get { return "AudioDuration cannot be less than or equal to 0 seconds."; }
         }
 
         #endregion
@@ -94,6 +99,16 @@
         public static string IllogicalPagingNumber
         {
             get { return "Unable to request results for page number {0}."; }
+        }
+
+        public static string ExceptionMessage
+        {
+            get { return "UNKNOWN EXCEPTION: {0}\n{1}."; }
+        }
+
+        public static string UnknownExceptionOcurred
+        {
+            get { return "An unknown error ocurred. Please refer to Id {0}."; }
         }
 
         #endregion
