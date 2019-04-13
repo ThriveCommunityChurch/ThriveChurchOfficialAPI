@@ -10,12 +10,19 @@ using ThriveChurchOfficialAPI.Services;
 
 namespace ThriveChurchOfficialAPI.Controllers
 {
+    /// <summary>
+    /// Sermons Controller
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class SermonsController : ControllerBase
     {
         private readonly ISermonsService _sermonsService;
 
+        /// <summary>
+        /// Sermons Controller C'tor
+        /// </summary>
+        /// <param name="sermonsService"></param>
         public SermonsController(ISermonsService sermonsService)
         {
             // delay the init of the repo for when we go to the service, we will grab the connection 
@@ -23,8 +30,16 @@ namespace ThriveChurchOfficialAPI.Controllers
             _sermonsService = sermonsService;
         }
 
-        // GET api/sermons
+        /// <summary>
+        /// Get a summary of every sermon series
+        /// </summary>
+        /// <returns>SermonsSummary object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpGet]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons()
         {
             var response = await _sermonsService.GetAllSermons();
@@ -69,6 +84,14 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
+        /// <summary>
+        /// Start a new sermon series
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpPost("series")]
         public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] SermonSeries request)
         {
@@ -90,8 +113,17 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
-        // this query string should contain an Id
+        /// <summary>
+        /// Get a sermon series
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <returns>SermonSeries object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpGet("series/{SeriesId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<SermonSeries>> GetSeriesForId([BindRequired] string SeriesId)
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
@@ -104,8 +136,18 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
-        // this query string should contain an Id
+        /// <summary>
+        /// Update a sermon series including messages
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <param name="request"></param>
+        /// <returns>SermonSeries object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpPut("series/{SeriesId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<SermonSeries>> ModifySermonSeries([BindRequired] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
@@ -118,7 +160,18 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
+        /// <summary>
+        /// Add a message to a sermon series
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <param name="request"></param>
+        /// <returns>SermonSeries Object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpPost("series/{SeriesId}/message")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([BindRequired] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
@@ -131,7 +184,18 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
+        /// <summary>
+        /// Modify a sermon message
+        /// </summary>
+        /// <param name="MessageId"></param>
+        /// <param name="request"></param>
+        /// <returns>An updated sermon message</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpPut("series/message/{MessageId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries([BindRequired] string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
@@ -144,7 +208,16 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
+        /// <summary>
+        /// Get Livestreaming information
+        /// </summary>
+        /// <returns>Live Streaming info</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpGet("live")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<LiveStreamingResponse>> GetLiveSermons()
         {
             var response = await _sermonsService.GetLiveSermons();
@@ -159,7 +232,17 @@ namespace ThriveChurchOfficialAPI.Controllers
             return value;
         }
 
+        /// <summary>
+        /// Set and activate the livestream
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>LiveSermon Object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpPost("live")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<LiveStreamingResponse>> GoLive([FromBody] LiveSermonsUpdateRequest request)
         {
             var response = await _sermonsService.GoLive(request);
@@ -172,7 +255,14 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response.Result;
         }
 
+        /// <summary>
+        /// Set an active livestream for a special event
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>LiveSermon Object</returns>
         [HttpPut("live/special")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveForSpecialEvents([FromBody] LiveSermonsSpecialEventUpdateRequest request)
         {
             var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
@@ -185,7 +275,21 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response;
         }
 
+        /// <summary>
+        /// Get active livstream data
+        /// </summary>
+        /// <remarks>
+        /// This is a polling route, meaning that you can call this in a loop if you wish. However, please keep in mind the Rate Limits. <br />
+        /// <br />
+        /// This response includes an end time, so you may not need to call this in a loop.
+        /// </remarks>
+        /// <returns>LiveSermon info</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpGet("live/poll")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<LiveSermonsPollingResponse>> PollForLiveEventData()
         {
             var response = await _sermonsService.PollForLiveEventData();
@@ -198,7 +302,16 @@ namespace ThriveChurchOfficialAPI.Controllers
             return response;
         }
 
+        /// <summary>
+        /// End a livestream 
+        /// </summary>
+        /// <returns>LiveSermon Object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpDelete("live")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<LiveSermons>> UpdateLiveSermonsInactive()
         {
             var response = await _sermonsService.UpdateLiveSermonsInactive();

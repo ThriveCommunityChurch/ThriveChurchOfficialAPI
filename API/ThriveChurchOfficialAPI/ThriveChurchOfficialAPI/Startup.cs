@@ -107,8 +107,14 @@ namespace ThriveChurchOfficialAPI
 
             services.AddLogging(builder =>
             {
+                string path = @"C:\";
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
                 builder.AddConfiguration(Configuration.GetSection("Logging"));
-                builder.AddFile(o => o.RootPath = AppContext.BaseDirectory);
+                builder.AddFile(o => o.RootPath = path);
             });
 
             #endregion

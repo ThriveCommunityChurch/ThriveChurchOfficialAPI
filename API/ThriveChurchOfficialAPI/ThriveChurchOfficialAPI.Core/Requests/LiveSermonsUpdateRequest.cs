@@ -23,14 +23,14 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static SystemResponse<bool> ValidateRequest(LiveSermonsUpdateRequest request)
+        public static ValidationResponse ValidateRequest(LiveSermonsUpdateRequest request)
         {
             if (request == null)
             {
-                return new SystemResponse<bool>(true, SystemMessages.EmptyRequest);
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
-            return new SystemResponse<bool>(true, "Success!");
+            return new ValidationResponse("Success!");
         }
     }
 }

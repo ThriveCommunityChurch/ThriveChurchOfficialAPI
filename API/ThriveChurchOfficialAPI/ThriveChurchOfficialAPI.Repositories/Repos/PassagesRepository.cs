@@ -8,13 +8,25 @@ using System.Threading.Tasks;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
+    /// <summary>
+    /// Passages Repo
+    /// </summary>
     public class PassagesRepository: RepositoryBase, IPassagesRepository
     {
+        /// <summary>
+        /// Passages Repo C'tor
+        /// </summary>
+        /// <param name="Configuration"></param>
         public PassagesRepository(IConfiguration Configuration)
             : base(Configuration)
         {
         }
 
+        /// <summary>
+        /// Gets passages from ESV API given some search criteria
+        /// </summary>
+        /// <param name="searchCriteria"></param>
+        /// <returns></returns>
         public async Task<PassageTextInfo> GetPassagesForSearch(string searchCriteria)
         {
             if (string.IsNullOrEmpty(EsvApiKey))
@@ -31,7 +43,12 @@ namespace ThriveChurchOfficialAPI.Repositories
             return response;
         }
 
-        // This should probably return any type that the user requests, however if the API we are using ever breaks the contract 
+        /// <summary>
+        /// Send the request to the ESV API with our auth token
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="authenticationToken"></param>
+        /// <returns></returns>
         public async Task<PassageTextInfo> GetPassages(string uri, string authenticationToken)
         {
             var authToken = string.Format("Token {0}", authenticationToken);

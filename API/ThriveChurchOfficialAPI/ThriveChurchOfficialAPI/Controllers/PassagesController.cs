@@ -26,11 +26,16 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
-        /// 
+        /// Get bible passage for free text search
         /// </summary>
         /// <param name="searchCriteria"></param>
-        /// <returns></returns>
+        /// <returns>Formatted Bible Passages</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
         [HttpGet]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
         public async Task<ActionResult<SermonPassageResponse>> Get([FromQuery] string searchCriteria)
         {
             var response = await _passagesService.GetSinglePassageForSearch(searchCriteria);

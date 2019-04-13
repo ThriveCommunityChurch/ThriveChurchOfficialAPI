@@ -9,6 +9,9 @@ using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
+    /// <summary>
+    /// Base Repo
+    /// </summary>
     public abstract class RepositoryBase
     {
         #region Read-Only Configs
@@ -39,12 +42,16 @@ namespace ThriveChurchOfficialAPI.Repositories
         private readonly MongoClient _mongoClient;
 
         /// <summary>
-        /// Public access to the Mongo Client
+        /// Public readonly access to the Mongo Client
         /// </summary>
         public MongoClient Client { get => _mongoClient; }
 
         #endregion
 
+        /// <summary>
+        /// Repo Base C'tor
+        /// </summary>
+        /// <param name="Configuration"></param>
         // only allow this to be accessible within its class and by derived class instances
         protected RepositoryBase(IConfiguration Configuration)
         {
@@ -61,6 +68,9 @@ namespace ThriveChurchOfficialAPI.Repositories
             _mongoClient = new MongoClient(MongoConnectionString);
         }
 
+        /// <summary>
+        /// Validate configuaration settings from appsettings.json
+        /// </summary>
         private void ValidateConfigs()
         {
             if (string.IsNullOrEmpty(MongoConnectionString))
@@ -91,6 +101,12 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         #region Generic REST Methods
 
+        /// <summary>
+        /// Send a Get request with an optional auth token
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="authToken"></param>
+        /// <returns></returns>
         public async Task<HttpResponseMessage> GetAsync(string url, string authToken)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, url);
