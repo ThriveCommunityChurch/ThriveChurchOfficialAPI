@@ -103,7 +103,12 @@
 
         public static string ExceptionMessage
         {
-            get { return "UNKNOWN EXCEPTION: {0}\n{1}."; }
+            get { return "UNKNOWN EXCEPTION: {0}, {1}."; }
+        }
+
+        public static string BadRequestResponse
+        {
+            get { return "Bad Request. {0}"; }
         }
 
         public static string UnknownExceptionOcurred

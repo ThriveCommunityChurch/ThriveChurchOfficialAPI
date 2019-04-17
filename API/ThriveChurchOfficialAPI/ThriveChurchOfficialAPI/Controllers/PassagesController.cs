@@ -11,6 +11,9 @@ using ThriveChurchOfficialAPI.Services;
 
 namespace ThriveChurchOfficialAPI.Controllers
 {
+    /// <summary>
+    /// Passages Controller
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class PassagesController : ControllerBase

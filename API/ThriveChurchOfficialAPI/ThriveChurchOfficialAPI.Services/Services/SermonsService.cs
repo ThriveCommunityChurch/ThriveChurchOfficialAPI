@@ -18,14 +18,13 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMemoryCache _cache;
         private Timer _timer;
-        private readonly ILogger _logger;
 
-        public SermonsService(ISermonsRepository sermonsRepo, IMemoryCache cache, ILogger<SermonsService> logger)
+        public SermonsService(ISermonsRepository sermonsRepo, 
+            IMemoryCache cache)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
             _cache = cache;
-            _logger = logger;
         }
 
         /// <summary>
@@ -69,7 +68,7 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber)
         {
             // Page num canonot be 0, and neg page numbers make no sense
-            if (pageNumber <= 0)
+            if (pageNumber <= 0 || pageNumber >= 1474836500)
             {
                 return new SystemResponse<SermonsSummaryPagedResponse>(true, string.Format(SystemMessages.IllogicalPagingNumber, pageNumber));
             }

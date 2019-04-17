@@ -22,7 +22,6 @@ namespace ThriveChurchOfficialAPI
             }
         }
 
-
         /// <summary>
         /// Get a substring between 2 other substrings
         /// </summary>

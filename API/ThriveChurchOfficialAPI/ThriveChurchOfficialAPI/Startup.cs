@@ -37,6 +37,7 @@ using AspNetCoreRateLimit;
 using System.Reflection;
 using System.IO;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
+using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -44,7 +45,18 @@ namespace ThriveChurchOfficialAPI
 
     public class Startup
     {
-        public Startup(IHostingEnvironment env)
+        /// <summary>
+        /// System Logger
+        /// </summary>
+        private readonly ILogger _logger;
+
+        /// <summary>
+        /// System Configruation
+        /// </summary>
+        public IConfigurationRoot Configuration { get; set; }
+
+
+        public Startup(IHostingEnvironment env, ILogger<Startup> logger)
         {
             var builder = new ConfigurationBuilder()
             .SetBasePath(env.ContentRootPath)
@@ -52,10 +64,9 @@ namespace ThriveChurchOfficialAPI
 
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
+
+            _logger = logger;
         }
-
-        public IConfigurationRoot Configuration { get; set; }
-
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -116,6 +127,9 @@ namespace ThriveChurchOfficialAPI
                 builder.AddConfiguration(Configuration.GetSection("Logging"));
                 builder.AddFile(o => o.RootPath = path);
             });
+
+            // configure loggers for our error handlers
+            SystemResponseBase.ConfigureLogger(_logger);
 
             #endregion
 
