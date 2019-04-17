@@ -26,7 +26,7 @@ namespace ThriveChurchOfficialAPI.Core
 
             if (DidError)
             {
-                Logger.LogError(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
+                Logger.LogWarning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
             }
         }
 
