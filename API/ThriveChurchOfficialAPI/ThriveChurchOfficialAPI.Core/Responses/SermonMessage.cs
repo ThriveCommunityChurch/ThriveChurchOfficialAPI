@@ -11,6 +11,7 @@ namespace ThriveChurchOfficialAPI.Core
         public SermonMessage()
         {
             AudioUrl = null;
+            AudioDuration = null;
             VideoUrl = null;
             PassageRef = null;
             Speaker = null;
@@ -29,7 +30,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// A numeric value representing the number of seconds of the message audio file
         /// </summary>
-        public double AudioDuration { get; set; }
+        public double? AudioDuration { get; set; }
 
         /// <summary>
         /// The full Url for the youtube video for the sermon recording.
@@ -100,7 +101,7 @@ namespace ThriveChurchOfficialAPI.Core
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
             }
 
-            if (request.AudioDuration <= 0)
+            if (request?.AudioDuration <= 0)
             {
                 return new ValidationResponse(true, SystemMessages.AudioDurationTooShort);
             }
