@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Runtime.Serialization;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -24,9 +23,12 @@ namespace ThriveChurchOfficialAPI.Core
             HasErrors = DidError;
             ErrorMessage = ErrorMsg;
 
+            SetFileLoggingType();
+
             if (DidError)
             {
                 Logger.LogWarning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
+                FileLogger.Warn(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
             }
         }
 

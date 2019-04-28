@@ -38,6 +38,8 @@ using System.Reflection;
 using System.IO;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using ThriveChurchOfficialAPI.Core;
+using log4net.Config;
+using log4net;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -173,6 +175,14 @@ namespace ThriveChurchOfficialAPI
             });
 
             app.UseIpRateLimiting(); // enable rate limits
+
+            // log4net
+            var logRepo = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepo, new FileInfo("log4net.config"));
+
+            var log = LogManager.GetLogger(typeof(Startup));
+            log.Warn("Starting application...");
+
             app.UseMvc();
         }
     }
