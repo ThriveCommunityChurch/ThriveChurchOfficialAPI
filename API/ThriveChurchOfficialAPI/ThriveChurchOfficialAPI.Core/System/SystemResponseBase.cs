@@ -1,4 +1,4 @@
-﻿using log4net;
+using log4net;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Runtime.Serialization;
@@ -25,8 +25,7 @@ namespace ThriveChurchOfficialAPI.Core
         {
             StackFrame frame = new StackFrame(2);
             var method = frame.GetMethod();
-            var type = method.DeclaringType.DeclaringType;
-            var name = method.Name;
+            var type = method.DeclaringType?.DeclaringType ?? method.DeclaringType ?? typeof(SystemResponseBase);
 
             _log = LogManager.GetLogger(type);
         }
