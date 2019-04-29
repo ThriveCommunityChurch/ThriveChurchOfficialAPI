@@ -1,4 +1,4 @@
-using log4net;
+﻿using log4net;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Runtime.Serialization;

@@ -40,6 +40,9 @@ using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using ThriveChurchOfficialAPI.Core;
 using log4net.Config;
 using log4net;
+using System.Collections.Generic;
+using System.Linq;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -93,6 +96,17 @@ namespace ThriveChurchOfficialAPI
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
+
+                // Adding auth to swagger docs
+                c.AddSecurityDefinition("oauth2", new ApiKeyScheme
+                {
+                    Description = "Please enter your API Key.",
+                    In = "header",
+                    Name = "Authorization",
+                    Type = "apiKey"
+                });
+
+                c.OperationFilter<SecurityRequirementsOperationFilter>(false);
             });
 
             // Preserve Casing of JSON Objects
@@ -146,6 +160,7 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IPassagesRepository), typeof(PassagesRepository));
             services.AddTransient(typeof(ISermonsRepository), typeof(SermonsRepository));
             services.AddTransient(typeof(IPassagesService), typeof(PassagesService));
+            services.AddTransient(typeof(ITokenRepo), typeof(TokenRepo));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -160,11 +175,14 @@ namespace ThriveChurchOfficialAPI
                 app.UseHsts();
             }
 
-            // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
+            // add rate limiting
+            app.UseIpRateLimiting();
 
             // add exception filtering 
             app.ConfigureCustomExceptionMiddleware();
+
+            // Custom API Key validation
+            app.UseApiKeyValidation();
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
             // specifying the Swagger JSON endpoint.
@@ -174,15 +192,17 @@ namespace ThriveChurchOfficialAPI
                 c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
             });
 
-            app.UseIpRateLimiting(); // enable rate limits
-
-            // log4net
+            // enable log4net for file logging
             var logRepo = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(logRepo, new FileInfo("log4net.config"));
 
             var log = LogManager.GetLogger(typeof(Startup));
             log.Warn("Starting application...");
 
+            // Enable Swagger middleware as a JSON endpoint.
+            app.UseSwagger();
+
+            // finally enable the MVC middleware
             app.UseMvc();
         }
     }

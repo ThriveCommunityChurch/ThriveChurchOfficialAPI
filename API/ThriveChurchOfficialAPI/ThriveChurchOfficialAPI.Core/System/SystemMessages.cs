@@ -38,6 +38,22 @@
             }
         }
 
+        public static string NoApiKey
+        {
+            get
+            {
+                return "Authorization failed." ;
+            }
+        }
+
+        public static string WrongApiKey
+        {
+            get
+            {
+                return "Requested API Key is invalid.";
+            }
+        }
+
         #endregion
 
         #region Sermon Messages
@@ -109,6 +125,16 @@
         public static string BadRequestResponse
         {
             get { return "Bad Request. {0}"; }
+        }
+
+        public static string InvalidAPIKeyDebug
+        {
+            get { return "Unauthorized. {0} attempted to make a requiest using the api key: {1}"; }
+        }
+
+        public static string NoAPIKeyDebug
+        {
+            get { return "Unauthorized. {0} attempted to make a requiest without an API Key."; }
         }
 
         public static string UnknownExceptionOcurred

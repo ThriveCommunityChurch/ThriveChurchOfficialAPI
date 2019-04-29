@@ -20,8 +20,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Sermons Repo C'tor
         /// </summary>
         /// <param name="Configuration"></param>
-        public SermonsRepository(IConfiguration Configuration)
-            : base(Configuration)
+        public SermonsRepository(IConfiguration Configuration, ITokenRepo tokenRepo)
+            : base(Configuration, tokenRepo)
         {
             db = Client.GetDatabase("SermonSeries");
         }

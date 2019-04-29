@@ -1,5 +1,8 @@
 ﻿namespace ThriveChurchOfficialAPI
 {
+    /// <summary>
+    /// Global AppSettings from your appsettings.json
+    /// </summary>
     public class AppSettings
     {
         /// <summary>
