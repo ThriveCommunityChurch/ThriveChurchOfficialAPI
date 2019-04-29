@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using log4net;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,6 +18,8 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
     {
         private readonly RequestDelegate _next;
         private readonly ILogger _logger;
+
+        private static ILog _log { get; set; }
  
         /// <summary>
         /// Exception C'tor
@@ -44,7 +48,13 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
                 // create an exception Guid so we can look it up later in the logs
                 var exceptionId = Guid.NewGuid().ToString();
 
-                _logger.LogError(string.Format(SystemMessages.ExceptionMessage, exceptionId, ex));
+                _log = LogManager.GetLogger(typeof(ExceptionHandler));
+
+                // log this as a critical failure in the console
+                _logger.LogCritical(string.Format(SystemMessages.ExceptionMessage, exceptionId, ex));
+
+                // log this as fatal in the logfile
+                _log.Fatal(string.Format(SystemMessages.ExceptionMessage, exceptionId, ex));
                 await HandleExceptionAsync(httpContext, exceptionId);
             }
         }

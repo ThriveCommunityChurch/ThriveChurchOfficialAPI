@@ -24,9 +24,12 @@ namespace ThriveChurchOfficialAPI.Core
             HasErrors = DidError;
             ErrorMessage = ErrorMsg;
 
+            SetFileLoggingType();
+
             if (DidError)
             {
                 Logger.LogWarning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
+                FileLogger.Warn(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
             }
         }
 
