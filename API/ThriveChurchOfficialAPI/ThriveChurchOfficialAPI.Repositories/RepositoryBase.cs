@@ -32,6 +32,16 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         public string OverrideEsvApiKey { get; }
 
+        /// <summary>
+        /// Thrive API Key, granted to this user
+        /// </summary>
+        public string ThriveApiKey { get; }
+        
+        /// <summary>
+        /// Collection in your mongo instance for storing tokens
+        /// </summary>
+        public string TokenCollectionLocation { get; }
+
         #endregion
 
         #region Public Vars Set At Runtime
@@ -46,6 +56,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         public MongoClient Client { get => _mongoClient; }
 
+        private readonly ITokenRepo _tokenRepo;
+
         #endregion
 
         /// <summary>
@@ -53,14 +65,18 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="Configuration"></param>
         // only allow this to be accessible within its class and by derived class instances
-        protected RepositoryBase(IConfiguration Configuration)
+        protected RepositoryBase(IConfiguration Configuration, ITokenRepo tokenRepo)
         {
             // set our keys and connections here in our Base Class
             MongoConnectionString = Configuration["MongoConnectionString"];
             EsvApiKey = Configuration["EsvApiKey"];
             OverrideEsvApiKey = Configuration["OverrideEsvApiKey"];
+            ThriveApiKey = TokenHandler.GenerateHashedKey(Configuration["ThriveAPIKey"]);
+            TokenCollectionLocation = Configuration["TokenConnectionStringPath"];
 
-            // in the event our configs are null, throw a Null Exception
+            _tokenRepo = tokenRepo;
+
+            // in the event our configs are null, throw an Exception
             ValidateConfigs();
 
             // assuming the configs are valid, create a MongoClient we can use for everything, we only need one.
@@ -96,6 +112,19 @@ namespace ThriveChurchOfficialAPI.Repositories
                 throw new ArgumentNullException("IConfiguration.OverrideEsvApiKey",
                         string.Format(SystemMessages.OverrideMissingFromAppSettings));
             }
+
+            if (string.IsNullOrEmpty(TokenCollectionLocation))
+            {
+                throw new ArgumentNullException("IConfiguration.TokenConnectionStringPath",
+                    string.Format(SystemMessages.ConnectionMissingFromAppSettings, "MongoConnectionString"));
+            }
+
+            var response = _tokenRepo.ValidateToken(ThriveApiKey);
+            if (response.HasErrors)
+            {
+                throw new Exception(response.ErrorMessage);
+            }
+            
         }
 
 

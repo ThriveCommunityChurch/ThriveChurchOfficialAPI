@@ -17,8 +17,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Passages Repo C'tor
         /// </summary>
         /// <param name="Configuration"></param>
-        public PassagesRepository(IConfiguration Configuration)
-            : base(Configuration)
+        public PassagesRepository(IConfiguration Configuration, ITokenRepo tokenRepo)
+            : base(Configuration, tokenRepo)
         {
         }
 

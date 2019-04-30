@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Caching.Memory;
@@ -15,6 +16,7 @@ namespace ThriveChurchOfficialAPI.Controllers
     /// </summary>
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class SermonsController : ControllerBase
     {
         private readonly ISermonsService _sermonsService;
@@ -40,6 +42,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons()
         {
             var response = await _sermonsService.GetAllSermons();
@@ -72,6 +75,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("paged")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber)
         {
             var response = await _sermonsService.GetPagedSermons(PageNumber);
@@ -93,6 +97,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <response code="400">Bad Request</response>
         [Produces("application/json")]
         [HttpPost("series")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] SermonSeries request)
         {
             var response = await _sermonsService.CreateNewSermonSeries(request);
@@ -124,6 +131,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("series/{SeriesId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<SermonSeries>> GetSeriesForId([BindRequired] string SeriesId)
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
@@ -148,6 +156,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPut("series/{SeriesId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<SermonSeries>> ModifySermonSeries([BindRequired] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
@@ -172,6 +181,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPost("series/{SeriesId}/message")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([BindRequired] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
@@ -196,6 +206,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPut("series/message/{MessageId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries([BindRequired] string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
@@ -218,6 +229,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("live")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<LiveStreamingResponse>> GetLiveSermons()
         {
             var response = await _sermonsService.GetLiveSermons();
@@ -243,6 +255,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPost("live")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<LiveStreamingResponse>> GoLive([FromBody] LiveSermonsUpdateRequest request)
         {
             var response = await _sermonsService.GoLive(request);
@@ -263,6 +276,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPut("live/special")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveForSpecialEvents([FromBody] LiveSermonsSpecialEventUpdateRequest request)
         {
             var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
@@ -290,6 +304,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("live/poll")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<LiveSermonsPollingResponse>> PollForLiveEventData()
         {
             var response = await _sermonsService.PollForLiveEventData();
@@ -312,6 +327,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpDelete("live")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [Authorize]
         public async Task<ActionResult<LiveSermons>> UpdateLiveSermonsInactive()
         {
             var response = await _sermonsService.UpdateLiveSermonsInactive();
