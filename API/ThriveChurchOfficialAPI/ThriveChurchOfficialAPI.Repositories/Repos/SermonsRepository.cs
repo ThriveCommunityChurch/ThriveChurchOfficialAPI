@@ -14,8 +14,8 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// </summary>
     public class SermonsRepository : RepositoryBase, ISermonsRepository
     {
-        IMongoCollection<SermonSeries> _sermonsCollection;
-        IMongoCollection<LiveSermons> _livestreamCollection;
+        private readonly IMongoCollection<SermonSeries> _sermonsCollection;
+        private readonly IMongoCollection<LiveSermons> _livestreamCollection;
 
         /// <summary>
         /// Sermons Repo C'tor
