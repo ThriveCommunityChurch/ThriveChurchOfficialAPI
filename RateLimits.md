@@ -3,9 +3,6 @@ The _Thrive Church Official API_ uses rate limiting based on client IP to preven
 
 The following limits are categorized by timeframe, and will be enforced by a Http Status code of [429](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429).
 
-### 1 Second
-Any client that makes **more than 2** requests in under 1 second will be denied.
-
 ### 1 Minute
 Any client that makes **more than 100** requests in under 1 minute will be denied.
 
@@ -33,11 +30,6 @@ You can adjust the settings within this object to suit your needs. To enforce th
   "EndpointWhitelist": [ "get:/api/license", "*:/api/status" ],
   "ClientWhitelist": [ "dev-id-1", "dev-id-2" ],
   "GeneralRules": [
-    {
-      "Endpoint": "*",
-      "Period": "1s",
-      "Limit": 2
-    },
     {
       "Endpoint": "*",
       "Period": "15m",
