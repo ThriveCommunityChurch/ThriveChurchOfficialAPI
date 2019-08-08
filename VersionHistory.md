@@ -1,4 +1,4 @@
-### 1.1  —  April 17, 2019
+### 1.1  —  August 8, 2019
 - Performance improvements with searching for bible passages
 - Improved file logger
 - Improving code style
