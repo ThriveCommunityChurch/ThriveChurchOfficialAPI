@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Runtime.Serialization;
+using Serilog;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -26,7 +26,7 @@ namespace ThriveChurchOfficialAPI.Core
 
             if (DidError)
             {
-                Logger.LogWarning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
+                Log.Warning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
             }
         }
 

@@ -32,6 +32,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         public string OverrideEsvApiKey { get; }
 
+        /// <summary>
+        /// Mongo Database
+        /// </summary>
+        public IMongoDatabase DB { get; }
+
+        private const string DB_NAME = "SermonSeries";
+
         #endregion
 
         #region Public Vars Set At Runtime
@@ -66,6 +73,9 @@ namespace ThriveChurchOfficialAPI.Repositories
             // assuming the configs are valid, create a MongoClient we can use for everything, we only need one.
             // Sets the Client object for a given connection string
             _mongoClient = new MongoClient(MongoConnectionString);
+
+            // assign our database to the global Abide Database, this will also create it if it does not exist
+            DB = Client.GetDatabase(DB_NAME);
         }
 
         /// <summary>

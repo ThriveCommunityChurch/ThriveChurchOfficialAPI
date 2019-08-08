@@ -9,6 +9,7 @@ launchSettings.json
 *assets.json
 *.cache
 *.db
+*SystemVariables.cs
 
 # Release Files & folders
 *Release/

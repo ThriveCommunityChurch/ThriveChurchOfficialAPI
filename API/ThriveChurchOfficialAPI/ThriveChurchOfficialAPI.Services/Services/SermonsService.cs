@@ -9,7 +9,6 @@ using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
 using System.Collections.Generic;
 using MongoDB.Bson;
-using Microsoft.Extensions.Logging;
 
 namespace ThriveChurchOfficialAPI.Services
 {

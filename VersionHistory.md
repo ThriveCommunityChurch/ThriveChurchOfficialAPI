@@ -1,3 +1,9 @@
+### 1.1  —  August 8, 2019
+- Performance improvements with searching for bible passages
+- Improved file logger
+- Improving code style
+- Created new BiblePassages collection
+
 ### 1.0  —  April 17, 2019
 - Initial Release
 - Get a paged list of sermon series'
