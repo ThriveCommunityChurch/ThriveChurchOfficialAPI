@@ -28,7 +28,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Swagger;
 using ThriveChurchOfficialAPI.Services;
 using ThriveChurchOfficialAPI.Repositories;
@@ -38,8 +37,7 @@ using System.Reflection;
 using System.IO;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using ThriveChurchOfficialAPI.Core;
-using log4net.Config;
-using log4net;
+using Serilog;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -47,10 +45,6 @@ namespace ThriveChurchOfficialAPI
 
     public class Startup
     {
-        /// <summary>
-        /// System Logger
-        /// </summary>
-        private readonly ILogger _logger;
 
         /// <summary>
         /// System Configruation
@@ -58,7 +52,7 @@ namespace ThriveChurchOfficialAPI
         public IConfigurationRoot Configuration { get; set; }
 
 
-        public Startup(IHostingEnvironment env, ILogger<Startup> logger)
+        public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
             .SetBasePath(env.ContentRootPath)
@@ -66,8 +60,6 @@ namespace ThriveChurchOfficialAPI
 
             builder.AddEnvironmentVariables();
             Configuration = builder.Build();
-
-            _logger = logger;
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -118,20 +110,11 @@ namespace ThriveChurchOfficialAPI
 
             #region File Logging
 
-            services.AddLogging(builder =>
-            {
-                string path = @"C:\";
-                if (!Directory.Exists(path))
-                {
-                    Directory.CreateDirectory(path);
-                }
-
-                builder.AddConfiguration(Configuration.GetSection("Logging"));
-                builder.AddFile(o => o.RootPath = path);
-            });
-
-            // configure loggers for our error handlers
-            SystemResponseBase.ConfigureLogger(_logger);
+            Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console()
+            .WriteTo.File("C:/logs/logfile.log", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
 
             #endregion
 
@@ -175,13 +158,6 @@ namespace ThriveChurchOfficialAPI
             });
 
             app.UseIpRateLimiting(); // enable rate limits
-
-            // log4net
-            var logRepo = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            XmlConfigurator.Configure(logRepo, new FileInfo("log4net.config"));
-
-            var log = LogManager.GetLogger(typeof(Startup));
-            log.Warn("Starting application...");
 
             app.UseMvc();
         }

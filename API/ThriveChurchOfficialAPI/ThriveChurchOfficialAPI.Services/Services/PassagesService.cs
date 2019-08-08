@@ -29,6 +29,20 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonPassageResponse>(true, string.Format(SystemMessages.NullProperty, "searchCriteria"));
             }
 
+            var response = new SermonPassageResponse();
+
+            // check the cache first and see if it's in there, before going to the ESV API
+            var cacheResponse = await _passagesRepository.GetPassageFromCache(searchCriteria);
+            if (!cacheResponse.HasErrors && cacheResponse.Result != null)
+            {
+                // if there were no errors then apply the cache result
+                response.Passage = cacheResponse.Result.PassageText;
+
+                return new SystemResponse<SermonPassageResponse>(response, "Success!");
+            }
+
+            // this just means that we didn't find it in the cache, so keep going normally
+
             // since ESV returns everything as one massive string, I need to convert everything to objects
             // Then to strings if I wish
             var getPassagesResponse = await _passagesRepository.GetPassagesForSearch(searchCriteria);
@@ -48,11 +62,17 @@ namespace ThriveChurchOfficialAPI.Services
 
             // replace the canonical with what was requested
             finalPassage = finalPassage.Replace(string.Format("{0}\n\n", getPassagesResponse.canonical), "");
+            response.Passage = finalPassage;
 
-            var response = new SermonPassageResponse
+            // store the result in the cache, but use a discard for the result, because we just need it to execute
+            var biblePassage = new BiblePassage
             {
-                Passage = finalPassage
+                CreateDate = DateTime.UtcNow,
+                PassageRef = searchCriteria,
+                PassageText = finalPassage
             };
+
+            _ = _passagesRepository.SetPassageForCache(biblePassage);
 
             return new SystemResponse<SermonPassageResponse>(response, "Success!");
         }

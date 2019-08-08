@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -13,6 +15,8 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// </summary>
     public class PassagesRepository: RepositoryBase, IPassagesRepository
     {
+        private readonly IMongoCollection<BiblePassage> _biblePassageCollection;
+
         /// <summary>
         /// Passages Repo C'tor
         /// </summary>
@@ -20,6 +24,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         public PassagesRepository(IConfiguration Configuration)
             : base(Configuration)
         {
+            _biblePassageCollection = DB.GetCollection<BiblePassage>("BiblePassages");
         }
 
         /// <summary>
@@ -63,6 +68,54 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
 
             return passageAndInfo;
+        }
+
+        /// <summary>
+        /// Search for a bible passage in the cache
+        /// </summary>
+        /// <param name="searchCriteria"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<BiblePassage>> GetPassageFromCache(string searchCriteria)
+        {
+            // create an equality filter
+            FilterDefinition<BiblePassage> filter = Builders<BiblePassage>.Filter.Eq(b => b.PassageRef, searchCriteria);
+
+            // look in the DB
+            IAsyncCursor<BiblePassage> result = await _biblePassageCollection.FindAsync(filter);
+            BiblePassage passage = result.FirstOrDefault();
+
+            if (passage == null || passage == default(BiblePassage))
+            {
+                return new SystemResponse<BiblePassage>(true, $"Unable to find passage with PassageRef {searchCriteria}.");
+            }
+
+            return new SystemResponse<BiblePassage>(passage, "Success!");
+        }
+
+        /// <summary>
+        /// Insert a new cache value for a specified passage
+        /// </summary>
+        /// <param name="searchCriteria"></param>
+        /// <returns></returns>
+        public async Task<BiblePassage> SetPassageForCache(BiblePassage passage)
+        {
+            // create an equality filter
+            FilterDefinition<BiblePassage> filter = Builders<BiblePassage>.Filter.Eq(b => b.PassageRef, passage.PassageRef);
+
+            // look in the DB
+            IAsyncCursor<BiblePassage> result = await _biblePassageCollection.FindAsync(filter);
+            BiblePassage found = result.FirstOrDefault();
+
+            // we should not find one
+            if (found == null || found == default(BiblePassage))
+            {
+                // save the item in the collection, then return once it's been assigned an _id
+                await _biblePassageCollection.InsertOneAsync(passage);
+                return passage;
+            }
+
+            // however if we found one, return that one
+            return found;
         }
     }
 }

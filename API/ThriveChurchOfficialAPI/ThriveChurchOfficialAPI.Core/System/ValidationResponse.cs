@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -24,12 +25,9 @@ namespace ThriveChurchOfficialAPI.Core
             HasErrors = DidError;
             ErrorMessage = ErrorMsg;
 
-            SetFileLoggingType();
-
             if (DidError)
             {
-                Logger.LogWarning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
-                FileLogger.Warn(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
+                Log.Warning(string.Format(SystemMessages.BadRequestResponse, ErrorMsg));
             }
         }
 
