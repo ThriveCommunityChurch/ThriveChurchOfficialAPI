@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using System;
@@ -108,6 +109,20 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
         }
 
+        /// <summary>
+        /// Validate an ObjectId
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        protected bool IsValidObjectId(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return false;
+            }
+
+            return ObjectId.TryParse(id, out ObjectId _);
+        }
 
         #region Generic REST Methods
 

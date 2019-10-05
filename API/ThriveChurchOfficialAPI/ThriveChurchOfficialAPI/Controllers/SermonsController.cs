@@ -267,12 +267,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
                 return StatusCode(400);
             }
 
-            return response;
+            return response.Result;
         }
 
         /// <summary>
@@ -316,12 +316,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateLiveSermonsInactive();
 
-            if (response == null)
+            if (response.HasErrors)
             {
                 return StatusCode(400);
             }
 
-            return response;
+            return response.Result;
         }
     }
 }

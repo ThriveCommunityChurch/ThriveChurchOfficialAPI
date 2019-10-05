@@ -9,6 +9,11 @@
             get { return "Property named {0} cannot be null or empty."; }
         }
 
+        public static string UnableToFindPropertyForId
+        {
+            get { return "Unable to find {0} with ID: {1}."; }
+        }
+
         public static string EmptyRequest
         {
             get { return "Request cannot be null or empty."; }
