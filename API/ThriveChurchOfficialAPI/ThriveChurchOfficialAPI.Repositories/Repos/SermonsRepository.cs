@@ -300,8 +300,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (document == null || document == default(LiveSermons))
             {
-                // something bad happened here
-                return null;
+                return new SystemResponse<LiveSermons>(true, string.Format(SystemMessages.UnableToUpdatePropertyForId, "Live Sermon", request.Id));
             }
 
             // get the object again because it's not updated in memory
@@ -312,8 +311,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (response == null || response == default(LiveSermons))
             {
-                // something bad happened here
-                return null;
+                return new SystemResponse<LiveSermons>(true, string.Format(SystemMessages.UnableToUpdatePropertyForId, "Live Sermon", request.Id));
             }
 
             return new SystemResponse<LiveSermons>(response, "Success!");

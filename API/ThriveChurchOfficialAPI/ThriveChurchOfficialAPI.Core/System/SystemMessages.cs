@@ -14,6 +14,11 @@
             get { return "Unable to find {0} with ID: {1}."; }
         }
 
+        public static string UnableToUpdatePropertyForId
+        {
+            get { return "Unable to update {0} with ID: {1}."; }
+        }
+
         public static string EmptyRequest
         {
             get { return "Request cannot be null or empty."; }
