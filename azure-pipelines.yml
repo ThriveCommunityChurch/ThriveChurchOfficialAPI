@@ -3,15 +3,19 @@
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
-trigger:
+pr:
+- dev
 - master
+
+trigger:
+  - master
 
 pool:
   vmImage: 'windows-latest'
 
 variables:
   solution: 'API/ThriveChurchOfficialAPI/ThriveChurchOfficialAPI.sln'
-  buildPlatform: 'win10-x64'
+  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
 steps:
