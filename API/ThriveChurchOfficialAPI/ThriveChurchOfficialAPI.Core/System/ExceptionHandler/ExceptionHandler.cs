@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -24,7 +23,7 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
         /// </summary>
         /// <param name="next"></param>
         /// <param name="logger"></param>
-        public ExceptionHandler(RequestDelegate next, ILogger<ExceptionHandler> logger)
+        public ExceptionHandler(RequestDelegate next)
         {
             _next = next;
         }
