@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -17,15 +18,17 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
     public class ExceptionHandler
     {
         private readonly RequestDelegate _next;
+        private readonly IConfiguration _configuration;
  
         /// <summary>
         /// Exception C'tor
         /// </summary>
         /// <param name="next"></param>
         /// <param name="logger"></param>
-        public ExceptionHandler(RequestDelegate next)
+        public ExceptionHandler(RequestDelegate next, IConfiguration Configuration)
         {
             _next = next;
+            _configuration = Configuration;
         }
  
         /// <summary>
@@ -78,7 +81,7 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
         {
             using (SmtpClient smtpClient = new SmtpClient())
             {
-                NetworkCredential basicCredential = new NetworkCredential("api@thrive-fl.org", SystemVariables.API_PW);
+                NetworkCredential basicCredential = new NetworkCredential("api@thrive-fl.org", _configuration["EmailPW"]);
                 using (MailMessage message = new MailMessage())
                 {
                     MailAddress fromAddress = new MailAddress("api@thrive-fl.org");
