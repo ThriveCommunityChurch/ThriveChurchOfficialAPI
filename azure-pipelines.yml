@@ -15,7 +15,7 @@ pool:
 
 variables:
   solution: 'API/ThriveChurchOfficialAPI/ThriveChurchOfficialAPI.sln'
-  buildPlatform: 'win10-x64'
+  buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 
 steps:
