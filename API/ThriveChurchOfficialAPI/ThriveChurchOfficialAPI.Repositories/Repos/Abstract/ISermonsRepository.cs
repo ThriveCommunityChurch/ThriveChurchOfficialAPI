@@ -10,15 +10,15 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
 
-        Task<SermonSeries> GetSermonSeriesForId(string SeriesId);
+        Task<SystemResponse<SermonSeries>> GetSermonSeriesForId(string SeriesId);
 
         Task<LiveSermons> GetLiveSermons();
 
         Task<LiveSermons> GoLive(LiveSermonsUpdateRequest request);
 
-        Task<LiveSermons> UpdateLiveSermons(LiveSermons request);
+        Task<SystemResponse<LiveSermons>> UpdateLiveSermons(LiveSermons request);
 
-        Task<LiveSermons> UpdateLiveSermonsInactive();
+        Task<SystemResponse<LiveSermons>> UpdateLiveSermonsInactive();
 
         Task<SystemResponse<SermonSeries>> UpdateSermonSeries(SermonSeries request);
 
