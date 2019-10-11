@@ -9,6 +9,7 @@ pr:
 
 trigger:
   - master
+  - dev
 
 pool:
   vmImage: 'windows-latest'
