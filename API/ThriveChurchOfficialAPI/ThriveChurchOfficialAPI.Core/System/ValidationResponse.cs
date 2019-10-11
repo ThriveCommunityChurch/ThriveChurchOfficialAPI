@@ -5,7 +5,6 @@ using System.Data;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace ThriveChurchOfficialAPI.Core
