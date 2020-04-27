@@ -14,7 +14,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// Requested message update
         /// </summary>
-        public SermonMessage Message { get; set; }
+        public SermonMessageRequest Message { get; set; }
 
         /// <summary>
         /// Validates the request object
@@ -32,7 +32,7 @@ namespace ThriveChurchOfficialAPI.Core
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Message"));
             }
 
-            var messageValidationResponse = SermonMessage.ValidateRequest(request.Message);
+            var messageValidationResponse = SermonMessageRequest.ValidateRequest(request.Message);
             if (messageValidationResponse.HasErrors)
             {
                 return new ValidationResponse(true, messageValidationResponse.ErrorMessage);
