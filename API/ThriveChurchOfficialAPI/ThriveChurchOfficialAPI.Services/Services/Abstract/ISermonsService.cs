@@ -15,7 +15,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
+        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(CreateSermonSeriesRequest request);
 
         /// <summary>
         /// Return the information about a live sermon going on now - if it's live

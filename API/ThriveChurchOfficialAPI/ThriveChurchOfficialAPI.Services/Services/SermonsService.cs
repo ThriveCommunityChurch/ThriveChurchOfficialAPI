@@ -95,9 +95,9 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all SermonSeries Objets
         /// </summary>
-        public async Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request)
+        public async Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(CreateSermonSeriesRequest request)
         {
-            var validRequest = SermonSeries.ValidateRequest(request);
+            var validRequest = CreateSermonSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
             {
                 return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
@@ -120,7 +120,7 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeries>(foundSeries, "202");
             }
 
-            // if any of the sermon series' currently have a null
+            // if any of the sermon series' are currently active
             if (request.EndDate == null)
             {
                 var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
@@ -139,14 +139,38 @@ namespace ThriveChurchOfficialAPI.Services
             // sanitise the start dates
             request.StartDate = request.StartDate.Value.ToUniversalTime().Date;
 
+            var messageList = new List<SermonMessage>();
+
             foreach (var message in request.Messages)
             {
-                // sanitise the message dates and get rid of the times
-                message.Date = message.Date.Value.Date.ToUniversalTime().Date;
-                message.MessageId = Guid.NewGuid().ToString();
+                messageList.Add(new SermonMessage
+                {
+                    AudioFileSize = message.AudioFileSize,
+                    AudioDuration = message.AudioDuration,
+                    // sanitise the message dates and get rid of the times
+                    Date = message.Date.Value.Date.ToUniversalTime().Date,
+                    MessageId = Guid.NewGuid().ToString(),
+                    AudioUrl = message.AudioUrl,
+                    PassageRef = message.PassageRef,
+                    Speaker = message.Speaker,
+                    Title = message.Title,
+                    VideoUrl = message.VideoUrl
+                });
             }
 
-            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(request);
+            var sermonSeries = new SermonSeries
+            {
+                ArtUrl = request.ArtUrl,
+                EndDate = request.EndDate,
+                Messages = messageList,
+                Name = request.Name,
+                Slug = request.Slug,
+                StartDate = request.StartDate,
+                Thumbnail = request.Thumbnail,
+                Year = request.Year
+            };
+
+            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
             if (getAllSermonsResponse.HasErrors)
             {
                 return new SystemResponse<SermonSeries>(true, getAllSermonsResponse.ErrorMessage); 
@@ -185,15 +209,26 @@ namespace ThriveChurchOfficialAPI.Services
             // add the sermon message to the response object and re-update the Mongo doc
             var currentMessages = series.Messages.ToList();
 
-            // add the Guid to the requested messages then add the messages
+            var messageList = new List<SermonMessage>();
+
             foreach (var message in request.MessagesToAdd)
             {
-                // sanitise the message dates and get rid of the times
-                message.Date = message.Date.Value.Date.ToUniversalTime().Date;
-                message.MessageId = Guid.NewGuid().ToString();
+                messageList.Add(new SermonMessage
+                {
+                    AudioFileSize = message.AudioFileSize,
+                    AudioDuration = message.AudioDuration,
+                    // sanitise the message dates and get rid of the times
+                    Date = message.Date.Value.Date.ToUniversalTime().Date,
+                    MessageId = Guid.NewGuid().ToString(),
+                    AudioUrl = message.AudioUrl,
+                    PassageRef = message.PassageRef,
+                    Speaker = message.Speaker,
+                    Title = message.Title,
+                    VideoUrl = message.VideoUrl
+                });
             }
 
-            currentMessages.AddRange(request.MessagesToAdd);
+            currentMessages.AddRange(messageList);
 
             // readd the messages back to the object, This is important (see SO for  Deep Copy vs shallow copy)
             series.Messages = currentMessages;

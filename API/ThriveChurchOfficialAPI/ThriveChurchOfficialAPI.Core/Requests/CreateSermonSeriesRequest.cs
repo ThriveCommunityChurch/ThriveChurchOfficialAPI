@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace ThriveChurchOfficialAPI.Core
 {
-    /// <summary>
-    /// C'tor
-    /// </summary>
-    public class SermonSeries
+    public class CreateSermonSeriesRequest
     {
-        public SermonSeries()
+        public CreateSermonSeriesRequest()
         {
             StartDate = null;
             EndDate = null;
@@ -23,13 +18,6 @@ namespace ThriveChurchOfficialAPI.Core
             ArtUrl = null;
             LastUpdated = null;
         }
-
-        /// <summary>
-        /// ObjectId notation from Mongo
-        /// </summary>
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
 
         /// <summary>
         /// The name of the sermon series
@@ -76,14 +64,14 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// A collection of Messages spoken / given by someone within this sermon series
         /// </summary>
-        public IEnumerable<SermonMessage> Messages { get; set; }
+        public IEnumerable<SermonMessageRequest> Messages { get; set; }
 
         /// <summary>
         /// Validate the request object
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static ValidationResponse ValidateRequest(SermonSeries request)
+        public static ValidationResponse ValidateRequest(CreateSermonSeriesRequest request)
         {
             if (request == null)
             {
@@ -124,7 +112,7 @@ namespace ThriveChurchOfficialAPI.Core
             // messages must at least be an object, it should not be null
             if (request.Messages == null)
             {
-                request.Messages = new List<SermonMessage>();
+                request.Messages = new List<SermonMessageRequest>();
             }
 
             if (request.StartDate != null && request.EndDate != null)

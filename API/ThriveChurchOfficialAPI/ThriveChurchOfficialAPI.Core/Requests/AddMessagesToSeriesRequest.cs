@@ -14,7 +14,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// A collection of messages that should be added to this Sermon Series
         /// </summary>
-        public IEnumerable<SermonMessage> MessagesToAdd { get; set; }
+        public IEnumerable<SermonMessageRequest> MessagesToAdd { get; set; }
 
         /// <summary>
         /// Validate the request object
@@ -35,7 +35,7 @@ namespace ThriveChurchOfficialAPI.Core
 
             foreach (var message in request.MessagesToAdd)
             {
-                var validateMessages = SermonMessage.ValidateRequest(message);
+                var validateMessages = SermonMessageRequest.ValidateRequest(message);
                 if (validateMessages.HasErrors)
                 {
                     return new ValidationResponse(true, validateMessages.ErrorMessage);

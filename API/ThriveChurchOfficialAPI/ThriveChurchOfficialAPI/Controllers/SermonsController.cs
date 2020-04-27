@@ -93,7 +93,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <response code="400">Bad Request</response>
         [Produces("application/json")]
         [HttpPost("series")]
-        public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] SermonSeries request)
+        public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] CreateSermonSeriesRequest request)
         {
             var response = await _sermonsService.CreateNewSermonSeries(request);
 
