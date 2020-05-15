@@ -46,8 +46,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// The passage being referenced in this message
         /// </summary>
-        [Required(ErrorMessage = "No value given for property 'PassageRef'. This property is required.")]
-        [DataType(DataType.Text)]
         public string PassageRef { get; set; }
 
         /// <summary>
