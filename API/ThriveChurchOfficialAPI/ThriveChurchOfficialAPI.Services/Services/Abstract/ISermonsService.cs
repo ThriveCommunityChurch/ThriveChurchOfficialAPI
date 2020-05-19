@@ -15,7 +15,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
+        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(CreateSermonSeriesRequest request);
 
         /// <summary>
         /// Return the information about a live sermon going on now - if it's live
@@ -34,7 +34,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<LiveStreamingResponse> UpdateLiveForSpecialEvents(LiveSermonsSpecialEventUpdateRequest request);
+        Task<SystemResponse<LiveStreamingResponse>> UpdateLiveForSpecialEvents(LiveSermonsSpecialEventUpdateRequest request);
 
         /// <summary>
         /// Return information about a currently active stream
@@ -67,7 +67,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// Reset the LiveSermons object back to it's origional state & stop async timer
         /// </summary>
         /// <returns></returns>
-        Task<LiveSermons> UpdateLiveSermonsInactive();
+        Task<SystemResponse<LiveSermons>> UpdateLiveSermonsInactive();
 
         /// <summary>
         /// Updates a sermon series to add a list of sermon messages

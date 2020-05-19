@@ -34,24 +34,24 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool ValidateRequest(LiveSermonsSpecialEventUpdateRequest request)
+        public ValidationResponse ValidateRequest()
         {
-            if (string.IsNullOrWhiteSpace(request.Title))
+            if (string.IsNullOrWhiteSpace(Title))
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, nameof(Title)));
             }
 
-            if (string.IsNullOrWhiteSpace(request.Slug))
+            if (string.IsNullOrWhiteSpace(Slug))
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, nameof(Slug)));
             }
 
-            if (request.SpecialEventTimes == null)
+            if (SpecialEventTimes == null)
             {
-                return false;
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, nameof(SpecialEventTimes)));
             }
 
-            return true;
+            return new ValidationResponse(true, "Success!");
         }
     }
 }

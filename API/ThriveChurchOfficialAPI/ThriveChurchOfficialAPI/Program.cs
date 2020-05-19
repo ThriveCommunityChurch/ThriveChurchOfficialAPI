@@ -22,7 +22,6 @@
     SOFTWARE.
 */
 
-
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,10 +31,11 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace ThriveChurchOfficialAPI
 {
+    #pragma warning disable CS1591
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -51,4 +51,6 @@ namespace ThriveChurchOfficialAPI
                 .UseStartup<Startup>();
 
     }
+
+    #pragma warning restore CS1591
 }

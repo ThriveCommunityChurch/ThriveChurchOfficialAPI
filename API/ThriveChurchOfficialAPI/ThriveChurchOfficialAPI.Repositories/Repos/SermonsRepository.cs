@@ -191,6 +191,11 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SystemResponse<SermonSeries>> UpdateSermonSeries(SermonSeries request)
         {
+            if (!IsValidObjectId(request.Id))
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Sermon Series", request.Id));
+            }
+
             // updated time is now
             request.LastUpdated = DateTime.UtcNow;
 
@@ -210,14 +215,19 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="SeriesId"></param>
         /// <returns></returns>
-        public async Task<SermonSeries> GetSermonSeriesForId(string SeriesId)
+        public async Task<SystemResponse<SermonSeries>> GetSermonSeriesForId(string SeriesId)
         {
+            if (!IsValidObjectId(SeriesId))
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Sermon Series", SeriesId));
+            }
+
             var singleSeries = await _sermonsCollection.FindAsync(
                    Builders<SermonSeries>.Filter.Eq(s => s.Id, SeriesId));
 
             var response = singleSeries.FirstOrDefault();
 
-            return response;
+            return new SystemResponse<SermonSeries>(response, "Success!");
         }
 
         /// <summary>
@@ -271,8 +281,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<LiveSermons> UpdateLiveSermons(LiveSermons request)
+        public async Task<SystemResponse<LiveSermons>> UpdateLiveSermons(LiveSermons request)
         {
+            if (!IsValidObjectId(request.Id))
+            {
+                return new SystemResponse<LiveSermons>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Live Sermon", request.Id));
+            }
+
             var document = await _livestreamCollection.FindOneAndUpdateAsync(
                     Builders<LiveSermons>.Filter
                         .Eq(l => l.Id, request.Id),
@@ -285,8 +300,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (document == null || document == default(LiveSermons))
             {
-                // something bad happened here
-                return null;
+                return new SystemResponse<LiveSermons>(true, string.Format(SystemMessages.UnableToUpdatePropertyForId, "Live Sermon", request.Id));
             }
 
             // get the object again because it's not updated in memory
@@ -297,11 +311,10 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (response == null || response == default(LiveSermons))
             {
-                // something bad happened here
-                return null;
+                return new SystemResponse<LiveSermons>(true, string.Format(SystemMessages.UnableToUpdatePropertyForId, "Live Sermon", request.Id));
             }
 
-            return response;
+            return new SystemResponse<LiveSermons>(response, "Success!");
         }
         
         /// <summary>
@@ -349,13 +362,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Update LiveSermons to inactive once the stream has concluded
         /// </summary>
         /// <returns></returns>
-        public async Task<LiveSermons> UpdateLiveSermonsInactive()
+        public async Task<SystemResponse<LiveSermons>> UpdateLiveSermonsInactive()
         {
             var liveSermonsResponse = await GetLiveSermons();
             if (liveSermonsResponse == null || liveSermonsResponse == default(LiveSermons))
             {
                 // something bad happened here
-                return default(LiveSermons);
+                return new SystemResponse<LiveSermons>(true, "Error getting live sermons.");
             }
 
             // make the change to reflect that this sermon was just updated
@@ -363,10 +376,9 @@ namespace ThriveChurchOfficialAPI.Repositories
             liveSermonsResponse.SpecialEventTimes = null;
 
             var updatedLiveSermon = await UpdateLiveSermons(liveSermonsResponse);
-            if (updatedLiveSermon == null || updatedLiveSermon == default(LiveSermons))
+            if (updatedLiveSermon.HasErrors)
             {
-                // something bad happened here
-                return default(LiveSermons);
+                return new SystemResponse<LiveSermons>(true, updatedLiveSermon.ErrorMessage);
             }
 
             return updatedLiveSermon;

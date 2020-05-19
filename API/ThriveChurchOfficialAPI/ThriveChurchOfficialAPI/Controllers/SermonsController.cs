@@ -93,7 +93,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <response code="400">Bad Request</response>
         [Produces("application/json")]
         [HttpPost("series")]
-        public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] SermonSeries request)
+        public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] CreateSermonSeriesRequest request)
         {
             var response = await _sermonsService.CreateNewSermonSeries(request);
 
@@ -267,12 +267,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
 
-            if (response == null)
+            if (response.HasErrors)
             {
                 return StatusCode(400);
             }
 
-            return response;
+            return response.Result;
         }
 
         /// <summary>
@@ -316,12 +316,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.UpdateLiveSermonsInactive();
 
-            if (response == null)
+            if (response.HasErrors)
             {
                 return StatusCode(400);
             }
 
-            return response;
+            return response.Result;
         }
     }
 }

@@ -3,12 +3,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ThriveChurchOfficialAPI.Core
 {
-    /// <summary>
-    /// C'tor
-    /// </summary>
-    public class SermonMessage
+    public class SermonMessageRequest
     {
-        public SermonMessage()
+
+        public SermonMessageRequest()
         {
             AudioUrl = null;
             AudioDuration = null;
@@ -72,8 +70,40 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? Date { get; set; }
 
         /// <summary>
-        /// String representation of a GUID (Cannot be modified)
+        /// Validates the object
         /// </summary>
-        public string MessageId { get; set; }
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public static ValidationResponse ValidateRequest(SermonMessageRequest request)
+        {
+            if (request == null)
+            {
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
+            }
+
+            // A/V urls, and PassageRef are allowed to be null, however others cannot
+            if (request.Date == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Date"));
+            }
+
+            if (request.Speaker == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Speaker"));
+            }
+
+            if (request.Title == null)
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
+            }
+
+            if (request?.AudioDuration <= 0)
+            {
+                return new ValidationResponse(true, SystemMessages.AudioDurationTooShort);
+            }
+
+            return new ValidationResponse("Success!");
+        }
+
     }
 }
