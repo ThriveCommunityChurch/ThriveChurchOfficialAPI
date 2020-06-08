@@ -38,6 +38,8 @@ using System.IO;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using ThriveChurchOfficialAPI.Core;
 using Serilog;
+using Hangfire.Mongo;
+using Hangfire;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -131,6 +133,27 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IPassagesRepository), typeof(PassagesRepository));
             services.AddTransient(typeof(ISermonsRepository), typeof(SermonsRepository));
             services.AddTransient(typeof(IPassagesService), typeof(PassagesService));
+
+            #region Hangfire Tasks
+
+            var hangfireMigrationOptions = new MongoMigrationOptions
+            {
+                Strategy = MongoMigrationStrategy.Migrate,
+                BackupStrategy = MongoBackupStrategy.Collections
+            };
+
+            var hangfireStorageOptions = new MongoStorageOptions
+            {
+                MigrationOptions = hangfireMigrationOptions
+            };
+
+            // Add framework services.
+            services.AddHangfire(config =>
+            {
+                config.UseMongoStorage(Configuration["HangfireConnectionString"], hangfireStorageOptions);
+            });
+
+            #endregion
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -158,6 +181,16 @@ namespace ThriveChurchOfficialAPI
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
                 c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
             });
+
+            #region Hangfire Tasks
+
+            app.UseHangfireServer(new BackgroundJobServerOptions() { WorkerCount = 2 });
+
+            // Map Dashboard to the `http://<your-app>/hf-dashboard` URL.
+            //app.UseHangfireDashboard("/hf-dashboard", new DashboardOptions { IsReadOnlyFunc = (DashboardContext context) => true }); // read only for prod
+            app.UseHangfireDashboard("/hf-dashboard");
+
+            #endregion
 
             app.UseIpRateLimiting(); // enable rate limits
 

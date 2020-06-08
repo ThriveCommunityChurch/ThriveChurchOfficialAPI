@@ -9,6 +9,9 @@ using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
 using System.Collections.Generic;
 using MongoDB.Bson;
+using Hangfire;
+using ThriveChurchOfficialAPI.Core.System;
+using NCrontab;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -273,6 +276,46 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
+        /// Schedule a livestream to occur regularly
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public string ScheduleLiveStream(LiveSermonsSchedulingRequest request)
+        {
+            var hangfireCreationResponse = CreateLiveStreamStartHangfire(request);
+            var hangfireEndingResponse = CreateLiveStreamEndHangfire(request);
+
+            var hangfireResponse = $"Start Job ID: {hangfireCreationResponse}\nEnd Job ID: {hangfireEndingResponse}";
+            return hangfireResponse;
+        }
+
+        private string CreateLiveStreamStartHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var jobId = request.StartSchedule;
+
+            // Upserts the recurring job data
+            RecurringJob.AddOrUpdate(jobId, () =>
+                GoLiveHangfire(request),
+                request.StartSchedule
+            );
+
+            return jobId;
+        }
+
+        private string CreateLiveStreamEndHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var jobId = request.EndSchedule;
+
+            // Upserts the recurring job data
+            RecurringJob.AddOrUpdate(jobId, () =>
+                EndLiveHangfire(request),
+                request.EndSchedule
+            );
+
+            return jobId;
+        }
+
+        /// <summary>
         /// Gets a sermon series for its Id
         /// </summary>
         /// <param name="seriesId"></param>
@@ -383,6 +426,26 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var jobId = request.StartSchedule;
+
+            CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
+            DateTime endTime = schedule.GetNextOccurrence(DateTime.UtcNow);
+
+            var liveStreamUpdate = new LiveSermonsUpdateRequest
+            {
+                ExpirationTime = endTime
+            };
+
+            return GoLive(liveStreamUpdate);
+        }
+
+        /// <summary>
         /// Update the LiveSermons object
         /// </summary>
         /// <param name="request"></param>
@@ -411,9 +474,6 @@ namespace ThriveChurchOfficialAPI.Services
                 IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null ? true : false,
                 SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null
             };
-
-            // we are updating this so we should watch for when it expires, when it does we will need to update Mongo
-            DetermineIfStreamIsInactive();
 
             return new SystemResponse<LiveStreamingResponse>(response, "Success!");
         }
@@ -537,6 +597,13 @@ namespace ThriveChurchOfficialAPI.Services
                 // when it's done kill the timer
                 Dispose();
             }
+        }
+
+        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
+
+            return;
         }
 
         /// <summary>
