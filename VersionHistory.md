@@ -1,4 +1,7 @@
-### 1.1  —  August 8, 2019
+### 1.2  —  June 8, 2020
+- Support for Recurring live-streams
+
+### 1.1  —  May 19, 2020
 - Performance improvements with searching for bible passages
 - Improved file logger
 - Improving code style
