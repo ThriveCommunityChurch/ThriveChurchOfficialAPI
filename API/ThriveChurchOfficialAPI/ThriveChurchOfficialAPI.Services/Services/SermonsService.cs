@@ -296,7 +296,8 @@ namespace ThriveChurchOfficialAPI.Services
             // Upserts the recurring job data
             RecurringJob.AddOrUpdate(jobId, () =>
                 GoLiveHangfire(request),
-                request.StartSchedule
+                request.StartSchedule,
+                TimeZoneInfo.Local
             );
 
             return jobId;
@@ -309,7 +310,8 @@ namespace ThriveChurchOfficialAPI.Services
             // Upserts the recurring job data
             RecurringJob.AddOrUpdate(jobId, () =>
                 EndLiveHangfire(request),
-                request.EndSchedule
+                request.EndSchedule,
+                TimeZoneInfo.Local
             );
 
             return jobId;
