@@ -173,13 +173,16 @@ namespace ThriveChurchOfficialAPI.Services
                 Year = request.Year
             };
 
-            var getAllSermonsResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
-            if (getAllSermonsResponse.HasErrors)
+            var creationResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
+            if (creationResponse.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, getAllSermonsResponse.ErrorMessage); 
+                return new SystemResponse<SermonSeries>(true, creationResponse.ErrorMessage); 
             }
 
-            return new SystemResponse<SermonSeries>(getAllSermonsResponse.Result, "Success!");
+            // Save data in cache.
+            _cache.Set(string.Format(CacheKeys.GetSermonSeries, creationResponse.Result.Id), creationResponse.Result, PersistentCacheEntryOptions);
+
+            return new SystemResponse<SermonSeries>(creationResponse.Result, "Success!");
         }
 
         /// <summary>
@@ -243,6 +246,9 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeries>(true, updateResponse.ErrorMessage);
             }
 
+            // Save data in cache.
+            _cache.Set(string.Format(CacheKeys.GetSermonSeries, updateResponse.Result.Id), updateResponse.Result, PersistentCacheEntryOptions);
+
             return new SystemResponse<SermonSeries>(updateResponse.Result, "Success!");
         }
 
@@ -254,6 +260,8 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SystemResponse<SermonMessage>> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
         {
+            // TODO: Fix this
+
             var validRequest = UpdateMessagesInSermonSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
             {
@@ -327,13 +335,22 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "seriesId"));
             }
 
-            var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-            if (seriesResponse.HasErrors)
+            // check the cache first -> if there's a value there grab it
+            if (!_cache.TryGetValue(string.Format(CacheKeys.GetSermonSeries, seriesId), out SermonSeries series))
             {
-                return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
-            }
+                // Key not in cache, so get data.
+                var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
 
-            var series = seriesResponse.Result;
+                if (seriesResponse.HasErrors)
+                {
+                    return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
+                }
+
+                series = seriesResponse.Result;
+
+                // Save data in cache.
+                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), series, PersistentCacheEntryOptions);
+            }
 
             var orderedMessages = series.Messages.OrderByDescending(i => i.Date.Value);
             series.Messages = orderedMessages;
@@ -395,6 +412,9 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var response = updateResponse.Result;
+
+            // Save data in cache.
+            _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), response, PersistentCacheEntryOptions);
 
             return new SystemResponse<SermonSeries>(response, "Success!");
         }
@@ -641,5 +661,7 @@ namespace ThriveChurchOfficialAPI.Services
         public static string GetSermons { get { return "LiveSermonsCache"; } }
 
         public static string GetPagedSermons { get { return "PagedSermonsCache:{0}"; } }
+
+        public static string GetSermonSeries { get { return "SermonSeriesCache:{0}"; } }
     }
 }
