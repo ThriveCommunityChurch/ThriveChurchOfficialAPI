@@ -1,0 +1,15 @@
+﻿using System.Threading.Tasks;
+using ThriveChurchOfficialAPI.Core;
+
+namespace ThriveChurchOfficialAPI.Services
+{
+    public interface IConfigService
+    {
+        /// <summary>
+        /// Get a value for a config setting
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <returns></returns>
+        Task<SystemResponse<ConfigurationResponse>> GetConfigValue(string setting);
+    }
+}
