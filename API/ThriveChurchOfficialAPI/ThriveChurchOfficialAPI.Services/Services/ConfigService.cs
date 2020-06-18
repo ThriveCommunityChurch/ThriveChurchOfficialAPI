@@ -40,18 +40,71 @@ namespace ThriveChurchOfficialAPI.Services
 
             #endregion
 
-            var settingResponse = await _configRepository.GetConfigValue(setting);
-            if (settingResponse.HasErrors)
+            // check the cache first -> if there's a value there grab it
+            if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, setting), out string value))
             {
-                return new SystemResponse<ConfigurationResponse>(true, settingResponse.ErrorMessage);
+                // Key not in cache, so get data.
+                var settingResponse = await _configRepository.GetConfigValue(setting);
+                if (settingResponse.HasErrors)
+                {
+                    return new SystemResponse<ConfigurationResponse>(true, settingResponse.ErrorMessage);
+                }
+
+                value = settingResponse.Result;
+
+                // Save data in cache.
+                _cache.Set(string.Format(CacheKeys.GetConfig, setting), value, PersistentCacheEntryOptions);
             }
 
             var response = new ConfigurationResponse
             {
-                Value = settingResponse.Result
+                Value = value
             };
 
             return new SystemResponse<ConfigurationResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Get a value for a config setting
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(ConfigKeyRequest request)
+        {
+            #region Validations
+
+            var validationResponse = ConfigKeyRequest.Validate(request);
+            if (validationResponse.HasErrors)
+            {
+                return new SystemResponse<ConfigurationCollectionResponse>(true, SystemMessages.EmptyRequest);
+            }
+
+            #endregion
+
+            var settingResponse = await _configRepository.GetConfigValues(request);
+            if (settingResponse.HasErrors)
+            {
+                return new SystemResponse<ConfigurationCollectionResponse>(true, settingResponse.ErrorMessage);
+            }
+
+            var foundValues = settingResponse.Result;
+            var finalList = new List<ConfigurationResponseMap>();
+
+            foreach (var setting in foundValues)
+            {
+                finalList.Add(new ConfigurationResponseMap
+                {
+                    Key = setting.Key,
+                    Value = setting.Value
+                });
+            }
+
+            var response = new ConfigurationCollectionResponse
+            {
+                Configs = finalList
+            };
+
+            return new SystemResponse<ConfigurationCollectionResponse>(response, "Success!");
         }
     }
 }

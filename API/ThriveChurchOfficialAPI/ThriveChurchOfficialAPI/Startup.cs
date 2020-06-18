@@ -133,6 +133,8 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IPassagesRepository), typeof(PassagesRepository));
             services.AddTransient(typeof(ISermonsRepository), typeof(SermonsRepository));
             services.AddTransient(typeof(IPassagesService), typeof(PassagesService));
+            services.AddTransient(typeof(IConfigService), typeof(ConfigService));
+            services.AddTransient(typeof(IConfigRepository), typeof(ConfigRepository));
 
             #region Hangfire Tasks
 

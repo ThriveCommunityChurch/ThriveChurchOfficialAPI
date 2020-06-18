@@ -51,5 +51,49 @@ namespace ThriveChurchOfficialAPI.Controllers
 
             return response.Result;
         }
+
+        /// <summary>
+        /// Get a value for a config setting
+        /// </summary>
+        /// <returns>SermonsSummary object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("list")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<ConfigurationCollectionResponse>> GetConfigValues(ConfigKeyRequest request)
+        {
+            var response = await _configService.GetConfigValues(request);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Set a value for a config setting
+        /// </summary>
+        /// <returns>SermonsSummary object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpPost()]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<ConfigurationCollectionResponse>> SetConfigValue(SetConfigRequest request)
+        {
+            var response = await _configService.SetConfigValue(request);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
     }
 }

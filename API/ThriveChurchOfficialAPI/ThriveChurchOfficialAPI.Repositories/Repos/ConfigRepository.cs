@@ -32,5 +32,15 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             return null;
         }
+
+        /// <summary>
+        /// Get values for a collection of config settings
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(ConfigKeyRequest request)
+        {
+            return null;
+        }
     }
 }

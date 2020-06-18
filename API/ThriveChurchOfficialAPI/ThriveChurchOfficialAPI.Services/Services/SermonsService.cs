@@ -663,5 +663,7 @@ namespace ThriveChurchOfficialAPI.Services
         public static string GetPagedSermons { get { return "PagedSermonsCache:{0}"; } }
 
         public static string GetSermonSeries { get { return "SermonSeriesCache:{0}"; } }
+
+        public static string GetConfig { get { return "SystemConfiguration:{0}"; } }
     }
 }
