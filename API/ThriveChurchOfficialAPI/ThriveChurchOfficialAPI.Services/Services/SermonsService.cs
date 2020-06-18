@@ -304,7 +304,8 @@ namespace ThriveChurchOfficialAPI.Services
             // Upserts the recurring job data
             RecurringJob.AddOrUpdate(jobId, () =>
                 GoLiveHangfire(request),
-                request.StartSchedule
+                request.StartSchedule,
+                TimeZoneInfo.Local
             );
 
             return jobId;
@@ -317,7 +318,8 @@ namespace ThriveChurchOfficialAPI.Services
             // Upserts the recurring job data
             RecurringJob.AddOrUpdate(jobId, () =>
                 EndLiveHangfire(request),
-                request.EndSchedule
+                request.EndSchedule,
+                TimeZoneInfo.Local
             );
 
             return jobId;
@@ -340,7 +342,6 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // Key not in cache, so get data.
                 var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-
                 if (seriesResponse.HasErrors)
                 {
                     return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
