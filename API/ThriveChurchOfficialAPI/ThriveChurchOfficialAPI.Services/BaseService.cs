@@ -13,12 +13,27 @@ namespace ThriveChurchOfficialAPI
         /// <summary>
         /// Global Cache options for IMemoryCache
         /// </summary>
-        public MemoryCacheEntryOptions CacheEntryOptions { get
+        public MemoryCacheEntryOptions CacheEntryOptions {
+            get
             {
                 // set a reusible cache options object
                 return new MemoryCacheEntryOptions()
                 // Keep in cache for this time, reset time if accessed.
                 .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
+            }
+        }
+
+        /// <summary>
+        /// Global Persistent Cache options for IMemoryCache
+        /// </summary>
+        public MemoryCacheEntryOptions PersistentCacheEntryOptions
+        {
+            get
+            {
+                // set a reusible cache options object
+                return new MemoryCacheEntryOptions()
+                // Keep in cache for this time, reset time if accessed.
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(172800)); // 2 days
             }
         }
 
