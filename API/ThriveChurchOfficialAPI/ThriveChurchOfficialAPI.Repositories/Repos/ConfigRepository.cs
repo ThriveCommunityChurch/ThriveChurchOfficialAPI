@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
-    public class ConfigRepository: RepositoryBase, IConfigRepository
+    public class ConfigRepository : RepositoryBase, IConfigRepository
     {
         private readonly IMongoCollection<ConfigSettings> _configCollection;
 
@@ -55,7 +55,22 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(IEnumerable<string> request)
         {
-            throw new NotImplementedException();
+            if (request == null || !request.Any() || request.Any(i => string.IsNullOrEmpty(i)))
+            {
+                return new SystemResponse<IEnumerable<ConfigSettings>>(true, string.Format(SystemMessages.NullProperty, nameof(request)));
+            }
+
+            var filter = Builders<ConfigSettings>.Filter.In(i => i.Key, request);
+
+            var cursor = await _configCollection.FindAsync(filter);
+
+            var found = cursor.ToList();
+            if (found == null)
+            {
+                return new SystemResponse<IEnumerable<ConfigSettings>>(true, SystemMessages.UnableToFindConfigs);
+            }
+
+            return new SystemResponse<IEnumerable<ConfigSettings>>(found, "Success!");
         }
 
         /// <summary>
@@ -65,7 +80,14 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(ConfigKeyRequest request)
         {
-            throw new NotImplementedException();
+            if (request == null || !request.Keys.Any())
+            {
+                return new SystemResponse<IEnumerable<ConfigSettings>>(true, string.Format(SystemMessages.NullProperty, nameof(ConfigKeyRequest.Keys)));
+            }
+
+            var keys = request.Keys;
+
+            return await GetConfigValues(keys);
         }
 
         /// <summary>

@@ -6,6 +6,7 @@
 
         public const string ConfigurationsMustHaveUniqueKeys = "Each configuration value must have a unique key";
         public const string UnableToFindConfigForKey = "Unable to find configuration with key: {0}";
+        public const string UnableToFindConfigs = "No configurations found.";
 
         #endregion
 
