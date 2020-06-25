@@ -18,5 +18,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request"></param>
         /// <returns></returns>
         Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(ConfigKeyRequest request);
+
+        /// <summary>
+        /// Set values for config settings
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<SystemResponse<string>> SetConfigValues(SetConfigRequest request);
     }
 }

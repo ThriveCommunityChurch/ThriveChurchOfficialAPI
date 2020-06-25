@@ -65,6 +65,45 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
+        /// Set values for config settings
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<string>> SetConfigValues(SetConfigRequest request)
+        {
+            var validationResponse = SetConfigRequest.Validate(request);
+            if (validationResponse.HasErrors)
+            {
+                return new SystemResponse<string>(true, validationResponse.ErrorMessage);
+            }
+
+            var keysToUpdate = request.Configurations.Select(i => i.Key).ToList();
+            var uniqueKeys = new HashSet<string>(keysToUpdate);
+
+            if (keysToUpdate.Count() != uniqueKeys.Count)
+            {
+                return new SystemResponse<string>(true, SystemMessages.ConfigurationsMustHaveUniqueKeys);
+            }
+
+            var settingResponse = await _configRepository.GetConfigValues(keysToUpdate);
+            if (settingResponse.HasErrors)
+            {
+                return new SystemResponse<string>(true, settingResponse.ErrorMessage);
+            }
+
+            var foundValues = settingResponse.Result;
+            var finalList = new List<ConfigurationMap>();
+
+            var updateResponse = await _configRepository.SetConfigValues(request);
+            if (updateResponse.HasErrors)
+            {
+                return new SystemResponse<string>(true, updateResponse.ErrorMessage);
+            }
+
+            return new SystemResponse<string>($"Updated {keysToUpdate.Count}", "Success!");
+        }
+
+        /// <summary>
         /// Get a value for a config setting
         /// </summary>
         /// <param name="setting"></param>
@@ -88,11 +127,11 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var foundValues = settingResponse.Result;
-            var finalList = new List<ConfigurationResponseMap>();
+            var finalList = new List<ConfigurationMap>();
 
             foreach (var setting in foundValues)
             {
-                finalList.Add(new ConfigurationResponseMap
+                finalList.Add(new ConfigurationMap
                 {
                     Key = setting.Key,
                     Value = setting.Value

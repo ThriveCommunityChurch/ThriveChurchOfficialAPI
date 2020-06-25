@@ -28,9 +28,34 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="setting"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<string>> GetConfigValue(string setting)
+        public async Task<SystemResponse<ConfigSettings>> GetConfigValue(string setting)
         {
-            return null;
+            if (string.IsNullOrEmpty(setting))
+            {
+                return new SystemResponse<ConfigSettings>(true, string.Format(SystemMessages.NullProperty, nameof(setting)));
+            }
+
+            var filter = Builders<ConfigSettings>.Filter.Eq(i => i.Key, setting);
+
+            var cursor = await _configCollection.FindAsync(filter);
+
+            var found = cursor.FirstOrDefault();
+            if (found == null || found == default(ConfigSettings))
+            {
+                return new SystemResponse<ConfigSettings>(true, string.Format(SystemMessages.UnableToFindConfigForKey, nameof(setting)));
+            }
+
+            return new SystemResponse<ConfigSettings>(found, "Success!");
+        }
+
+        /// <summary>
+        /// Get values for a collection of config settings
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(IEnumerable<string> request)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -40,7 +65,17 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <returns></returns>
         public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(ConfigKeyRequest request)
         {
-            return null;
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Set values for config settings
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<IEnumerable<string>>> SetConfigValues(SetConfigRequest request)
+        {
+            throw new NotImplementedException();
         }
     }
 }
