@@ -208,6 +208,8 @@ namespace ThriveChurchOfficialAPI.Services
                 });
             }
 
+            updateRequest.Configurations = updates;
+
             var validationResponse = SetConfigRequest.Validate(updateRequest);
             if (validationResponse.HasErrors)
             {
@@ -218,6 +220,19 @@ namespace ThriveChurchOfficialAPI.Services
             if (updateResponse.HasErrors)
             {
                 return new SystemResponse<string>(true, updateResponse.ErrorMessage);
+            }
+
+            foreach (var setting in updates)
+            {
+                var config = new ConfigurationResponse
+                {
+                    Value = setting.Value,
+                    Type = setting.Type,
+                    Key = setting.Key
+                };
+
+                // Save data in cache.
+                _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
             }
 
             return new SystemResponse<string>("Success!", "Success!");

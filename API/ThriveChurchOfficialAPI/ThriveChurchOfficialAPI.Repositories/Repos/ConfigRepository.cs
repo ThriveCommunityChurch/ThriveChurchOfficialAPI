@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
+using Serilog;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -106,9 +107,61 @@ namespace ThriveChurchOfficialAPI.Repositories
                 }
             }
 
+            // we are only doing an Update here not an upsert or an insert.
+            var updateList = new List<WriteModel<ConfigSetting>>();
 
-            // initialize all the 
-            _configCollection.InsertMany(configs);
+            foreach (var config in configs)
+            {
+                var filter = Builders<ConfigSetting>.Filter.Eq(i => i.Key, config.Key);
+
+                var update = Builders<ConfigSetting>.Update.Set(i => i.Value, config.Value)
+                    .Set(i => i.LastUpdated, DateTime.UtcNow)
+                    .Set(i => i.Key, config.Key)
+                    .Set(i => i.Type, config.Type);
+
+                var updateModel = new UpdateOneModel<ConfigSetting>(filter, update)
+                {
+                    IsUpsert = true
+                };
+
+                updateList.Add(updateModel);
+            }
+
+            GenerateIndexes();
+
+            _ = _configCollection.BulkWriteAsync(updateList);
+        }
+
+        private void GenerateIndexes()
+        {
+            List<BsonDocument> indexes = _configCollection.Indexes.List().ToList();
+
+            foreach (var existingIndex in indexes)
+            {
+                if (existingIndex.GetElement("name").Value.ToString() == "Configs_Keys_1")
+                {
+                    return;
+                }
+            }
+
+            var index = new CreateIndexModel<ConfigSetting>(new IndexKeysDefinitionBuilder<ConfigSetting>().Ascending(j => j.Key),
+                new CreateIndexOptions
+                {
+                    Name = "Configs_Keys_1",
+                    Background = false,
+                    Unique = true
+                }
+            );
+
+            try
+            {
+                _configCollection.Indexes.CreateOne(index);
+            }
+            catch (Exception e)
+            {
+                Log.Error("Error ocurred when generating indexes for Configuration collection.");
+                Log.Fatal(string.Format(SystemMessages.ExceptionMessage, e.ToString()));
+            }
         }
 
         /// <summary>
