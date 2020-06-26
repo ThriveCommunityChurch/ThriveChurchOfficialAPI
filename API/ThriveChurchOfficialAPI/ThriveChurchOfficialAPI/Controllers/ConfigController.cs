@@ -97,7 +97,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
-        /// Set a value for a config setting
+        /// Set values for config settings from a CSV
         /// </summary>
         /// <returns>SermonsSummary object</returns>
         /// <response code="200">OK</response>
@@ -106,9 +106,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPost("values/csv")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<ConfigurationCollectionResponse>> SetConfigValuesFromCSV([FromBody] string csvValues)
+        public async Task<ActionResult<string>> SetConfigValuesFromCSV([FromBody] string csv)
         {
-            var response = await _configService.SetConfigValuesFromCSV(csvValues);
+            var response = await _configService.SetConfigValuesFromCSV(csv);
 
             if (response.HasErrors)
             {

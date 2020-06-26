@@ -25,5 +25,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request"></param>
         /// <returns></returns>
         Task<SystemResponse<string>> SetConfigValues(SetConfigRequest request);
+
+        /// <summary>
+        /// Set values for config settings from a CSV
+        /// </summary>
+        /// <param name="csv"></param>
+        /// <returns></returns>
+        Task<SystemResponse<string>> SetConfigValuesFromCSV(string csv);
     }
 }

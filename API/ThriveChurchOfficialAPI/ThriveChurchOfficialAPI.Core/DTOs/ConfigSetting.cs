@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ThriveChurchOfficialAPI.Core
 {
-    public class ConfigSettings: ObjectBase
+    public class ConfigSetting: ObjectBase
     {
         /// <summary>
         /// The key for the setting. This is the piece that we look for

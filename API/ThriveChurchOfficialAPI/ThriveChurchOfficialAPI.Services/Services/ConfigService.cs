@@ -8,6 +8,8 @@ using ThriveChurchOfficialAPI.Repositories;
 using System.Linq;
 using System.Collections.Generic;
 using ThriveChurchOfficialAPI.Core.System;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -41,7 +43,7 @@ namespace ThriveChurchOfficialAPI.Services
             #endregion
 
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, setting), out string value))
+            if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, setting), out ConfigurationResponse value))
             {
                 // Key not in cache, so get data.
                 var settingResponse = await _configRepository.GetConfigValue(setting);
@@ -50,18 +52,20 @@ namespace ThriveChurchOfficialAPI.Services
                     return new SystemResponse<ConfigurationResponse>(true, settingResponse.ErrorMessage);
                 }
 
-                value = settingResponse.Result;
+                var result = settingResponse.Result;
+
+                var response = new ConfigurationResponse
+                {
+                    Key = result.Key,
+                    Value = result.Value,
+                    Type = result.Type
+                };
 
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetConfig, setting), value, PersistentCacheEntryOptions);
+                _cache.Set(string.Format(CacheKeys.GetConfig, setting), result, PersistentCacheEntryOptions);
             }
 
-            var response = new ConfigurationResponse
-            {
-                Value = value
-            };
-
-            return new SystemResponse<ConfigurationResponse>(response, "Success!");
+            return new SystemResponse<ConfigurationResponse>(value, "Success!");
         }
 
         /// <summary>
@@ -71,6 +75,8 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SystemResponse<string>> SetConfigValues(SetConfigRequest request)
         {
+            #region Validations
+
             var validationResponse = SetConfigRequest.Validate(request);
             if (validationResponse.HasErrors)
             {
@@ -85,14 +91,27 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<string>(true, SystemMessages.ConfigurationsMustHaveUniqueKeys);
             }
 
-            var settingResponse = await _configRepository.GetConfigValues(keysToUpdate);
+            var keysNotFound = new List<string>();
+
+            foreach (var settingKey in uniqueKeys)
+            {
+                // check the cache first -> if there's a value there grab it
+                if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, settingKey), out ConfigurationResponse value))
+                {
+                    keysNotFound.Add(settingKey);
+                    continue;
+                }
+            }
+
+            var settingResponse = await _configRepository.GetConfigValues(keysNotFound);
             if (settingResponse.HasErrors)
             {
                 return new SystemResponse<string>(true, settingResponse.ErrorMessage);
             }
 
+            #endregion
+
             var foundValues = settingResponse.Result;
-            var finalList = new List<ConfigurationMap>();
 
             var updateResponse = await _configRepository.SetConfigValues(request);
             if (updateResponse.HasErrors)
@@ -100,7 +119,108 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<string>(true, updateResponse.ErrorMessage);
             }
 
+            foreach (var setting in request.Configurations)
+            {
+                var config = new ConfigurationResponse
+                {
+                    Value = setting.Value,
+                    Type = setting.Type,
+                    Key = setting.Key
+                };
+
+                // Save data in cache.
+                _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
+            }
+
             return new SystemResponse<string>($"Updated {keysToUpdate.Count}", "Success!");
+        }
+
+        /// <summary>
+        /// Set values for config settings from a CSV
+        /// </summary>
+        /// <param name="csv"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<string>> SetConfigValuesFromCSV(string csv)
+        {
+            if (string.IsNullOrEmpty(csv))
+            {
+                return new SystemResponse<string>(true, SystemMessages.EmptyRequest);
+            }
+
+            var requestedUpdates = new Dictionary<string, string>();
+
+            // Okay so I need to enforce the format that the Keys are aleays in the first column and the values are always in the 2nd
+            using (StringReader reader = new StringReader(csv))
+            {
+                string readText = reader.ReadLine();
+
+                if (string.IsNullOrEmpty(readText))
+                {
+                    return new SystemResponse<string>(true, SystemMessages.InvalidConfigCSVFormat);
+                }
+
+                // We need to only split on the strings that are not within an escaped set of string quotes
+                Regex CSVParser = new Regex(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+                string[] csvValues = CSVParser.Split(readText);
+
+                if (csvValues == null || !csvValues.Any() || csvValues.Count() != 2)
+                {
+                    return new SystemResponse<string>(true, SystemMessages.InvalidConfigCSVFormat);
+                }
+
+                var key = csvValues[0];
+                var value = csvValues[1];
+
+                if (requestedUpdates.ContainsKey(key))
+                {
+                    return new SystemResponse<string>(true, SystemMessages.ConfigurationsMustHaveUniqueKeys);
+                }
+                else
+                {
+                    requestedUpdates[key] = value;
+                }
+            }
+
+            var getConfigRequest = new ConfigKeyRequest
+            {
+                Keys = requestedUpdates.Keys
+            };
+
+            var getApplicableKeys = await GetConfigValues(getConfigRequest);
+            if (getApplicableKeys.HasErrors)
+            {
+                return new SystemResponse<string>(true, getApplicableKeys.ErrorMessage);
+            }
+
+            var settings = getApplicableKeys.Result.Configs.ToDictionary(Key => Key.Key, Value => Value);
+            var updateRequest = new SetConfigRequest();
+            var updates = new List<ConfigurationMap>();
+
+            foreach (var setting in requestedUpdates)
+            {
+                var foundSetting = settings[setting.Key];
+
+                updates.Add(new ConfigurationMap
+                {
+                    Key = setting.Key,
+                    Type = foundSetting.Type,
+                    Value = setting.Value
+                });
+            }
+
+            var validationResponse = SetConfigRequest.Validate(updateRequest);
+            if (validationResponse.HasErrors)
+            {
+                return new SystemResponse<string>(true, validationResponse.ErrorMessage);
+            }
+
+            var updateResponse = await _configRepository.SetConfigValues(updateRequest);
+            if (updateResponse.HasErrors)
+            {
+                return new SystemResponse<string>(true, updateResponse.ErrorMessage);
+            }
+
+            return new SystemResponse<string>("Success!", "Success!");
         }
 
         /// <summary>
@@ -120,6 +240,21 @@ namespace ThriveChurchOfficialAPI.Services
 
             #endregion
 
+            var keysNotFount = new List<string>();
+            var finalList = new List<ConfigurationResponse>();
+
+            foreach (var settingKey in request.Keys)
+            {
+                // check the cache first -> if there's a value there grab it
+                if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, settingKey), out ConfigurationResponse value))
+                {
+                    keysNotFount.Add(settingKey);
+                    continue;
+                }
+
+                finalList.Add(value);
+            }
+
             var settingResponse = await _configRepository.GetConfigValues(request);
             if (settingResponse.HasErrors)
             {
@@ -127,14 +262,18 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var foundValues = settingResponse.Result;
-            var finalList = new List<ConfigurationMap>();
+            if (foundValues.Count() != request.Keys.Count())
+            {
+                return new SystemResponse<ConfigurationCollectionResponse>(true, SystemMessages.ConfigValuesNotFound);
+            }
 
             foreach (var setting in foundValues)
             {
-                finalList.Add(new ConfigurationMap
+                finalList.Add(new ConfigurationResponse
                 {
                     Key = setting.Key,
-                    Value = setting.Value
+                    Value = setting.Value,
+                    Type = setting.Type
                 });
             }
 

@@ -11,7 +11,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public class ConfigRepository : RepositoryBase, IConfigRepository
     {
-        private readonly IMongoCollection<ConfigSettings> _configCollection;
+        private readonly IMongoCollection<ConfigSetting> _configCollection;
 
         /// <summary>
         /// Sermons Repo C'tor
@@ -20,7 +20,95 @@ namespace ThriveChurchOfficialAPI.Repositories
         public ConfigRepository(IConfiguration Configuration)
             : base(Configuration)
         {
-            _configCollection = DB.GetCollection<ConfigSettings>("Configurations");
+            _configCollection = DB.GetCollection<ConfigSetting>("Configurations");
+
+            InitCollection();
+        }
+
+        private void InitCollection()
+        {
+            var defaultPhone = "(555) 555-5555";
+            var defaultEmail = "example@example.com";
+            var defaultUri = "https://google.com/";
+            var defaultValue = "";
+
+            var configs = new List<ConfigSetting>();
+            var defaultKeys = new Dictionary<ConfigType, List<string>>
+            {
+                {
+                    ConfigType.Email,
+                    new List<string>
+                    {
+                        "Email_Main"
+                    }
+                },
+                {
+                    ConfigType.Link,
+                    new List<string>
+                    {
+                        "SmallGroup_URL",
+                        "Live_URL",
+                        "Serve_URL",
+                        "ImNew_URL",
+                        "Give_URL",
+                        "FB_Social_URL",
+                        "TW_Social_URL",
+                        "IG_Social_URL",
+                        "Website_URL",
+                        "Team_URL"
+                    }
+                },
+                {
+                    ConfigType.Phone,
+                    new List<string>
+                    {
+                       "Phone_Main"
+                    }
+                },
+                {
+                    ConfigType.Misc,
+                    new List<string>
+                    {
+                        "Address_Main"
+                    }
+                }
+        };
+
+            foreach (var dflt in defaultKeys)
+            {
+                foreach (var key in dflt.Value)
+                {
+                    var config = new ConfigSetting
+                    {
+                        CreateDate = DateTime.UtcNow,
+                        LastUpdated = DateTime.UtcNow,
+                        Type = dflt.Key,
+                        Key = key
+                    };
+
+                    switch (config.Type)
+                    {
+                        case ConfigType.Email:
+                            config.Value = defaultEmail;
+                            break;
+                        case ConfigType.Link:
+                            config.Value = defaultUri;
+                            break;
+                        case ConfigType.Phone:
+                            config.Value = defaultPhone;
+                            break;
+                        case ConfigType.Misc:
+                            config.Value = defaultValue;
+                            break;
+                    }
+
+                    configs.Add(config);
+                }
+            }
+
+
+            // initialize all the 
+            _configCollection.InsertMany(configs);
         }
 
         /// <summary>
@@ -28,24 +116,24 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="setting"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<ConfigSettings>> GetConfigValue(string setting)
+        public async Task<SystemResponse<ConfigSetting>> GetConfigValue(string setting)
         {
             if (string.IsNullOrEmpty(setting))
             {
-                return new SystemResponse<ConfigSettings>(true, string.Format(SystemMessages.NullProperty, nameof(setting)));
+                return new SystemResponse<ConfigSetting>(true, string.Format(SystemMessages.NullProperty, nameof(setting)));
             }
 
-            var filter = Builders<ConfigSettings>.Filter.Eq(i => i.Key, setting);
+            var filter = Builders<ConfigSetting>.Filter.Eq(i => i.Key, setting);
 
             var cursor = await _configCollection.FindAsync(filter);
 
             var found = cursor.FirstOrDefault();
-            if (found == null || found == default(ConfigSettings))
+            if (found == null || found == default(ConfigSetting))
             {
-                return new SystemResponse<ConfigSettings>(true, string.Format(SystemMessages.UnableToFindConfigForKey, nameof(setting)));
+                return new SystemResponse<ConfigSetting>(true, string.Format(SystemMessages.UnableToFindConfigForKey, nameof(setting)));
             }
 
-            return new SystemResponse<ConfigSettings>(found, "Success!");
+            return new SystemResponse<ConfigSetting>(found, "Success!");
         }
 
         /// <summary>
@@ -53,24 +141,29 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(IEnumerable<string> request)
+        public async Task<SystemResponse<IEnumerable<ConfigSetting>>> GetConfigValues(IEnumerable<string> request)
         {
             if (request == null || !request.Any() || request.Any(i => string.IsNullOrEmpty(i)))
             {
-                return new SystemResponse<IEnumerable<ConfigSettings>>(true, string.Format(SystemMessages.NullProperty, nameof(request)));
+                return new SystemResponse<IEnumerable<ConfigSetting>>(true, string.Format(SystemMessages.NullProperty, nameof(request)));
             }
 
-            var filter = Builders<ConfigSettings>.Filter.In(i => i.Key, request);
+            var filter = Builders<ConfigSetting>.Filter.In(i => i.Key, request);
 
             var cursor = await _configCollection.FindAsync(filter);
 
             var found = cursor.ToList();
             if (found == null)
             {
-                return new SystemResponse<IEnumerable<ConfigSettings>>(true, SystemMessages.UnableToFindConfigs);
+                return new SystemResponse<IEnumerable<ConfigSetting>>(true, SystemMessages.UnableToFindConfigs);
             }
 
-            return new SystemResponse<IEnumerable<ConfigSettings>>(found, "Success!");
+            if (found.Count != request.Count())
+            {
+                return new SystemResponse<IEnumerable<ConfigSetting>>(true, SystemMessages.ConfigValuesNotFound);
+            }
+
+            return new SystemResponse<IEnumerable<ConfigSetting>>(found, "Success!");
         }
 
         /// <summary>
@@ -78,11 +171,11 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<IEnumerable<ConfigSettings>>> GetConfigValues(ConfigKeyRequest request)
+        public async Task<SystemResponse<IEnumerable<ConfigSetting>>> GetConfigValues(ConfigKeyRequest request)
         {
             if (request == null || !request.Keys.Any())
             {
-                return new SystemResponse<IEnumerable<ConfigSettings>>(true, string.Format(SystemMessages.NullProperty, nameof(ConfigKeyRequest.Keys)));
+                return new SystemResponse<IEnumerable<ConfigSetting>>(true, string.Format(SystemMessages.NullProperty, nameof(ConfigKeyRequest.Keys)));
             }
 
             var keys = request.Keys;
@@ -95,9 +188,31 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<IEnumerable<string>>> SetConfigValues(SetConfigRequest request)
+        public async Task<SystemResponse<string>> SetConfigValues(SetConfigRequest request)
         {
-            throw new NotImplementedException();
+            if (request == null || !request.Configurations.Any())
+            {
+                return new SystemResponse<string>(true, string.Format(SystemMessages.NullProperty, nameof(SetConfigRequest.Configurations)));
+            }
+
+            // we are only doing an Update here not an upsert or an insert.
+            var updateList = new List<WriteModel<ConfigSetting>>();
+
+            foreach (var config in request.Configurations)
+            {
+                var filter = Builders<ConfigSetting>.Filter.Eq(i => i.Key, config.Key);
+
+                var update = Builders<ConfigSetting>.Update.Set(i => i.Value, config.Value)
+                    .Set(i => i.LastUpdated, DateTime.UtcNow);
+
+                updateList.Add(new UpdateOneModel<ConfigSetting>(filter, update));
+            }
+
+            var updates = await _configCollection.BulkWriteAsync(updateList);
+
+            var updateResponse = $"{request.Configurations.Count()} configurations updated";
+
+            return new SystemResponse<string>(updateResponse, "Success!");
         }
     }
 }

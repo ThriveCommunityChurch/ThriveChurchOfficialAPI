@@ -13,9 +13,12 @@
         #region Validations
 
         public const string NullProperty = "Property named {0} cannot be null or empty.";
+        public const string ConfigNotProperlyFormatted = "{0} configuration contains value that is not properly formatted: {1}.";
         public const string UnableToFindPropertyForId = "Unable to find {0} with ID: {1}.";
         public const string UnableToUpdatePropertyForId = "Unable to update {0} with ID: {1}.";
         public const string EmptyRequest = "Request cannot be null or empty.";
+        public const string InvalidConfigCSVFormat = "Invalid configuration CSV format.";
+        public const string ConfigValuesNotFound = "One or more configuration values not found for requested keys.";
         public const string EndDateMustBeAfterStartDate = "EndDate must be an ISO-8601 DateTime after StartDate.";
         public const string InvalidPropertyType = "the property {0} is not the correct type of {1}.";
         public const string ConnectionMissingFromAppSettings = "{0} is a required configuation parameter. Please add it to the AppSettings.json and restart the application.";

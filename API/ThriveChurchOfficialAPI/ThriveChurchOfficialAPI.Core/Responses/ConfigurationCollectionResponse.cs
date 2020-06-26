@@ -9,6 +9,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// A collection of configuration values
         /// </summary>
-        public IEnumerable<ConfigurationMap> Configs { get; set; }
+        public IEnumerable<ConfigurationResponse> Configs { get; set; }
     }
 }
