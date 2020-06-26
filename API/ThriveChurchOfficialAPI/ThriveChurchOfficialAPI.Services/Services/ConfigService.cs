@@ -61,8 +61,10 @@ namespace ThriveChurchOfficialAPI.Services
                     Type = result.Type
                 };
 
+                value = response;
+
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetConfig, setting), result, PersistentCacheEntryOptions);
+                _cache.Set(string.Format(CacheKeys.GetConfig, setting), response, PersistentCacheEntryOptions);
             }
 
             return new SystemResponse<ConfigurationResponse>(value, "Success!");
@@ -152,32 +154,42 @@ namespace ThriveChurchOfficialAPI.Services
             // Okay so I need to enforce the format that the Keys are aleays in the first column and the values are always in the 2nd
             using (StringReader reader = new StringReader(csv))
             {
-                string readText = reader.ReadLine();
+                string readText = string.Empty;
 
-                if (string.IsNullOrEmpty(readText))
+                while (readText != null)
                 {
-                    return new SystemResponse<string>(true, SystemMessages.InvalidConfigCSVFormat);
-                }
+                    readText = reader.ReadLine();
 
-                // We need to only split on the strings that are not within an escaped set of string quotes
-                Regex CSVParser = new Regex(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-                string[] csvValues = CSVParser.Split(readText);
+                    if (readText == null)
+                    {
+                        break;
+                    }
 
-                if (csvValues == null || !csvValues.Any() || csvValues.Count() != 2)
-                {
-                    return new SystemResponse<string>(true, SystemMessages.InvalidConfigCSVFormat);
-                }
+                    if (string.IsNullOrEmpty(readText))
+                    {
+                        return new SystemResponse<string>(true, SystemMessages.InvalidConfigCSVFormat);
+                    }
 
-                var key = csvValues[0];
-                var value = csvValues[1];
+                    // We need to only split on the strings that are not within an escaped set of string quotes
+                    Regex CSVParser = new Regex(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+                    string[] csvValues = CSVParser.Split(readText);
 
-                if (requestedUpdates.ContainsKey(key))
-                {
-                    return new SystemResponse<string>(true, SystemMessages.ConfigurationsMustHaveUniqueKeys);
-                }
-                else
-                {
-                    requestedUpdates[key] = value;
+                    if (csvValues == null || !csvValues.Any() || csvValues.Count() != 2)
+                    {
+                        return new SystemResponse<string>(true, SystemMessages.InvalidConfigCSVFormat);
+                    }
+
+                    var key = csvValues[0].Trim();
+                    var value = csvValues[1].Trim();
+
+                    if (requestedUpdates.ContainsKey(key))
+                    {
+                        return new SystemResponse<string>(true, SystemMessages.ConfigurationsMustHaveUniqueKeys);
+                    }
+                    else
+                    {
+                        requestedUpdates[key] = value;
+                    }
                 }
             }
 

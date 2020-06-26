@@ -28,6 +28,14 @@ namespace ThriveChurchOfficialAPI.Repositories
 
         private void InitCollection()
         {
+            var foundDocs = _configCollection.Find(Builders<ConfigSetting>.Filter.Empty).ToList();
+
+            // we need to make sure we don't overwrite anything in the collection
+            if (foundDocs != null || foundDocs.Any())
+            {
+                return;
+            }
+
             var defaultPhone = "(555) 555-5555";
             var defaultEmail = "example@example.com";
             var defaultUri = "https://google.com/";
