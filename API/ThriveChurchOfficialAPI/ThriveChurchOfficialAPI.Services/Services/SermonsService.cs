@@ -446,17 +446,12 @@ namespace ThriveChurchOfficialAPI.Services
             return response;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
         {
             var jobId = request.StartSchedule;
 
             CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
-            DateTime endTime = schedule.GetNextOccurrence(DateTime.UtcNow);
+            DateTime endTime = schedule.GetNextOccurrence(DateTime.Now);
 
             var liveStreamUpdate = new LiveSermonsUpdateRequest
             {
@@ -464,6 +459,13 @@ namespace ThriveChurchOfficialAPI.Services
             };
 
             return GoLive(liveStreamUpdate);
+        }
+
+        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
+
+            return;
         }
 
         /// <summary>
@@ -618,13 +620,6 @@ namespace ThriveChurchOfficialAPI.Services
                 // when it's done kill the timer
                 Dispose();
             }
-        }
-
-        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
-
-            return;
         }
 
         /// <summary>
