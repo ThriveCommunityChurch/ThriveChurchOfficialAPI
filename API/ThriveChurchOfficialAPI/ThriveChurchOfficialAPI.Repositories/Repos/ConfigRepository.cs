@@ -230,23 +230,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
-        /// Get values for a collection of config settings
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public async Task<SystemResponse<IEnumerable<ConfigSetting>>> GetConfigValues(ConfigKeyRequest request)
-        {
-            if (request == null || !request.Keys.Any())
-            {
-                return new SystemResponse<IEnumerable<ConfigSetting>>(true, string.Format(SystemMessages.NullProperty, nameof(ConfigKeyRequest.Keys)));
-            }
-
-            var keys = request.Keys;
-
-            return await GetConfigValues(keys);
-        }
-
-        /// <summary>
         /// Set values for config settings
         /// </summary>
         /// <param name="request"></param>

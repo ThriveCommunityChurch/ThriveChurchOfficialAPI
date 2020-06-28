@@ -193,12 +193,7 @@ namespace ThriveChurchOfficialAPI.Services
                 }
             }
 
-            var getConfigRequest = new ConfigKeyRequest
-            {
-                Keys = requestedUpdates.Keys
-            };
-
-            var getApplicableKeys = await GetConfigValues(getConfigRequest);
+            var getApplicableKeys = await GetConfigValues(requestedUpdates.Keys);
             if (getApplicableKeys.HasErrors)
             {
                 return new SystemResponse<string>(true, getApplicableKeys.ErrorMessage);
@@ -253,14 +248,13 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// Get a value for a config setting
         /// </summary>
-        /// <param name="setting"></param>
+        /// <param name="keys"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(ConfigKeyRequest request)
+        public async Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(IEnumerable<string> keys)
         {
             #region Validations
 
-            var validationResponse = ConfigKeyRequest.Validate(request);
-            if (validationResponse.HasErrors)
+            if (keys == null || !keys.Any())
             {
                 return new SystemResponse<ConfigurationCollectionResponse>(true, SystemMessages.EmptyRequest);
             }
@@ -270,7 +264,7 @@ namespace ThriveChurchOfficialAPI.Services
             var keysNotFount = new List<string>();
             var finalList = new List<ConfigurationResponse>();
 
-            foreach (var settingKey in request.Keys)
+            foreach (var settingKey in keys)
             {
                 // check the cache first -> if there's a value there grab it
                 if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, settingKey), out ConfigurationResponse value))
@@ -283,12 +277,7 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // we only want to grab the ones we haven't already found
-            var configRequest = new ConfigKeyRequest
-            {
-                Keys = keysNotFount
-            };
-
-            var settingResponse = await _configRepository.GetConfigValues(configRequest);
+            var settingResponse = await _configRepository.GetConfigValues(keysNotFount);
             if (settingResponse.HasErrors)
             {
                 return new SystemResponse<ConfigurationCollectionResponse>(true, settingResponse.ErrorMessage);

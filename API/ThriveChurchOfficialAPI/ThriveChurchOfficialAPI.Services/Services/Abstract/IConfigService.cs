@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Services
@@ -17,7 +18,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(ConfigKeyRequest request);
+        Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(IEnumerable<string> Keys);
 
         /// <summary>
         /// Set values for config settings

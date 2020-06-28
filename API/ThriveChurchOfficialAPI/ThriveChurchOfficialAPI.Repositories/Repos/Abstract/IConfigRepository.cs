@@ -14,13 +14,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<SystemResponse<ConfigSetting>> GetConfigValue(string setting);
 
         /// <summary>
-        /// Get values for a collection of config settings
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        Task<SystemResponse<IEnumerable<ConfigSetting>>> GetConfigValues(ConfigKeyRequest request);
-
-        /// <summary>
         /// Get values for a collection of config keys
         /// </summary>
         /// <param name="request"></param>

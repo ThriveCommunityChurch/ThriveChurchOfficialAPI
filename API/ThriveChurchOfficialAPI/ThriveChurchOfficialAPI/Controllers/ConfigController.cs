@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -62,9 +63,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("list")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<ConfigurationCollectionResponse>> GetConfigValues([FromQuery]ConfigKeyRequest request)
+        public async Task<ActionResult<ConfigurationCollectionResponse>> GetConfigValues([FromQuery] string[] Keys)
         {
-            var response = await _configService.GetConfigValues(request);
+            var response = await _configService.GetConfigValues(Keys);
 
             if (response.HasErrors)
             {
