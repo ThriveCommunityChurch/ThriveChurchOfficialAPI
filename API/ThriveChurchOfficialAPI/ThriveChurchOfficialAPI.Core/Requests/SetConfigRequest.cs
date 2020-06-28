@@ -91,23 +91,16 @@ namespace ThriveChurchOfficialAPI.Core
         /// <returns></returns>
         private static ValidationResponse ValidatePhone(string phone)
         {
-            var address = new PhoneAttribute();
-
             if (phone.Contains(' ') || phone.Contains('(') || phone.Contains(')') || phone.Contains('-') || phone.Contains('+'))
             {
                 return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
             }
 
-            var validInt = !Int32.TryParse(phone, out Int32 value);
+            var validInt = !Int32.TryParse(phone, out Int32 _);
 
-            if (!validInt || value == 0)
+            if (!validInt)
             {
                 return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
-            }
-
-            if (!address.IsValid(phone))
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.ConfigNotProperlyFormatted, "Phone", phone));
             }
 
             return new ValidationResponse("Success!");
