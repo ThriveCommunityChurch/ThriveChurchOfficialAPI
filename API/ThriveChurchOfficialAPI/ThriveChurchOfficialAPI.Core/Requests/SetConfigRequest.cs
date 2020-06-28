@@ -98,7 +98,9 @@ namespace ThriveChurchOfficialAPI.Core
                 return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
             }
 
-            if (!int.TryParse(phone, out int _))
+            var validInt = !Int32.TryParse(phone, out Int32 value);
+
+            if (!validInt || value == 0)
             {
                 return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
             }
