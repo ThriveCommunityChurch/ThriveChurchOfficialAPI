@@ -282,17 +282,19 @@ namespace ThriveChurchOfficialAPI.Services
                 finalList.Add(value);
             }
 
-            var settingResponse = await _configRepository.GetConfigValues(request);
+            // we only want to grab the ones we haven't already found
+            var configRequest = new ConfigKeyRequest
+            {
+                Keys = keysNotFount
+            };
+
+            var settingResponse = await _configRepository.GetConfigValues(configRequest);
             if (settingResponse.HasErrors)
             {
                 return new SystemResponse<ConfigurationCollectionResponse>(true, settingResponse.ErrorMessage);
             }
 
             var foundValues = settingResponse.Result;
-            if (foundValues.Count() != request.Keys.Count())
-            {
-                return new SystemResponse<ConfigurationCollectionResponse>(true, SystemMessages.ConfigValuesNotFound);
-            }
 
             foreach (var setting in foundValues)
             {

@@ -31,7 +31,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             var foundDocs = _configCollection.Find(Builders<ConfigSetting>.Filter.Empty).ToList();
 
             // we need to make sure we don't overwrite anything in the collection
-            if (foundDocs != null || foundDocs.Any())
+            if (foundDocs != null && foundDocs.Any())
             {
                 return;
             }
@@ -135,6 +135,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                 updateList.Add(updateModel);
             }
 
+            Log.Warning($"Inserting Configs: {updateList?.Count ?? 0}");
+
             GenerateIndexes();
 
             _ = _configCollection.BulkWriteAsync(updateList);
@@ -191,7 +193,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             var found = cursor.FirstOrDefault();
             if (found == null || found == default(ConfigSetting))
             {
-                return new SystemResponse<ConfigSetting>(true, string.Format(SystemMessages.UnableToFindConfigForKey, nameof(setting)));
+                return new SystemResponse<ConfigSetting>(true, string.Format(SystemMessages.UnableToFindConfigForKey, setting));
             }
 
             return new SystemResponse<ConfigSetting>(found, "Success!");
