@@ -93,6 +93,16 @@ namespace ThriveChurchOfficialAPI.Core
         {
             var address = new PhoneAttribute();
 
+            if (phone.Contains(' ') || phone.Contains('(') || phone.Contains(')') || phone.Contains('-') || phone.Contains('+'))
+            {
+                return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
+            }
+
+            if (!int.TryParse(phone, out int _))
+            {
+                return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
+            }
+
             if (!address.IsValid(phone))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.ConfigNotProperlyFormatted, "Phone", phone));

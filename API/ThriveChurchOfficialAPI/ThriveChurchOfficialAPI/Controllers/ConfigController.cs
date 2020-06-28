@@ -62,7 +62,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("list")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<ConfigurationCollectionResponse>> GetConfigValues(ConfigKeyRequest request)
+        public async Task<ActionResult<ConfigurationCollectionResponse>> GetConfigValues([FromQuery]ConfigKeyRequest request)
         {
             var response = await _configService.GetConfigValues(request);
 
