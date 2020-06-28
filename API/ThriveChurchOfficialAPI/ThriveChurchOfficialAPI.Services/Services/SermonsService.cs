@@ -342,7 +342,6 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // Key not in cache, so get data.
                 var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-
                 if (seriesResponse.HasErrors)
                 {
                     return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
@@ -665,5 +664,7 @@ namespace ThriveChurchOfficialAPI.Services
         public static string GetPagedSermons { get { return "PagedSermonsCache:{0}"; } }
 
         public static string GetSermonSeries { get { return "SermonSeriesCache:{0}"; } }
+
+        public static string GetConfig { get { return "SystemConfiguration:{0}"; } }
     }
 }

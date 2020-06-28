@@ -40,6 +40,7 @@ using ThriveChurchOfficialAPI.Core;
 using Serilog;
 using Hangfire.Mongo;
 using Hangfire;
+using Newtonsoft.Json.Converters;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -87,11 +88,13 @@ namespace ThriveChurchOfficialAPI
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
+                c.DescribeAllEnumsAsStrings();
             });
 
             // Preserve Casing of JSON Objects
             services.AddMvc()
-            .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver());
+            .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver())
+            .AddJsonOptions(options => options.SerializerSettings.Converters.Add(new StringEnumConverter()));
 
             // Add functionality to inject IOptions<T>
             services.AddOptions();
@@ -133,6 +136,8 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IPassagesRepository), typeof(PassagesRepository));
             services.AddTransient(typeof(ISermonsRepository), typeof(SermonsRepository));
             services.AddTransient(typeof(IPassagesService), typeof(PassagesService));
+            services.AddTransient(typeof(IConfigService), typeof(ConfigService));
+            services.AddTransient(typeof(IConfigRepository), typeof(ConfigRepository));
 
             #region Hangfire Tasks
 
