@@ -180,7 +180,7 @@ namespace ThriveChurchOfficialAPI.Services
                     }
 
                     var key = csvValues[0].Trim();
-                    var value = csvValues[1].Trim();
+                    var value = csvValues[1].Replace("%s", "\n").Replace("\"", "").Trim();
 
                     if (requestedUpdates.ContainsKey(key))
                     {
@@ -276,23 +276,26 @@ namespace ThriveChurchOfficialAPI.Services
                 finalList.Add(value);
             }
 
-            // we only want to grab the ones we haven't already found
-            var settingResponse = await _configRepository.GetConfigValues(keysNotFount);
-            if (settingResponse.HasErrors)
+            if (keysNotFount.Any())
             {
-                return new SystemResponse<ConfigurationCollectionResponse>(true, settingResponse.ErrorMessage);
-            }
-
-            var foundValues = settingResponse.Result;
-
-            foreach (var setting in foundValues)
-            {
-                finalList.Add(new ConfigurationResponse
+                // we only want to grab the ones we haven't already found
+                var settingResponse = await _configRepository.GetConfigValues(keysNotFount);
+                if (settingResponse.HasErrors)
                 {
-                    Key = setting.Key,
-                    Value = setting.Value,
-                    Type = setting.Type
-                });
+                    return new SystemResponse<ConfigurationCollectionResponse>(true, settingResponse.ErrorMessage);
+                }
+
+                var foundValues = settingResponse.Result;
+
+                foreach (var setting in foundValues)
+                {
+                    finalList.Add(new ConfigurationResponse
+                    {
+                        Key = setting.Key,
+                        Value = setting.Value,
+                        Type = setting.Type
+                    });
+                }
             }
 
             var response = new ConfigurationCollectionResponse

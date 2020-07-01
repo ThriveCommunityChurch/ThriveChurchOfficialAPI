@@ -105,13 +105,6 @@ namespace ThriveChurchOfficialAPI.Core
                 return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
             }
 
-            var validInt = !Int32.TryParse(phone, out Int32 _);
-
-            if (!validInt)
-            {
-                return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
-            }
-
             return new ValidationResponse("Success!");
         }
         
@@ -129,9 +122,9 @@ namespace ThriveChurchOfficialAPI.Core
 
             if (config.Key == "FB_PageId")
             {
-                var validInt = !long.TryParse(config.Value, out long _);
+                var validLong = Int64.TryParse(config.Value, out Int64 _);
 
-                if (!validInt)
+                if (!validLong)
                 {
                     return new ValidationResponse(true, SystemMessages.InvalidConfigForFBPage);
                 }

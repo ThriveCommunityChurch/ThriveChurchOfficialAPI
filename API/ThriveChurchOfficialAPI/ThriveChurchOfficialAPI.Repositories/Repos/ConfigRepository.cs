@@ -73,7 +73,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                     ConfigType.Misc,
                     new List<string>
                     {
-                        "Address_Main"
+                        "Address_Main",
+                        "Location_Name"
                     }
                 },
                 {
@@ -218,6 +219,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Get values for a collection of config settings
         /// </summary>
         /// <param name="request"></param>
+        /// <param name="createRequest"></param>
         /// <returns></returns>
         public async Task<SystemResponse<IEnumerable<ConfigSetting>>> GetConfigValues(IEnumerable<string> request)
         {
