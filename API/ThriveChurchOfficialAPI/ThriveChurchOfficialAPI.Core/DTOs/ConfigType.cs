@@ -12,6 +12,8 @@ namespace ThriveChurchOfficialAPI.Core
 
         Link,
 
-        Misc
+        Misc,
+
+        Social
     }
 }

@@ -30,12 +30,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             var foundDocs = _configCollection.Find(Builders<ConfigSetting>.Filter.Empty).ToList();
 
-            // we need to make sure we don't overwrite anything in the collection
-            if (foundDocs != null && foundDocs.Any())
-            {
-                return;
-            }
-
             var defaultPhone = "(555) 555-5555";
             var defaultEmail = "example@example.com";
             var defaultUri = "https://google.com/";
@@ -64,7 +58,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                         "TW_Social_URL",
                         "IG_Social_URL",
                         "Website_URL",
-                        "Team_URL"
+                        "Team_URL",
+                        "Prayer_URL"
                     }
                 },
                 {
@@ -80,8 +75,25 @@ namespace ThriveChurchOfficialAPI.Repositories
                     {
                         "Address_Main"
                     }
+                },
+                {
+                    ConfigType.Social,
+                    new List<string>
+                    {
+                        "FB_PageId",
+                        "IG_uName",
+                        "TW_uName"
+                    }
                 }
-        };
+            };
+
+            var totCountConfigs = defaultKeys.SelectMany(i => i.Value);
+
+            // we need to make sure we don't overwrite anything in the collection
+            if (foundDocs != null && totCountConfigs.Count() == foundDocs.Count)
+            {
+                return;
+            }
 
             foreach (var dflt in defaultKeys)
             {
@@ -107,6 +119,9 @@ namespace ThriveChurchOfficialAPI.Repositories
                             config.Value = defaultPhone;
                             break;
                         case ConfigType.Misc:
+                            config.Value = defaultValue;
+                            break;
+                        case ConfigType.Social:
                             config.Value = defaultValue;
                             break;
                     }
