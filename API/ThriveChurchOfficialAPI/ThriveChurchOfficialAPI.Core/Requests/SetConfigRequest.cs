@@ -61,6 +61,15 @@ namespace ThriveChurchOfficialAPI.Core
                         }
 
                         break;
+                    case ConfigType.Social:
+
+                        var socialValidation = ValidateSocial(config);
+                        if (socialValidation.HasErrors)
+                        {
+                            return new ValidationResponse(true, socialValidation.ErrorMessage);
+                        }
+
+                        break;
                 }
             }
 
@@ -101,6 +110,41 @@ namespace ThriveChurchOfficialAPI.Core
             if (!validInt)
             {
                 return new ValidationResponse(true, SystemMessages.PhoneNumbersCannotContainSpecialCharactersOrSpaces);
+            }
+
+            return new ValidationResponse("Success!");
+        }
+        
+        /// <summary>
+        /// Validate an email configuration
+        /// </summary>
+        /// <param name="phone"></param>
+        /// <returns></returns>
+        private static ValidationResponse ValidateSocial(ConfigurationMap config)
+        {
+            if (config.Value.Contains(' '))
+            {
+                return new ValidationResponse(true, SystemMessages.SocialConfigsCannotContainSpaces);
+            }
+
+            if (config.Key == "FB_PageId")
+            {
+                var validInt = !long.TryParse(config.Value, out long _);
+
+                if (!validInt)
+                {
+                    return new ValidationResponse(true, SystemMessages.InvalidConfigForFBPage);
+                }
+            }
+            else if (config.Key == "IG_uName" || config.Key == "TW_uName")
+            {
+                if (config.Value.Contains("?") || config.Value.Contains("&") || config.Value.Contains("="))
+                {
+                    return new ValidationResponse(true, SystemMessages.SocialConfigsContainInvalidCharacters);
+                }
+
+                // if anyone tries to put @ in their username we need to remove that
+                config.Value = config.Value.Replace("@", "").Trim();
             }
 
             return new ValidationResponse("Success!");

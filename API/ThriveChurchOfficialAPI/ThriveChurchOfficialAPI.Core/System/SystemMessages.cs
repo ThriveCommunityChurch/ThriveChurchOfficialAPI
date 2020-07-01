@@ -7,6 +7,9 @@
         public const string ConfigurationsMustHaveUniqueKeys = "Each configuration value must have a unique key";
         public const string UnableToFindConfigForKey = "Unable to find configuration with key: {0}";
         public const string UnableToFindConfigs = "No configurations found.";
+        public const string InvalidConfigForFBPage = "Facebook page configuration improperly formatted. This value should be a number.";
+        public const string SocialConfigsCannotContainSpaces = "Social configurations cannot contain spaces.";
+        public const string SocialConfigsContainInvalidCharacters = "Social configurations cannot contain the following characters: &, ?, or =";
 
         #endregion
 
