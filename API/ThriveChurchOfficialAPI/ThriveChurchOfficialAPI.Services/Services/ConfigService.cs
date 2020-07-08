@@ -105,15 +105,18 @@ namespace ThriveChurchOfficialAPI.Services
                 }
             }
 
-            var settingResponse = await _configRepository.GetConfigValues(keysNotFound);
-            if (settingResponse.HasErrors)
+            // if we didn't find them from the cache then we need to go to the DB
+            // but we don't need to go to the DB if we found them all in the cache
+            if (keysNotFound.Any())
             {
-                return new SystemResponse<string>(true, settingResponse.ErrorMessage);
+                var settingResponse = await _configRepository.GetConfigValues(keysNotFound);
+                if (settingResponse.HasErrors)
+                {
+                    return new SystemResponse<string>(true, settingResponse.ErrorMessage);
+                }
             }
 
             #endregion
-
-            var foundValues = settingResponse.Result;
 
             var updateResponse = await _configRepository.SetConfigValues(request);
             if (updateResponse.HasErrors)
