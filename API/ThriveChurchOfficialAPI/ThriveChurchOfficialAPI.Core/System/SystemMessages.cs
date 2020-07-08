@@ -29,6 +29,7 @@
         public const string OverrideMissingFromAppSettings = "Attempting to override 'EsvApiKey' within your appsettings.json but were unable to parse the value into a bool. " +
             "Please add \"true\" (to not check for a key) or \"false\" (to check for a key) " +
             "to 'OverrideEsvApiKey' within your AppSettings.json and restart the application.";
+        public const string PropertyNameCharactersLengthRange = "Property named {0} must must be within {1} and {2} characters in length.";
 
         #endregion
 
