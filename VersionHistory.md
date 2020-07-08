@@ -1,3 +1,9 @@
+### 1.3  —  July 7, 2020
+- Near real-time UI configurations
+- Caching improvements (200% increase in overall read performance)
+- Automated live-streams
+- Added character limits on the GET passage route
+
 ### 1.2  —  June 8, 2020
 - Support for Recurring live-streams
 
