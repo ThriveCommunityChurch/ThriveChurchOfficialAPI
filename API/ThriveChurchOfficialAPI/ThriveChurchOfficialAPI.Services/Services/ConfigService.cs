@@ -137,7 +137,7 @@ namespace ThriveChurchOfficialAPI.Services
                 _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
             }
 
-            return new SystemResponse<string>($"Updated {keysToUpdate.Count}", "Success!");
+            return new SystemResponse<string>($"Successfully updated {keysToUpdate.Count} configuration(s).", "Success!");
         }
 
         /// <summary>
