@@ -342,7 +342,6 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // Key not in cache, so get data.
                 var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-
                 if (seriesResponse.HasErrors)
                 {
                     return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
@@ -447,17 +446,12 @@ namespace ThriveChurchOfficialAPI.Services
             return response;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
         {
             var jobId = request.StartSchedule;
 
             CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
-            DateTime endTime = schedule.GetNextOccurrence(DateTime.UtcNow);
+            DateTime endTime = schedule.GetNextOccurrence(DateTime.Now);
 
             var liveStreamUpdate = new LiveSermonsUpdateRequest
             {
@@ -465,6 +459,13 @@ namespace ThriveChurchOfficialAPI.Services
             };
 
             return GoLive(liveStreamUpdate);
+        }
+
+        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
+
+            return;
         }
 
         /// <summary>
@@ -621,13 +622,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
         }
 
-        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
-
-            return;
-        }
-
         /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
         /// </summary>
@@ -665,5 +659,7 @@ namespace ThriveChurchOfficialAPI.Services
         public static string GetPagedSermons { get { return "PagedSermonsCache:{0}"; } }
 
         public static string GetSermonSeries { get { return "SermonSeriesCache:{0}"; } }
+
+        public static string GetConfig { get { return "SystemConfiguration:{0}"; } }
     }
 }

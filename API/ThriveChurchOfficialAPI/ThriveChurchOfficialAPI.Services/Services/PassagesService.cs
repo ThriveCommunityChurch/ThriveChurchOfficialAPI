@@ -29,6 +29,11 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonPassageResponse>(true, string.Format(SystemMessages.NullProperty, "searchCriteria"));
             }
 
+            if (searchCriteria.Length < 3 || searchCriteria.Length > 200)
+            {
+                return new SystemResponse<SermonPassageResponse>(true, string.Format(SystemMessages.PropertyNameCharactersLengthRange, 3, 200));
+            }
+
             var response = new SermonPassageResponse();
 
             // check the cache first and see if it's in there, before going to the ESV API
