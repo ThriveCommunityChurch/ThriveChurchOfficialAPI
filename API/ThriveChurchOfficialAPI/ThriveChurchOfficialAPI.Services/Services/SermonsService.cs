@@ -442,6 +442,10 @@ namespace ThriveChurchOfficialAPI.Services
                 response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
                 response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
             }
+            else
+            {
+                response.NextLive = getLiveSermonsResponse.NextLive;
+            }
 
             return response;
         }
@@ -463,7 +467,14 @@ namespace ThriveChurchOfficialAPI.Services
 
         public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
         {
-            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive();
+            CrontabSchedule schedule = CrontabSchedule.Parse(request.StartSchedule);
+            DateTime nextLocal = schedule.GetNextOccurrence(DateTime.Now);
+
+            // make sure that we're using UTC
+            long nextTics = nextLocal.Ticks;
+            DateTime nextLive = new DateTime(nextTics, DateTimeKind.Utc);
+
+            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive(nextLive);
 
             return;
         }

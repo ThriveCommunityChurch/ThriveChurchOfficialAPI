@@ -295,6 +295,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                     .Set(l => l.LastUpdated, DateTime.UtcNow)
                     .Set(l => l.IsLive, request.IsLive)
                     .Set(l => l.SpecialEventTimes, request.SpecialEventTimes)
+                    .Set(l => l.NextLive, request.NextLive)
                     .Set(l => l.ExpirationTime, request.ExpirationTime.ToUniversalTime())
                 );
 
@@ -362,7 +363,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Update LiveSermons to inactive once the stream has concluded
         /// </summary>
         /// <returns></returns>
-        public async Task<SystemResponse<LiveSermons>> UpdateLiveSermonsInactive()
+        public async Task<SystemResponse<LiveSermons>> UpdateLiveSermonsInactive(DateTime? nextLive = null)
         {
             var liveSermonsResponse = await GetLiveSermons();
             if (liveSermonsResponse == null || liveSermonsResponse == default(LiveSermons))
@@ -374,6 +375,11 @@ namespace ThriveChurchOfficialAPI.Repositories
             // make the change to reflect that this sermon was just updated
             liveSermonsResponse.IsLive = false;
             liveSermonsResponse.SpecialEventTimes = null;
+            
+            if (nextLive.HasValue && nextLive.Value.Kind == DateTimeKind.Utc)
+            {
+                liveSermonsResponse.NextLive = nextLive;
+            }
 
             var updatedLiveSermon = await UpdateLiveSermons(liveSermonsResponse);
             if (updatedLiveSermon.HasErrors)

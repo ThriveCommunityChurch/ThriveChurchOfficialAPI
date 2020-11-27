@@ -22,6 +22,11 @@ namespace ThriveChurchOfficialAPI.Core
         public bool IsLive { get; set; }
 
         /// <summary>
+        /// The UTC timestamp for when the livestream will be live again
+        /// </summarry>
+        public DateTime? NextLive { get; set; }
+
+        /// <summary>
         /// Set a time when a livestream notification will disappear,
         /// after this time when a user loads the page the notification will disappear.
         /// We will only use the time here.
