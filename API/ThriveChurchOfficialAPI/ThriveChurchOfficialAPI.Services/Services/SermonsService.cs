@@ -471,8 +471,7 @@ namespace ThriveChurchOfficialAPI.Services
             DateTime nextLocal = schedule.GetNextOccurrence(DateTime.Now);
 
             // make sure that we're using UTC
-            long nextTics = nextLocal.Ticks;
-            DateTime nextLive = new DateTime(nextTics, DateTimeKind.Utc);
+            DateTime nextLive = nextLocal.ToUniversalTime();
 
             var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive(nextLive);
 
