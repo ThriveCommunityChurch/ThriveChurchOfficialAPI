@@ -12,6 +12,7 @@ using MongoDB.Bson;
 using Hangfire;
 using ThriveChurchOfficialAPI.Core.System;
 using NCrontab;
+using Hangfire.Storage;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -470,8 +471,11 @@ namespace ThriveChurchOfficialAPI.Services
             CrontabSchedule schedule = CrontabSchedule.Parse(request.StartSchedule);
             DateTime nextLocal = schedule.GetNextOccurrence(DateTime.Now);
 
+            List<RecurringJobDto> recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
+            var nextJobExecTime = recurringJobs.OrderBy(i => i.NextExecution.Value).First().NextExecution.Value;
+
             // make sure that we're using UTC
-            DateTime nextLive = nextLocal.ToUniversalTime();
+            DateTime nextLive = nextJobExecTime.ToUniversalTime();
 
             var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive(nextLive);
 
