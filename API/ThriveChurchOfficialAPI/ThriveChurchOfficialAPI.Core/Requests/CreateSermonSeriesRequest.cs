@@ -16,7 +16,6 @@ namespace ThriveChurchOfficialAPI.Core
             Slug = null;
             Thumbnail = null;
             ArtUrl = null;
-            LastUpdated = null;
         }
 
         /// <summary>
@@ -55,11 +54,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// The direct URL to the full res art for this sermon series
         /// </summary>
         public string ArtUrl { get; set; }
-
-        /// <summary>
-        /// Used as a timestamp to indicate the last time that this object was updated
-        /// </summary>
-        public DateTime? LastUpdated { get; set; }
 
         /// <summary>
         /// A collection of Messages spoken / given by someone within this sermon series
@@ -101,12 +95,6 @@ namespace ThriveChurchOfficialAPI.Core
             if (string.IsNullOrEmpty(request.Slug))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Slug"));
-            }
-
-            // there's no guarantee that a requested value here will keep the same value
-            if (request.LastUpdated != null)
-            {
-                request.LastUpdated = null;
             }
 
             // messages must at least be an object, it should not be null
