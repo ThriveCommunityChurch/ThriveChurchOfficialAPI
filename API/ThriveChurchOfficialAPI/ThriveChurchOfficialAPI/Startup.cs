@@ -54,6 +54,7 @@ namespace ThriveChurchOfficialAPI
         /// </summary>
         public IConfigurationRoot Configuration { get; set; }
 
+        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
         public Startup(IHostingEnvironment env)
         {
@@ -70,6 +71,15 @@ namespace ThriveChurchOfficialAPI
         {
             // enable in-memory caching
             services.AddMemoryCache();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(MyAllowSpecificOrigins,
+                builder =>
+                {
+                    builder.WithOrigins("*");
+                });
+            });
 
             services.AddMvc(options =>
             {
@@ -199,7 +209,10 @@ namespace ThriveChurchOfficialAPI
 
             app.UseIpRateLimiting(); // enable rate limits
 
+            app.UseCors(MyAllowSpecificOrigins);
+
             app.UseMvc();
+
         }
     }
 
