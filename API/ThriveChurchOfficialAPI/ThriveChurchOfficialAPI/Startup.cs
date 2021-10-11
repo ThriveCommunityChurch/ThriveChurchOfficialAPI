@@ -31,20 +31,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
 using ThriveChurchOfficialAPI.Services;
 using ThriveChurchOfficialAPI.Repositories;
-using Newtonsoft.Json.Serialization;
 using AspNetCoreRateLimit;
 using System.Reflection;
 using System.IO;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
-using ThriveChurchOfficialAPI.Core;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 using Hangfire.Mongo;
 using Hangfire;
+using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Converters;
+using Microsoft.OpenApi.Models;
 
 namespace ThriveChurchOfficialAPI
 {
-    #pragma warning disable CS1591
+#pragma warning disable CS1591
 
     public class Startup
     {
@@ -56,7 +57,7 @@ namespace ThriveChurchOfficialAPI
 
         readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
-        public Startup(IHostingEnvironment env)
+        public Startup(IWebHostEnvironment env)
         {
             var builder = new ConfigurationBuilder()
             .SetBasePath(env.ContentRootPath)
@@ -87,24 +88,26 @@ namespace ThriveChurchOfficialAPI
                 // more on this here https://docs.microsoft.com/en-us/aspnet/core/mvc/models/validation?view=aspnetcore-2.2#top-level-node-validation
                 options.MaxModelValidationErrors = 50;
             })
-            .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            .SetCompatibilityVersion(CompatibilityVersion.Latest);
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new Info { Title = "Thrive Church Official API", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Thrive Church Official API", Version = "v1" });
 
                 // Set the comments path for the Swagger JSON and UI.
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
-                c.DescribeAllEnumsAsStrings();
             });
 
             // Preserve Casing of JSON Objects
-            services.AddMvc()
-            .AddJsonOptions(options => options.SerializerSettings.ContractResolver = new DefaultContractResolver())
-            .AddJsonOptions(options => options.SerializerSettings.Converters.Add(new StringEnumConverter()));
+            services.AddControllers()
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
+                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                });
 
             // Add functionality to inject IOptions<T>
             services.AddOptions();
@@ -172,7 +175,7 @@ namespace ThriveChurchOfficialAPI
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())
             {
@@ -195,11 +198,10 @@ namespace ThriveChurchOfficialAPI
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
                 c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
+                c.DefaultModelsExpandDepth(-1); // Disable swagger schemas at bottom
             });
 
             #region Hangfire Tasks
-
-            app.UseHangfireServer(new BackgroundJobServerOptions() { WorkerCount = 2 });
 
             // Map Dashboard to the `http://<your-app>/hf-dashboard` URL.
             //app.UseHangfireDashboard("/hf-dashboard", new DashboardOptions { IsReadOnlyFunc = (DashboardContext context) => true }); // read only for prod
@@ -211,7 +213,12 @@ namespace ThriveChurchOfficialAPI
 
             app.UseCors(MyAllowSpecificOrigins);
 
-            app.UseMvc();
+            app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
 
         }
     }

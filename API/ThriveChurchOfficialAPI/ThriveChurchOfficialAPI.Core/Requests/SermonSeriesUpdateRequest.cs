@@ -64,26 +64,20 @@ namespace ThriveChurchOfficialAPI.Core
         {
             if (request == null)
             {
-                new ValidationResponse(true, SystemMessages.EmptyRequest);
+                return new ValidationResponse(true, SystemMessages.EmptyRequest);
             }
 
-            if (request.ArtUrl == null)
+            if (string.IsNullOrEmpty(request.ArtUrl))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "ArtUrl"));
             }
-            if (request.EndDate == null)
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "EndDate"));
-            }
-            if (request.StartDate == null)
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "StartDate"));
-            }
-            if (request.Thumbnail == null)
+
+            if (string.IsNullOrEmpty(request.Thumbnail))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Thumbnail"));
             }
-            if (request.Slug == null)
+
+            if (string.IsNullOrEmpty(request.Slug))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Slug"));
             }
