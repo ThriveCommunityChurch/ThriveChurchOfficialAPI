@@ -70,17 +70,17 @@ namespace ThriveChurchOfficialAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // enable in-memory caching
-            services.AddMemoryCache();
-
             services.AddCors(options =>
             {
-                options.AddPolicy(MyAllowSpecificOrigins,
-                builder =>
-                {
-                    builder.WithOrigins("*");
-                });
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                                  builder =>
+                                  {
+                                      builder.WithOrigins("*").AllowAnyHeader().AllowAnyMethod();
+                                  });
             });
+
+            // enable in-memory caching
+            services.AddMemoryCache();
 
             services.AddMvc(options =>
             {
@@ -211,9 +211,9 @@ namespace ThriveChurchOfficialAPI
 
             app.UseIpRateLimiting(); // enable rate limits
 
-            app.UseCors(MyAllowSpecificOrigins);
-
             app.UseRouting();
+
+            app.UseCors(MyAllowSpecificOrigins);
 
             app.UseEndpoints(endpoints =>
             {
