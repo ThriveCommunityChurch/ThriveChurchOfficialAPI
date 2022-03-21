@@ -12,7 +12,7 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// <summary>
     /// Sermons Repo
     /// </summary>
-    public class MessagesRepository : RepositoryBase, IMessagesRepository
+    public class MessagesRepository : RepositoryBase<SermonMessage>, IMessagesRepository
     {
         private readonly IMongoCollection<SermonMessage> _messagesCollection;
 
@@ -31,80 +31,41 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request)
+        public async Task<SystemResponse<SermonMessage>> CreateNewMessage(SermonMessage request)
         {
             // updated time is now
-            request.LastUpdated = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            request.LastUpdated = now;
+            request.CreateDate = now;
 
-            await _sermonsCollection.InsertOneAsync(request);
+            await _messagesCollection.InsertOneAsync(request);
 
-            // respond with the inserted object
-            var inserted = await _sermonsCollection.FindAsync(
-                    Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
-
-            var response = inserted.FirstOrDefault();
-            if (response == default(SermonSeries))
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.ErrorOcurredInsertingIntoCollection, "Sermons"));
-            }
-
-            return new SystemResponse<SermonSeries>(response, "Success!");
+            return new SystemResponse<SermonMessage>(request, "Success!");
         }
 
         /// <summary>
         /// Gets a series object for the specified Id
         /// </summary>
-        /// <param name="SeriesId"></param>
-        /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> GetSermonSeriesForId(string SeriesId)
-        {
-            if (!IsValidObjectId(SeriesId))
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Sermon Series", SeriesId));
-            }
-
-            var singleSeries = await _sermonsCollection.FindAsync(
-                   Builders<SermonSeries>.Filter.Eq(s => s.Id, SeriesId));
-
-            var response = singleSeries.FirstOrDefault();
-
-            return new SystemResponse<SermonSeries>(response, "Success!");
-        }
-
-        /// <summary>
-        /// Used to find a series for a particular unique slug
-        /// </summary>
-        /// <param name="slug"></param>
-        /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug)
-        {
-            var singleSeries = await _sermonsCollection.FindAsync(
-                   Builders<SermonSeries>.Filter.Eq(s => s.Slug, slug));
-
-            var response = singleSeries.FirstOrDefault();
-            if (response == default(SermonSeries))
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindSermonWithSlug, slug));
-            }
-
-            return new SystemResponse<SermonSeries>(response, "Success!");
-        }
-
-        /// <summary>
-        /// Gets a sermon message for its Id
-        /// </summary>
         /// <param name="messageId"></param>
         /// <returns></returns>
-        public async Task<SermonMessage> GetMessageForId(string messageId)
+        public async Task<SystemResponse<SermonMessage>> GetMessageById(string messageId)
         {
-            // use a filter since we are looking for an Id which is a value in an array with n elements
-            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
+            if (!IsValidObjectId(messageId))
+            {
+                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "message", messageId));
+            }
 
-            var seriesResponse = await _sermonsCollection.FindAsync(filter);
-            var series = seriesResponse.FirstOrDefault();
-            var response = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
+            var filter = Builders<SermonMessage>.Filter.Eq(s => s.Id, messageId);
 
-            return response;
+            var cursor = await _messagesCollection.FindAsync(filter);
+
+            SermonMessage response = cursor.FirstOrDefault();
+            if (response == default)
+            {
+                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "message", messageId));
+            }
+
+            return new SystemResponse<SermonMessage>(response, "Success!");
         }
 
         /// <summary>

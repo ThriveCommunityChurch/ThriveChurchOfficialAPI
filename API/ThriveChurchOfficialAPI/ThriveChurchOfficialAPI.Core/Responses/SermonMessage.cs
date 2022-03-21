@@ -8,7 +8,7 @@ namespace ThriveChurchOfficialAPI.Core
     /// <summary>
     /// C'tor
     /// </summary>
-    public class SermonMessage
+    public class SermonMessage: ObjectBase
     {
         /// <summary>
         /// C'tor
@@ -24,13 +24,6 @@ namespace ThriveChurchOfficialAPI.Core
             Date = null;
             PlayCount = 0;
         }
-
-        /// <summary>
-        /// The unique ID of the message
-        /// </summary>
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
 
         /// <summary>
         /// The full Url for the .mp3 for the sermon recording.
@@ -83,6 +76,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         [DataType(DataType.Date)]
         public DateTime? Date { get; set; }
+
+        /// <summary>
+        /// Timestamp for the last time this objct was updated
+        /// </summary>
+        public DateTime LastUpdated { get; set; }
 
         /// <summary>
         /// The number of times that this message has been played.

@@ -12,7 +12,7 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// <summary>
     /// Sermons Repo
     /// </summary>
-    public class SermonsRepository : RepositoryBase, ISermonsRepository
+    public class SermonsRepository : RepositoryBase<SermonSeries>, ISermonsRepository
     {
         private readonly IMongoCollection<SermonSeries> _sermonsCollection;
         private readonly IMongoCollection<LiveSermons> _livestreamCollection;
@@ -32,17 +32,25 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
         /// <returns></returns>
-        public async Task<AllSermonsResponse> GetAllSermons(bool sorted = true)
+        public async Task<IEnumerable<SermonSeries>> GetAllSermons(bool sorted = true)
         {
             var filter = Builders<SermonSeries>.Filter.Empty;
-            var documents = await _sermonsCollection.Find(filter).ToListAsync();
 
-            var allSermonsResponse = new AllSermonsResponse
+            var stages = new List<BsonDocument>
             {
-                Sermons = sorted ? documents.OrderBy(i => i.StartDate) : documents
+                new BsonDocument("$match", ConvertFilterToBsonDocument(filter))
             };
 
-            return allSermonsResponse;
+            if (sorted)
+            {
+                stages.Add(new BsonDocument("$sort", new BsonDocument(nameof(SermonSeries.StartDate), -1)));
+            }
+
+            PipelineDefinition<SermonSeries, SermonSeries> pipeline = PipelineDefinition<SermonSeries, SermonSeries>.Create(stages);
+
+            var cursor = await _sermonsCollection.AggregateAsync(pipeline);
+
+            return cursor.ToList();
         }
 
         /// <summary>
@@ -83,7 +91,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             // converting this to an array first will allow us to not have to enumerate the collection multiple times
             // ToArray() just converts the DataType via reflection through a Buffer -> O(n) BUT length reads are O(1) after this
-            var totalRecordCount = totalRecord.Sermons.ToArray().Length;
+            var totalRecordCount = totalRecord.ToArray().Length;
 
             // since we know how many there are, in this method we can use that to indicate the total Pages in this method
             // Remember that pages 1 & 2 return a response of only 5
@@ -248,41 +256,6 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
 
             return new SystemResponse<SermonSeries>(response, "Success!");
-        }
-
-        /// <summary>
-        /// Gets a sermon message for its Id
-        /// </summary>
-        /// <param name="messageId"></param>
-        /// <returns></returns>
-        public async Task<SermonMessage> GetMessageForId(string messageId)
-        {
-            // use a filter since we are looking for an Id which is a value in an array with n elements
-            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
-
-            var seriesResponse = await _sermonsCollection.FindAsync(filter);
-            var series = seriesResponse.FirstOrDefault();
-            var response = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
-
-            return response;
-        }
-
-        /// <summary>
-        /// Gets a sermon message for its Id
-        /// </summary>
-        /// <param name="messageId"></param>
-        /// <returns></returns>
-        public async Task<SermonMessage> UpdateMessagePlayCount(string messageId)
-        {
-            // use a filter since we are looking for an Id which is a value in an array with n elements
-            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
-
-            var seriesResponse = await _sermonsCollection.FindAsync(filter);
-            var series = seriesResponse.FirstOrDefault();
-            var message = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
-            message.PlayCount++;
-
-            return response;
         }
 
         /// <summary>

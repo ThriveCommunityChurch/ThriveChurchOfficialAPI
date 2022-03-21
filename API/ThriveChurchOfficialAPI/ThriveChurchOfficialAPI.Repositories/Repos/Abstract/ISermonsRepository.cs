@@ -7,7 +7,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public interface ISermonsRepository
     {
-        Task<AllSermonsResponse> GetAllSermons(bool sorted = true);
+        Task<IEnumerable<SermonSeries>> GetAllSermons(bool sorted = true);
 
         Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
 
@@ -24,8 +24,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<SystemResponse<SermonSeries>> UpdateSermonSeries(SermonSeries request);
 
         Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug);
-
-        Task<SermonMessage> GetMessageForId(string messageId);
 
         /// <summary>
         /// Returns a paged collection of summarized sermon data
