@@ -76,14 +76,17 @@ namespace ThriveChurchOfficialAPI.Repositories
         public async Task<SermonMessage> UpdateMessagePlayCount(string messageId)
         {
             // use a filter since we are looking for an Id which is a value in an array with n elements
-            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
+            var filter = Builders<SermonMessage>.Filter.ElemMatch(x => x.Id, messageId);
+            var update = Builders<SermonMessage>.Update.Inc(x => x.PlayCount, 1);
 
-            var seriesResponse = await _sermonsCollection.FindAsync(filter);
-            var series = seriesResponse.FirstOrDefault();
-            var message = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
-            message.PlayCount++;
+            var messageResponse = await _messagesCollection.FindOneAndUpdateAsync(filter, update, 
+                new FindOneAndUpdateOptions<SermonMessage> 
+                { 
+                    // return the object after the update
+                    ReturnDocument = ReturnDocument.After 
+                });
 
-            return response;
+            return messageResponse;
         }
     }
 }
