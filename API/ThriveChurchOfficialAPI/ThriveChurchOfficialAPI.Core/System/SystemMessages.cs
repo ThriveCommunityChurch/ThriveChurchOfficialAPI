@@ -42,7 +42,7 @@
         public const string ErrorOcurredUpdatingDocumentForKey = "An error ocurred while updating the document with requested key of {0}.";
         public const string UnableToModifySlugForExistingSermonSeries = "Unable to modify slug for sermon series.";
         public const string SeriesWithSlugAlreadyExists = "A series with the slug {0} already exists.";
-        public const string UnableToFindLiveSermon = "Unable to find LiveSermon.";
+        public const string UnableToFind = "Unable to find {0}.";
         public const string AudioDurationTooShort = "AudioDuration cannot be less than or equal to 0 seconds.";
 
         #endregion

@@ -7,7 +7,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 {
     public interface ISermonsRepository
     {
-        Task<AllSermonsResponse> GetAllSermons();
+        Task<AllSermonsResponse> GetAllSermons(bool sorted = true);
 
         Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
 

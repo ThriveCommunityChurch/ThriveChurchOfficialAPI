@@ -90,5 +90,11 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request"></param>
         /// <returns></returns>
         string ScheduleLiveStream(LiveSermonsSchedulingRequest request);
+
+        /// <summary>
+        /// Gets sermon statistics
+        /// </summary>
+        /// <returns></returns>
+        Task<SystemResponse<SermonStatsResponse>> GetSermonStats();
     }
 }

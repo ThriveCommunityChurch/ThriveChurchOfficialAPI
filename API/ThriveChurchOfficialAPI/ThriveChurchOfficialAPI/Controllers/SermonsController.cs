@@ -209,6 +209,32 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
+        /// Mark a message as played by a user
+        /// </summary>
+        /// <remarks>
+        /// Request body is ignored on this request.
+        /// </remarks>
+        /// <param name="MessageId"></param>
+        /// <returns>SermonSeries Object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpPost("series/message/{MessageId}/played")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<SermonMessage>> MarkMessagePlayed([BindRequired] string MessageId)
+        {
+            var response = await _sermonsService.MarkMessagePlayed(MessageId);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
         /// Get Livestreaming information
         /// </summary>
         /// <returns>Live Streaming info</returns>
@@ -256,7 +282,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
-        /// Set an active livestream for a special event
+        /// Set an active livestream for a special event [DEPRECATED]
         /// </summary>
         /// <param name="request"></param>
         /// <returns>LiveSermon Object</returns>
@@ -330,6 +356,28 @@ namespace ThriveChurchOfficialAPI.Controllers
         public async Task<ActionResult<LiveSermons>> UpdateLiveSermonsInactive()
         {
             var response = await _sermonsService.UpdateLiveSermonsInactive();
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Get Stats for all sermons
+        /// </summary>
+        /// <returns>Live Streaming info</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("stats")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<SermonStatsResponse>> GetSermonsStats()
+        {
+            var response = await _sermonsService.GetSermonStats();
 
             if (response.HasErrors)
             {

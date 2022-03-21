@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace ThriveChurchOfficialAPI.Core
@@ -8,6 +10,9 @@ namespace ThriveChurchOfficialAPI.Core
     /// </summary>
     public class SermonMessage
     {
+        /// <summary>
+        /// C'tor
+        /// </summary>
         public SermonMessage()
         {
             AudioUrl = null;
@@ -17,7 +22,15 @@ namespace ThriveChurchOfficialAPI.Core
             Speaker = null;
             Title = null;
             Date = null;
+            PlayCount = 0;
         }
+
+        /// <summary>
+        /// The unique ID of the message
+        /// </summary>
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
 
         /// <summary>
         /// The full Url for the .mp3 for the sermon recording.
@@ -72,8 +85,8 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? Date { get; set; }
 
         /// <summary>
-        /// String representation of a GUID (Cannot be modified)
+        /// The number of times that this message has been played.
         /// </summary>
-        public string MessageId { get; set; }
+        public int PlayCount { get; set; }
     }
 }

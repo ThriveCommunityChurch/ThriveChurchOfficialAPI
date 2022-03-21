@@ -15,7 +15,6 @@ namespace ThriveChurchOfficialAPI.Core
         {
             StartDate = null;
             EndDate = null;
-            Messages = null;
             Name = null;
             Year = null;
             Slug = null;
@@ -74,11 +73,6 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? LastUpdated { get; set; }
 
         /// <summary>
-        /// A collection of Messages spoken / given by someone within this sermon series
-        /// </summary>
-        public IEnumerable<SermonMessage> Messages { get; set; }
-
-        /// <summary>
         /// Validate the request object
         /// </summary>
         /// <param name="request"></param>
@@ -119,12 +113,6 @@ namespace ThriveChurchOfficialAPI.Core
             if (request.LastUpdated != null)
             {
                 request.LastUpdated = null;
-            }
-
-            // messages must at least be an object, it should not be null
-            if (request.Messages == null)
-            {
-                request.Messages = new List<SermonMessage>();
             }
 
             if (request.StartDate != null && request.EndDate != null)

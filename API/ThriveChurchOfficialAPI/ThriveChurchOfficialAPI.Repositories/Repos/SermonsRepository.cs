@@ -32,13 +32,14 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
         /// <returns></returns>
-        public async Task<AllSermonsResponse> GetAllSermons()
+        public async Task<AllSermonsResponse> GetAllSermons(bool sorted = true)
         {
-            var documents = await _sermonsCollection.Find(_ => true).ToListAsync();
+            var filter = Builders<SermonSeries>.Filter.Empty;
+            var documents = await _sermonsCollection.Find(filter).ToListAsync();
 
             var allSermonsResponse = new AllSermonsResponse
             {
-                Sermons = documents.OrderBy(i => i.StartDate)
+                Sermons = sorted ? documents.OrderBy(i => i.StartDate) : documents
             };
 
             return allSermonsResponse;
@@ -262,6 +263,24 @@ namespace ThriveChurchOfficialAPI.Repositories
             var seriesResponse = await _sermonsCollection.FindAsync(filter);
             var series = seriesResponse.FirstOrDefault();
             var response = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
+
+            return response;
+        }
+
+        /// <summary>
+        /// Gets a sermon message for its Id
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns></returns>
+        public async Task<SermonMessage> UpdateMessagePlayCount(string messageId)
+        {
+            // use a filter since we are looking for an Id which is a value in an array with n elements
+            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
+
+            var seriesResponse = await _sermonsCollection.FindAsync(filter);
+            var series = seriesResponse.FirstOrDefault();
+            var message = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
+            message.PlayCount++;
 
             return response;
         }
