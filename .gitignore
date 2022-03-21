@@ -21,6 +21,8 @@ launchSettings.json
 *.png
 *.jpeg
 *.jpg
+**/publish/
+**/obj/
 
 # Mac files
 *.DS_Store
