@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
@@ -50,12 +52,64 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
                 // log this as fatal in the logfile
                 Log.Fatal(string.Format(SystemMessages.ExceptionMessage, exceptionId, ex));
 
+                try  
+                {
+                    StringBuilder sb = new StringBuilder();
+
+                    if (ex.Message.Contains("IP", StringComparison.OrdinalIgnoreCase))
+                    {
+                        HttpRequest request = httpContext.Request;
+
+                        sb.AppendLine("\nHeaders:");
+                        foreach (var header in request.Headers)
+                        {
+                            sb.AppendLine($"{header.Key} = {header.Value}");
+                        }
+
+                        sb.AppendLine("\nRequestInfo:");
+                        var protocolText = request.IsHttps ? "Https" : "Http";
+                        sb.AppendLine($"{protocolText} {request.Method} {request.Path}{request.QueryString}");
+
+                        sb.AppendLine("\nRequestBody:");
+                        sb.AppendLine(GetRequestBody(request));
+
+                        Log.Fatal($"Caller has invalid IP address. We gathered the following data. {sb}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Fatal(string.Format(SystemMessages.ExceptionMessage, exceptionId, e));
+                    Log.Fatal("ABOVE ERROR OCURRED WHEN ATTEMPTING TO READ INFO ON UNKNOWN CALLER.");
+                }
+
                 GenerateEmail(exceptionId);
 
                 await HandleExceptionAsync(httpContext, exceptionId);
             }
         }
- 
+
+        private static string GetRequestBody(HttpRequest request)
+        {
+            var bodyStr = "";
+
+            // Allows using several time the stream in ASP.Net Core
+            request.EnableBuffering();
+
+            // Arguments: Stream, Encoding, detect encoding, buffer size 
+            // AND, the most important: keep stream opened
+            using (StreamReader reader
+                      = new StreamReader(request.Body, Encoding.UTF8, true, 1024, true))
+            {
+                bodyStr = reader.ReadToEndAsync().Result;
+            }
+
+            // Rewind, so the core is not lost when it looks the body for the request
+            request.Body.Position = 0;
+
+            // Do whatever work with bodyStr here
+            return bodyStr;
+        }
+
         /// <summary>
         /// In the event an exception occurs, notify the user of the exception Id
         /// </summary>

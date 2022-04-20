@@ -13,7 +13,7 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// <summary>
     /// Passages Repo
     /// </summary>
-    public class PassagesRepository: RepositoryBase, IPassagesRepository
+    public class PassagesRepository: RepositoryBase<BiblePassage>, IPassagesRepository
     {
         private readonly IMongoCollection<BiblePassage> _biblePassageCollection;
 

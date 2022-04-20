@@ -15,7 +15,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(CreateSermonSeriesRequest request);
+        Task<SystemResponse<SermonSeriesResponse>> CreateNewSermonSeries(CreateSermonSeriesRequest request);
 
         /// <summary>
         /// Return the information about a live sermon going on now - if it's live
@@ -54,7 +54,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="seriesId"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonSeries>> GetSeriesForId(string seriesId);
+        Task<SystemResponse<SermonSeriesResponse>> GetSeriesForId(string seriesId);
 
         /// <summary>
         /// Recieve Sermon Series in a paged format
@@ -74,7 +74,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonSeries>> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request);
+        Task<SystemResponse<SermonSeriesResponse>> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request);
 
         /// <summary>
         /// Update a message within a sermon series

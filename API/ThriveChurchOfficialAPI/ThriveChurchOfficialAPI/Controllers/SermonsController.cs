@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -93,7 +93,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <response code="400">Bad Request</response>
         [Produces("application/json")]
         [HttpPost("series")]
-        public async Task<ActionResult<SermonSeries>> CreateNewSermonSeries([FromBody] CreateSermonSeriesRequest request)
+        public async Task<ActionResult<SermonSeriesResponse>> CreateNewSermonSeries([FromBody] CreateSermonSeriesRequest request)
         {
             var response = await _sermonsService.CreateNewSermonSeries(request);
 
@@ -124,7 +124,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("series/{SeriesId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<SermonSeries>> GetSeriesForId([BindRequired] string SeriesId)
+        public async Task<ActionResult<SermonSeriesResponse>> GetSeriesForId([BindRequired] string SeriesId)
         {
             var response = await _sermonsService.GetSeriesForId(SeriesId);
 
@@ -172,7 +172,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPost("series/{SeriesId}/message")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<SermonSeries>> AddMessagesToSermonSeries([BindRequired] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
+        public async Task<ActionResult<SermonSeriesResponse>> AddMessagesToSermonSeries([BindRequired] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
 
