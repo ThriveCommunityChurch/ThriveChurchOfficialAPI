@@ -54,11 +54,10 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
 
                 try  
                 {
-                    StringBuilder sb = new StringBuilder();
-
                     if (ex.Message.Contains("IP", StringComparison.OrdinalIgnoreCase))
                     {
                         HttpRequest request = httpContext.Request;
+                        StringBuilder sb = new StringBuilder();
 
                         sb.AppendLine("\nHeaders:");
                         foreach (var header in request.Headers)
