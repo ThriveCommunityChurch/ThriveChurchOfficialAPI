@@ -19,7 +19,7 @@ The _Thrive Church Official API_ takes advantage of Rate Limiting on all request
 More information about how this API handles rate limiting can be found within [RateLimits.md](https://github.com/ThriveCommunityChurch/ThriveChurchOfficialAPI/blob/master/RateLimits.md)
 
 ## Contributing
-Please create your own .NET Core 2.1 application on your machine. Once your application has been made, copy these files into your Solution. This is important because there are a number of files that are created when initializing a new .NET Application that you will need. Many of these files are settings, DLLs, Binaries, and other debugging files that have been ignored as to not clutter the repo. 
+Please create your own .NET 5 application on your machine. Once your application has been made, copy these files into your Solution. This is important because there are a number of files that are created when initializing a new .NET Application that you will need. Many of these files are settings, DLLs, Binaries, and other debugging files that have been ignored as to not clutter the repo. 
 
 You will need to make sure you have the following settings in your `AppSettings.json`. 
   1. `EsvApiKey` - If you wish to connect to the ESV Api, you will need to request an Auth Token from [the ESV API website](https://api.esv.org/). Simply include this token without "Token" for this setting.
