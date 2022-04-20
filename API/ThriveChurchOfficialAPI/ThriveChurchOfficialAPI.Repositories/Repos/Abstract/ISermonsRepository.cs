@@ -9,6 +9,18 @@ namespace ThriveChurchOfficialAPI.Repositories
     {
         Task<IEnumerable<SermonSeries>> GetAllSermons(bool sorted = true);
 
+        /// <summary>
+        /// Get all sermon series with matching slug
+        /// </summary>
+        /// <returns></returns>
+        Task<IEnumerable<SermonSeries>> GetSermonsBySlug(string slug);
+
+        /// <summary>
+        /// Get the currently active series
+        /// </summary>
+        /// <returns></returns>
+        Task<SermonSeries> GetActiveSeries();
+
         Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(SermonSeries request);
 
         Task<SystemResponse<SermonSeries>> GetSermonSeriesForId(string SeriesId);
@@ -22,8 +34,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<SystemResponse<LiveSermons>> UpdateLiveSermonsInactive(DateTime? nextLive = null);
 
         Task<SystemResponse<SermonSeries>> UpdateSermonSeries(SermonSeries request);
-
-        Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug);
 
         /// <summary>
         /// Returns a paged collection of summarized sermon data

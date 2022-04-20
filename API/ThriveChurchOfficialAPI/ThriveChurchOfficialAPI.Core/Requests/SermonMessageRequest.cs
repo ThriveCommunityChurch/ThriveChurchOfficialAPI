@@ -70,6 +70,16 @@ namespace ThriveChurchOfficialAPI.Core
         public DateTime? Date { get; set; }
 
         /// <summary>
+        /// The number of times that this message has been played.
+        /// </summary>
+        public int PlayCount { get; set; }
+
+        /// <summary>
+        /// The unique identifier of the series that this message is part of
+        /// </summary>
+        public string SeriesId { get; set; }
+
+        /// <summary>
         /// Validates the object
         /// </summary>
         /// <param name="request"></param>
@@ -87,14 +97,19 @@ namespace ThriveChurchOfficialAPI.Core
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Date"));
             }
 
-            if (request.Speaker == null)
+            if (string.IsNullOrEmpty(request.Speaker))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Speaker"));
             }
 
-            if (request.Title == null)
+            if (string.IsNullOrEmpty(request.Title))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
+            }
+
+            if (string.IsNullOrEmpty(request.SeriesId))
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
             }
 
             if (request?.AudioDuration <= 0)

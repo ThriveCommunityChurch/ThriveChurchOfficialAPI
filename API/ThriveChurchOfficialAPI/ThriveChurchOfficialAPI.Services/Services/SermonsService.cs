@@ -46,17 +46,15 @@ namespace ThriveChurchOfficialAPI.Services
             var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
 
             // we need to convert everything to the right response pattern
-            var sortedSeries = getAllSermonsResponse.Sermons.OrderByDescending(i => i.StartDate);
-
-            // for each one add only the properties we want to the list
             var responseList = new List<SermonSeriesSummary>();
-            foreach (var series in sortedSeries)
+            foreach (var series in getAllSermonsResponse)
             {
+                // for each one add only the properties we want to the list
                 var elemToAdd = new SermonSeriesSummary
                 {
                     ArtUrl = series.ArtUrl,
                     Id = series.Id,
-                    StartDate = series.StartDate.Value,
+                    StartDate = series.StartDate,
                     Title = series.Name
                 };
 
@@ -117,26 +115,39 @@ namespace ThriveChurchOfficialAPI.Services
 
             // the Slug on the series should be unique, so if we already have one with this slug
             // return an error - because we want to avoid having bad data in our database
-            var allSermonSries = await _sermonsRepository.GetAllSermons();
-            if (allSermonSries == null || allSermonSries == default(AllSermonsResponse))
-            {
-                return null;
-            }
+            var sermonsWithSlug = await _sermonsRepository.GetSermonsBySlug(request.Slug);
 
-            var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
-            if (seriesWithSameSlug.Any())
+            if (sermonsWithSlug.Any())
             {
-                var foundSeries = seriesWithSameSlug.FirstOrDefault();
+                SermonSeries foundSeries = sermonsWithSlug.FirstOrDefault();
+
+                var response = new SermonSeriesResponse
+                {
+                    ArtUrl = foundSeries.ArtUrl,
+                    LastUpdated = foundSeries.LastUpdated,
+                    EndDate = foundSeries.EndDate,
+                    Id = foundSeries.Id,
+                    Name = foundSeries.Name,
+                    Slug = foundSeries.Slug,
+                    StartDate = foundSeries.StartDate,
+                    Thumbnail = foundSeries.Thumbnail,
+                    Year = $"{foundSeries.StartDate.Year}"
+                };
+
+                _messagesRepository.GetMessageBySeriesId(foundSeries.Id);
 
                 // there is already a sermon series with this slug, respond with one of those
-                return new SystemResponse<SermonSeriesResponse>(foundSeries, "202");
+                return new SystemResponse<SermonSeriesResponse>(response, "202");
             }
 
-            // if any of the sermon series' are currently active
+            // Check if any of the sermon series' are currently active
+            // Because we can only have 1 active series
             if (request.EndDate == null)
             {
-                var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
-                if (currentlyActiveSeries.Any())
+                var activeSeries = await _sermonsRepository.GetActiveSeries();
+
+                // if there's a value then there's an active series
+                if (activeSeries != null)
                 {
                     // one of the series' is already active
                     var currentlyActive = currentlyActiveSeries.FirstOrDefault();
@@ -149,7 +160,23 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // sanitise the start dates
-            request.StartDate = request.StartDate.Value.ToUniversalTime().Date;
+            request.StartDate = request.StartDate.ToUniversalTime().Date;
+
+            var sermonSeries = new SermonSeries
+            {
+                ArtUrl = request.ArtUrl,
+                EndDate = request.EndDate,
+                Name = request.Name,
+                Slug = request.Slug,
+                StartDate = request.StartDate,
+                Thumbnail = request.Thumbnail
+            };
+
+            var seriesCreatedResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
+            if (seriesCreatedResponse.HasErrors)
+            {
+                return new SystemResponse<SermonSeriesResponse>(true, seriesCreatedResponse.ErrorMessage); 
+            }
 
             var messageList = new List<SermonMessage>();
 
@@ -161,37 +188,19 @@ namespace ThriveChurchOfficialAPI.Services
                     AudioDuration = message.AudioDuration,
                     // sanitise the message dates and get rid of the times
                     Date = message.Date.Value.Date.ToUniversalTime().Date,
-                    MessageId = Guid.NewGuid().ToString(),
                     AudioUrl = message.AudioUrl,
                     PassageRef = message.PassageRef,
                     Speaker = message.Speaker,
                     Title = message.Title,
-                    VideoUrl = message.VideoUrl
+                    VideoUrl = message.VideoUrl,
+                    SeriesId = seriesCreatedResponse.Result.Id
                 });
             }
 
-            var sermonSeries = new SermonSeries
-            {
-                ArtUrl = request.ArtUrl,
-                EndDate = request.EndDate,
-                Messages = messageList,
-                Name = request.Name,
-                Slug = request.Slug,
-                StartDate = request.StartDate,
-                Thumbnail = request.Thumbnail,
-                Year = request.Year
-            };
-
-            var creationResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
-            if (creationResponse.HasErrors)
-            {
-                return new SystemResponse<SermonSeriesResponse>(true, creationResponse.ErrorMessage); 
-            }
-
             // Save data in cache.
-            _cache.Set(string.Format(CacheKeys.GetSermonSeries, creationResponse.Result.Id), creationResponse.Result, PersistentCacheEntryOptions);
+            _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesCreatedResponse.Result.Id), seriesCreatedResponse.Result, PersistentCacheEntryOptions);
 
-            return new SystemResponse<SermonSeriesResponse>(creationResponse.Result, "Success!");
+            return new SystemResponse<SermonSeriesResponse>(seriesCreatedResponse.Result, "Success!");
         }
 
         /// <summary>
@@ -199,7 +208,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonSeriesResponse>> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request)
+        public async Task<SystemResponse<SermonSeriesResponse>> AddMessageToSermonSeries(string seriesId, AddMessagesToSeriesRequest request)
         {
             var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
@@ -207,23 +216,15 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeriesResponse>(true, validRequest.ErrorMessage);
             }
 
-            if (string.IsNullOrEmpty(SeriesId))
-            {
-                return new SystemResponse<SermonSeriesResponse>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
-            }
-
-            // if we can't find it then the Id is invalid
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(SeriesId);
+            var getSermonSeriesResponse = await GetSeriesById(seriesId);
             if (getSermonSeriesResponse.HasErrors)
             {
                 return new SystemResponse<SermonSeriesResponse>(true, getSermonSeriesResponse.ErrorMessage);
             }
 
-            var series = getSermonSeriesResponse.Result;
+            SermonSeries series = getSermonSeriesResponse.Result;
 
-            // add the sermon message to the response object and re-update the Mongo doc
-            var currentMessages = series.Messages.ToList();
-
+            // add the sermon message to mongo as 1 list
             var messageList = new List<SermonMessage>();
 
             foreach (var message in request.MessagesToAdd)
@@ -234,19 +235,18 @@ namespace ThriveChurchOfficialAPI.Services
                     AudioDuration = message.AudioDuration,
                     // sanitise the message dates and get rid of the times
                     Date = message.Date.Value.Date.ToUniversalTime().Date,
-                    MessageId = Guid.NewGuid().ToString(),
                     AudioUrl = message.AudioUrl,
                     PassageRef = message.PassageRef,
                     Speaker = message.Speaker,
                     Title = message.Title,
-                    VideoUrl = message.VideoUrl
+                    VideoUrl = message.VideoUrl,
+                    SeriesId = seriesId
                 });
             }
 
-            currentMessages.AddRange(messageList);
+            // read the messages back to the object, this is important (see SO for Deep Copy vs shallow copy)
+            // TODO: We need a private method to get ALL the data associated with a series given its ID - that can be really reusable
 
-            // readd the messages back to the object, This is important (see SO for  Deep Copy vs shallow copy)
-            series.Messages = currentMessages;
 
             // find and replace the one with the updated object
             var updateResponse = await _sermonsRepository.UpdateSermonSeries(series);
@@ -269,27 +269,24 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SystemResponse<SermonMessage>> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
         {
-            // TODO: Fix this
-
             var validRequest = UpdateMessagesInSermonSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
             {
                 return new SystemResponse<SermonMessage>(true, validRequest.ErrorMessage);
             }
 
-            var validGuid = Guid.TryParse(messageId, out Guid messageGuid);
-            if (!validGuid)
+            var message = new SermonMessage
             {
-                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.InvalidPropertyType, "messageId", "Guid"));
+                
+            };
+
+            var messageResponse = await _messagesRepository.UpdateMessageById(messageId, request.Message);
+            if (messageResponse.HasErrors)
+            {
+                return new SystemResponse<SermonMessage>(true, messageResponse.ErrorMessage);
             }
 
-            var messageResponse = await _sermonsRepository.GetMessageForId(messageId);
-            if (messageResponse == null || messageResponse == default(SermonMessage))
-            {
-                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.UnableToFindSermonMessageWithId, messageId));
-            }
-
-            return new SystemResponse<SermonMessage>(messageResponse, "Success!");
+            return new SystemResponse<SermonMessage>(messageResponse.Result, "Success!");
         }
 
         /// <summary>
@@ -362,10 +359,39 @@ namespace ThriveChurchOfficialAPI.Services
                 _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), series, PersistentCacheEntryOptions);
             }
 
+            // This is where we can call this 
+
             var orderedMessages = series.Messages.OrderByDescending(i => i.Date.Value);
             series.Messages = orderedMessages;
 
             return new SystemResponse<SermonSeriesResponse>(series, "Success!");
+        }
+
+        private async Task<SystemResponse<SermonSeries>> GetSeriesById(string seriesId, bool includeMessages = true)
+        {
+            if (string.IsNullOrEmpty(seriesId))
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
+            }
+
+            var invalidId = ObjectId.TryParse(seriesId, out ObjectId _);
+            if (!invalidId)
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.InvalidPropertyType, "SeriesId", "ObjectId"));
+            }
+
+            var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
+            if (seriesResponse.HasErrors)
+            {
+                return seriesResponse;
+            }
+
+            if (!includeMessages)
+            {
+                return seriesResponse;
+            }
+            
+
         }
 
         /// <summary>
@@ -381,24 +407,13 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
             }
 
-            if (string.IsNullOrEmpty(seriesId))
+            var getSermonSeriesResponse = await GetSeriesById(seriesId, includeMessages: false);
+            if (getSermonSeriesResponse.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
+                return new SystemResponse<SermonSeries>(true, getSermonSeriesResponse.ErrorMessage);
             }
 
-            var invalidId = ObjectId.TryParse(seriesId, out ObjectId id);
-            if (!invalidId)
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.InvalidPropertyType, "SeriesId", "ObjectId"));
-            }
-
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-            if (getSermonSeriesResponse == null)
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.ErrorOcurredUpdatingDocumentForKey, seriesId));
-            }
-
-            var series = getSermonSeriesResponse.Result;
+            SermonSeries series = getSermonSeriesResponse.Result;
 
             // make sure that no one can update the slug to something that already exists
             // this is not allowed
@@ -461,8 +476,6 @@ namespace ThriveChurchOfficialAPI.Services
 
         public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
         {
-            var jobId = request.StartSchedule;
-
             CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
             DateTime endTime = schedule.GetNextOccurrence(DateTime.Now);
 
@@ -529,13 +542,25 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SystemResponse<SermonStatsResponse>> GetSermonStats()
         {
-            var allSermonsResponse = await _sermonsRepository.GetAllSermons(sorted: false);
-            if (allSermonsResponse == null || allSermonsResponse.Sermons == null || !allSermonsResponse.Sermons.Any())
+            var allSermonsDelegate = _sermonsRepository.GetAllSermons(sorted: false);
+            var allMessagesDelegate = _messagesRepository.GetAllMessages();
+
+            await Task.WhenAll(allMessagesDelegate, allSermonsDelegate);
+
+            var allSermonsResponse = allSermonsDelegate.Result;
+            var allMessagesResponse = allMessagesDelegate.Result;
+
+            if (allSermonsResponse == null || allSermonsResponse == null || !allSermonsResponse.Any())
             {
                 return new SystemResponse<SermonStatsResponse>(true, string.Join(SystemMessages.UnableToFind, "all sermons"));
             }
 
-            var seriesList = allSermonsResponse.Sermons.ToList();
+            if (allMessagesResponse == null || allMessagesResponse == null || !allMessagesResponse.Any())
+            {
+                return new SystemResponse<SermonStatsResponse>(true, string.Join(SystemMessages.UnableToFind, "all sermons"));
+            }
+
+            var seriesList = allSermonsResponse.ToList();
 
             var response = new SermonStatsResponse
             {
@@ -547,47 +572,38 @@ namespace ThriveChurchOfficialAPI.Services
 
             // iterate through each message and calculate what we need to
             // this should be O(n*m) where n = # of series and m = # messages each series 
-            foreach (var series in seriesList)
+            foreach (var message in allMessagesResponse)
             {
-                foreach (var message in series.Messages)
+                response.TotalMessageNum++;
+                response.TotalAudioLength += message.AudioDuration ?? 0;
+                response.TotalFileSize += message.AudioFileSize ?? 0;
+
+                // we haven't seen this speaker yet, so add them to the list
+                if (!speakerStats.ContainsKey(message.Speaker))
                 {
-                    response.TotalMessageNum++;
-                    response.TotalAudioLength += message.AudioDuration ?? 0; 
-                    response.TotalFileSize += message.AudioFileSize ?? 0;
+                    speakerStats[message.Speaker] = new SpeakerStats
+                    {
+                        MessageCount = 1
+                    };
+                }
+                else
+                {
+                    // we've seen this speaker, so just increment
+                    speakerStats[message.Speaker].MessageCount++;
+                }
 
-                    // we haven't seen this speaker yet, so add them to the list
-                    if (!speakerStats.ContainsKey(message.Speaker))
-                    {
-                        speakerStats[message.Speaker] = new SpeakerStats
-                        {
-                           MessageCount = 1 
-                        };
-                    }
-                    else
-                    {
-                        // we've seen this speaker, so just increment
-                        speakerStats[message.Speaker].MessageCount++;
-                    }
-
-                    // if there's a duration then we can track that
-                    if (message.AudioDuration != null && message.AudioDuration > 0 && !speakerLength.ContainsKey(message.Speaker))
-                    {
-                        // assuming there's no speaker yet, we can init them with the current duration
-                        speakerLength[message.Speaker] = (double)message.AudioDuration;
-
-                    }
-                    else
-                    {
-                        // just append to what we have otherwise, but if its null - we just add nothing
-                        speakerLength[message.Speaker] += message.AudioDuration ?? 0;
-                    }
+                // if there's a duration then we can track that
+                if (message.AudioDuration != null && message.AudioDuration > 0 && !speakerLength.ContainsKey(message.Speaker))
+                {
+                    // assuming there's no speaker yet, we can init them with the current duration
+                    speakerLength[message.Speaker] = (double)message.AudioDuration;
+                }
+                else
+                {
+                    // just append to what we have otherwise, but if its null - we just add nothing
+                    speakerLength[message.Speaker] += message.AudioDuration ?? 0;
                 }
             }
-
-            // get all the averages now that we've iterated over everything
-            response.AvgMessagesPerSeries = (double)response.TotalMessageNum / response.TotalSeriesNum;
-            response.AvgAudioLength = response.TotalAudioLength / response.TotalMessageNum;
-            response.AvgFileSize = response.TotalFileSize / response.TotalMessageNum;
 
             var finalSpeakerList = new List<SpeakerStats>();
 
@@ -609,6 +625,10 @@ namespace ThriveChurchOfficialAPI.Services
                 });
             }
 
+            // get all the averages now that we've iterated over everything
+            response.AvgMessagesPerSeries = (double)response.TotalMessageNum / response.TotalSeriesNum;
+            response.AvgAudioLength = response.TotalAudioLength / response.TotalMessageNum;
+            response.AvgFileSize = response.TotalFileSize / response.TotalMessageNum;
             response.SpeakerStats = finalSpeakerList.OrderByDescending(i => i.MessageCount);
 
             return new SystemResponse<SermonStatsResponse>(response, "Success!");

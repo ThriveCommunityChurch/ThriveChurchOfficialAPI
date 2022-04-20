@@ -8,11 +8,9 @@ namespace ThriveChurchOfficialAPI.Core
     {
         public CreateSermonSeriesRequest()
         {
-            StartDate = null;
             EndDate = null;
             Messages = null;
             Name = null;
-            Year = null;
             Slug = null;
             Thumbnail = null;
             ArtUrl = null;
@@ -25,14 +23,9 @@ namespace ThriveChurchOfficialAPI.Core
         public string Name { get; set; }
 
         /// <summary>
-        /// This is a string notation for the year that the series is taking place
-        /// </summary>
-        public string Year { get; set; }
-
-        /// <summary>
         /// The starting date of the sermon series - we will ignore the time
         /// </summary>
-        public DateTime? StartDate { get; set; }
+        public DateTime StartDate { get; set; }
 
         /// <summary>
         /// The ending date of the sermon series - we will ignore the time
@@ -79,14 +72,6 @@ namespace ThriveChurchOfficialAPI.Core
             if (string.IsNullOrEmpty(request.ArtUrl))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "ArtUrl"));
-            }
-            if (string.IsNullOrEmpty(request.Year))
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Year"));
-            }
-            if (request.StartDate == null)
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "StartDate"));
             }
             if (string.IsNullOrEmpty(request.Thumbnail))
             {

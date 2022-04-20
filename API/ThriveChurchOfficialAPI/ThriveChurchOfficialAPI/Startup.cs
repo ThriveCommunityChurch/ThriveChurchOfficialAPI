@@ -180,26 +180,26 @@ namespace ThriveChurchOfficialAPI
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+
+                // Enable middleware to serve generated Swagger as a JSON endpoint.
+                app.UseSwagger();
+
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // specifying the Swagger JSON endpoint.
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
+                    c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
+                    c.DefaultModelsExpandDepth(-1); // Disable swagger schemas at bottom
+                });
             }
             else
             {
                 app.UseHsts();
             }
 
-            // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
-
             // add exception filtering 
             app.ConfigureCustomExceptionMiddleware();
-
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
-            // specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
-                c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
-                c.DefaultModelsExpandDepth(-1); // Disable swagger schemas at bottom
-            });
 
             #region Hangfire Tasks
 
@@ -209,7 +209,7 @@ namespace ThriveChurchOfficialAPI
 
             #endregion
 
-            app.UseIpRateLimiting(); // enable rate limits
+            app.UseIpRateLimiting();
 
             app.UseRouting();
 

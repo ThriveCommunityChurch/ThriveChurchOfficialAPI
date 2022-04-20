@@ -54,6 +54,32 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
+        /// Get all sermon series with matching slug
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<SermonSeries>> GetSermonsBySlug(string slug)
+        {
+            var filter = Builders<SermonSeries>.Filter.Eq(l => l.Slug, slug);
+
+            var cursor = await _sermonsCollection.FindAsync(filter);
+
+            return cursor.ToList();
+        }
+
+        /// <summary>
+        /// Get the currently active series
+        /// </summary>
+        /// <returns></returns>
+        public async Task<SermonSeries> GetActiveSeries()
+        {
+            var filter = Builders<SermonSeries>.Filter.Eq(l => l.EndDate, null);
+
+            var cursor = await _sermonsCollection.FindAsync(filter);
+
+            return cursor.FirstOrDefault();
+        }
+
+        /// <summary>
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
@@ -72,7 +98,8 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (pageNumber >= 3)
             {
-                beginningCount = (pageNumber * 10) - 20; // we subtract 20 because the first 10 pages we only return 5
+                // we subtract 20 because on the first 2 pages we only return 5
+                beginningCount = (pageNumber * 10) - 20;
             }
 
             var totalPageNumber = 1;
@@ -147,7 +174,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                     // because we will be loading many of them at once
                     ArtUrl = series.Thumbnail,
                     Id = series.Id,
-                    StartDate = series.StartDate.Value,
+                    StartDate = series.StartDate,
                     Title = series.Name
                 };
                 summariesList.Add(summary);
@@ -181,8 +208,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             await _sermonsCollection.InsertOneAsync(request);
 
             // respond with the inserted object
-            var inserted = await _sermonsCollection.FindAsync(
-                    Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
+            var inserted = await _sermonsCollection.FindAsync(Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
 
             var response = inserted.FirstOrDefault();
             if (response == default(SermonSeries))
@@ -205,11 +231,15 @@ namespace ThriveChurchOfficialAPI.Repositories
                 return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Sermon Series", request.Id));
             }
 
+            var filter = Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id);
+
             // updated time is now
             request.LastUpdated = DateTime.UtcNow;
 
-            var singleSeries = await _sermonsCollection.FindOneAndReplaceAsync(
-                   Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id), request);
+            var singleSeries = await _sermonsCollection.FindOneAndReplaceAsync(filter, request, new FindOneAndReplaceOptions<SermonSeries>
+            {
+                ReturnDocument = ReturnDocument.After
+            });
 
             if (singleSeries == null)
             {
@@ -235,25 +265,6 @@ namespace ThriveChurchOfficialAPI.Repositories
                    Builders<SermonSeries>.Filter.Eq(s => s.Id, SeriesId));
 
             var response = singleSeries.FirstOrDefault();
-
-            return new SystemResponse<SermonSeries>(response, "Success!");
-        }
-
-        /// <summary>
-        /// Used to find a series for a particular unique slug
-        /// </summary>
-        /// <param name="slug"></param>
-        /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug)
-        {
-            var singleSeries = await _sermonsCollection.FindAsync(
-                   Builders<SermonSeries>.Filter.Eq(s => s.Slug, slug));
-
-            var response = singleSeries.FirstOrDefault();
-            if (response == default(SermonSeries))
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindSermonWithSlug, slug));
-            }
 
             return new SystemResponse<SermonSeries>(response, "Success!");
         }
