@@ -1,8 +1,6 @@
 # Thrive Church Official API
 This API is primarily used by the Thrive Church Official App for serving users with content for both the Bible and our recorded / live sermons.
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/02b020659d344b9883ec20221c6f6c7e)](https://www.codacy.com/app/wyattbaggett/ThriveChurchOfficialAPI?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ThriveCommunityChurch/ThriveChurchOfficialAPI&amp;utm_campaign=Badge_Grade)
-
 ## Stack
 - C# .NET Core 2.1
 - MongoDB
