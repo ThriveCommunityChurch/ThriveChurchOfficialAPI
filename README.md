@@ -2,8 +2,10 @@
 This API is primarily used by the Thrive Church Official App for serving users with content for both the Bible and our recorded / live sermons.
 
 ## Stack
-- C# .NET Core 2.1
+- .NET 5
 - MongoDB
+- [Hangfire Tasks](https://www.hangfire.io/) via [NCrontab](https://github.com/atifaziz/NCrontab) & [Hangfire.Mongo](https://github.com/Hangfire-Mongo/Hangfire.Mongo)
+- [ESV API](https://api.esv.org/)
 
 ## API Documentation & Swagger UI
 Visiting `~/swagger/index.html` in your browser will allow you to view the Swagger UI for the API and easily send API requests as well as view response objects.
