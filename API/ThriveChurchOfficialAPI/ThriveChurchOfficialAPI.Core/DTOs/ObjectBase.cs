@@ -16,6 +16,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// Timestamp for when this object was created (UTC)
         /// </summary>
-        public DateTime CreateDate { get; set; }
+        public DateTime CreateDate { get; set; } = DateTime.UtcNow;
     }
 }

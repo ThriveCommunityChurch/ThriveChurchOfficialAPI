@@ -5,7 +5,6 @@ namespace ThriveChurchOfficialAPI.Core
 {
     public class SermonMessageRequest
     {
-
         public SermonMessageRequest()
         {
             AudioUrl = null;
@@ -14,7 +13,6 @@ namespace ThriveChurchOfficialAPI.Core
             PassageRef = null;
             Speaker = null;
             Title = null;
-            Date = null;
         }
 
         /// <summary>
@@ -67,12 +65,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// The date that this message was given - we will ignore the time
         /// </summary>
         [DataType(DataType.Date)]
-        public DateTime? Date { get; set; }
-
-        /// <summary>
-        /// The number of times that this message has been played.
-        /// </summary>
-        public int PlayCount { get; set; }
+        public DateTime Date { get; set; }
 
         /// <summary>
         /// The unique identifier of the series that this message is part of
@@ -92,11 +85,6 @@ namespace ThriveChurchOfficialAPI.Core
             }
 
             // A/V urls, and PassageRef are allowed to be null, however others cannot
-            if (request.Date == null)
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Date"));
-            }
-
             if (string.IsNullOrEmpty(request.Speaker))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Speaker"));
@@ -119,6 +107,5 @@ namespace ThriveChurchOfficialAPI.Core
 
             return new ValidationResponse("Success!");
         }
-
     }
 }

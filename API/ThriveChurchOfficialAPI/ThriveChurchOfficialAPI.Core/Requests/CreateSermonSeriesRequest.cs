@@ -88,13 +88,10 @@ namespace ThriveChurchOfficialAPI.Core
                 request.Messages = new List<SermonMessageRequest>();
             }
 
-            if (request.StartDate != null && request.EndDate != null)
+            // make sure that the dates are chronological
+            if (request.StartDate > request.EndDate)
             {
-                // make sure that the dates are chronological
-                if (request.StartDate > request.EndDate)
-                {
-                    return new ValidationResponse(true, SystemMessages.EndDateMustBeAfterStartDate);
-                }
+                return new ValidationResponse(true, SystemMessages.EndDateMustBeAfterStartDate);
             }
 
             return new ValidationResponse("Success!");

@@ -28,7 +28,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="seriesId"></param>
         /// <returns></returns>
-        Task<IEnumerable<SermonMessage>> GetMessageBySeriesId(string seriesId);
+        Task<IEnumerable<SermonMessage>> GetMessagesBySeriesId(string seriesId);
 
         /// <summary>
         /// Gets a sermon message using its Id
@@ -49,6 +49,6 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="messageId"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        Task<SermonMessage> UpdateMessageById(string messageId, SermonMessage message);
+        Task<SermonMessage> UpdateMessageById(string messageId, SermonMessageRequest message);
     }
 }

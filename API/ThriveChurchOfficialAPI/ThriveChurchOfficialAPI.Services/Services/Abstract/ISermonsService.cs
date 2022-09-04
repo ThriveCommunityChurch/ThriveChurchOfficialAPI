@@ -96,5 +96,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <returns></returns>
         Task<SystemResponse<SermonStatsResponse>> GetSermonStats();
+
+        /// <summary>
+        /// Updates the playcount for a sermon message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns></returns>
+        Task<SystemResponse<SermonMessage>> MarkMessagePlayed(string messageId);
     }
 }

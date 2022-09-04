@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
@@ -77,7 +78,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="seriesId"></param>
         /// <returns></returns>
-        public async Task<IEnumerable<SermonMessage>> GetMessageBySeriesId(string seriesId)
+        public async Task<IEnumerable<SermonMessage>> GetMessagesBySeriesId(string seriesId)
         {
             if (!IsValidObjectId(seriesId))
             {
@@ -86,7 +87,16 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             var filter = Builders<SermonMessage>.Filter.Eq(i => i.SeriesId, seriesId);
 
-            var cursor = await _messagesCollection.FindAsync(filter);
+            // we always want them in the order of most recent first
+            var stages = new List<BsonDocument>
+            {
+                new BsonDocument("$match", ConvertFilterToBsonDocument(filter)),
+                new BsonDocument("$sort", new BsonDocument(nameof(SermonSeries.StartDate), -1))
+            };
+
+            PipelineDefinition<SermonMessage, SermonMessage> pipeline = PipelineDefinition<SermonMessage, SermonMessage>.Create(stages);
+
+            var cursor = await _messagesCollection.AggregateAsync(pipeline);
 
             return cursor.ToList();
         }
@@ -123,7 +133,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="messageId"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public async Task<SermonMessage> UpdateMessageById(string messageId, SermonMessage message)
+        public async Task<SermonMessage> UpdateMessageById(string messageId, SermonMessageRequest message)
         {
             if (!IsValidObjectId(messageId))
             {
@@ -132,9 +142,11 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             // use a filter since we are looking for an Id which is a value in an array with n elements
             var filter = Builders<SermonMessage>.Filter.Eq(x => x.Id, messageId);
+            var update = Builders<SermonMessage>.Update.Set(x => x.LastUpdated, DateTime.UtcNow)
+                                                       .Set(x => x.PassageRef, message.PassageRef);
 
-            var messageResponse = await _messagesCollection.FindOneAndReplaceAsync(filter, message,
-                new FindOneAndReplaceOptions<SermonMessage>
+            var messageResponse = await _messagesCollection.FindOneAndUpdateAsync(filter, update,
+                new FindOneAndUpdateOptions<SermonMessage>
                 {
                     // return the object after the update
                     ReturnDocument = ReturnDocument.After
