@@ -9,7 +9,7 @@ namespace ThriveChurchOfficialAPI.Core
     /// <summary>
     /// C'tor
     /// </summary>
-    public class SermonSeries
+    public class SermonSeries: ObjectBase
     {
         public SermonSeries()
         {
@@ -18,15 +18,8 @@ namespace ThriveChurchOfficialAPI.Core
             Slug = null;
             Thumbnail = null;
             ArtUrl = null;
-            LastUpdated = null;
+            LastUpdated = DateTime.UtcNow;
         }
-
-        /// <summary>
-        /// ObjectId notation from Mongo
-        /// </summary>
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
 
         /// <summary>
         /// The name of the sermon series
@@ -62,6 +55,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// Used as a timestamp to indicate the last time that this object was updated
         /// </summary>
-        public DateTime? LastUpdated { get; set; }
+        public DateTime LastUpdated { get; set; }
     }
 }

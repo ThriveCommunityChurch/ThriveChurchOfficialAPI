@@ -24,7 +24,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         public SermonsRepository(IConfiguration Configuration)
             : base(Configuration)
         {
-            _sermonsCollection = DB.GetCollection<SermonSeries>("Sermons");
+            _sermonsCollection = DB.GetCollection<SermonSeries>("Series");
             _livestreamCollection = DB.GetCollection<LiveSermons>("Livestream");
         }
 
