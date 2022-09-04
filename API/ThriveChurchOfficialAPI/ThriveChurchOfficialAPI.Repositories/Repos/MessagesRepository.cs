@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
