@@ -4,7 +4,6 @@ This API is primarily used by the Thrive Church Official App for serving users w
 ## Stack
 - .NET 5
 - MongoDB
-- [Hangfire Tasks](https://www.hangfire.io/) via [NCrontab](https://github.com/atifaziz/NCrontab) & [Hangfire.Mongo](https://github.com/Hangfire-Mongo/Hangfire.Mongo)
 - [ESV API](https://api.esv.org/)
 
 ## API Documentation & Swagger UI
