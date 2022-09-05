@@ -5,7 +5,6 @@ namespace ThriveChurchOfficialAPI.Core
 {
     public class SermonMessageRequest
     {
-
         public SermonMessageRequest()
         {
             AudioUrl = null;
@@ -14,7 +13,6 @@ namespace ThriveChurchOfficialAPI.Core
             PassageRef = null;
             Speaker = null;
             Title = null;
-            Date = null;
         }
 
         /// <summary>
@@ -67,7 +65,12 @@ namespace ThriveChurchOfficialAPI.Core
         /// The date that this message was given - we will ignore the time
         /// </summary>
         [DataType(DataType.Date)]
-        public DateTime? Date { get; set; }
+        public DateTime Date { get; set; }
+
+        /// <summary>
+        /// The unique identifier of the series that this message is part of
+        /// </summary>
+        public string SeriesId { get; set; }
 
         /// <summary>
         /// Validates the object
@@ -82,19 +85,19 @@ namespace ThriveChurchOfficialAPI.Core
             }
 
             // A/V urls, and PassageRef are allowed to be null, however others cannot
-            if (request.Date == null)
-            {
-                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Date"));
-            }
-
-            if (request.Speaker == null)
+            if (string.IsNullOrEmpty(request.Speaker))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Speaker"));
             }
 
-            if (request.Title == null)
+            if (string.IsNullOrEmpty(request.Title))
             {
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Title"));
+            }
+
+            if (string.IsNullOrEmpty(request.SeriesId))
+            {
+                return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
             }
 
             if (request?.AudioDuration <= 0)
@@ -104,6 +107,5 @@ namespace ThriveChurchOfficialAPI.Core
 
             return new ValidationResponse("Success!");
         }
-
     }
 }

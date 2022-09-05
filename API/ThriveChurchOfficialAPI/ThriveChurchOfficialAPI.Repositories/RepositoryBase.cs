@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using System;
@@ -13,7 +14,7 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// <summary>
     /// Base Repo
     /// </summary>
-    public abstract class RepositoryBase
+    public abstract class RepositoryBase<TDocument>
     {
         #region Read-Only Configs
 
@@ -107,6 +108,19 @@ namespace ThriveChurchOfficialAPI.Repositories
                 throw new ArgumentNullException("IConfiguration.OverrideEsvApiKey",
                         string.Format(SystemMessages.OverrideMissingFromAppSettings));
             }
+        }
+
+        /// <summary>
+        /// Convert the filter to a BSON document
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        protected static BsonDocument ConvertFilterToBsonDocument(FilterDefinition<TDocument> filter)
+        {
+            var serializerRegistry = BsonSerializer.SerializerRegistry;
+            var documentSerializer = serializerRegistry.GetSerializer<TDocument>();
+            return filter.Render(documentSerializer, serializerRegistry);
         }
 
         /// <summary>

@@ -10,7 +10,7 @@ using Serilog;
 
 namespace ThriveChurchOfficialAPI.Repositories
 {
-    public class ConfigRepository : RepositoryBase, IConfigRepository
+    public class ConfigRepository : RepositoryBase<ConfigSetting>, IConfigRepository
     {
         private readonly IMongoCollection<ConfigSetting> _configCollection;
 

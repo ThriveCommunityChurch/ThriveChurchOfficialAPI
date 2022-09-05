@@ -12,7 +12,7 @@ namespace ThriveChurchOfficialAPI.Repositories
     /// <summary>
     /// Sermons Repo
     /// </summary>
-    public class SermonsRepository : RepositoryBase, ISermonsRepository
+    public class SermonsRepository : RepositoryBase<SermonSeries>, ISermonsRepository
     {
         private readonly IMongoCollection<SermonSeries> _sermonsCollection;
         private readonly IMongoCollection<LiveSermons> _livestreamCollection;
@@ -24,7 +24,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         public SermonsRepository(IConfiguration Configuration)
             : base(Configuration)
         {
-            _sermonsCollection = DB.GetCollection<SermonSeries>("Sermons");
+            _sermonsCollection = DB.GetCollection<SermonSeries>("Series");
             _livestreamCollection = DB.GetCollection<LiveSermons>("Livestream");
         }
 
@@ -32,16 +32,51 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
         /// <returns></returns>
-        public async Task<AllSermonsResponse> GetAllSermons()
+        public async Task<IEnumerable<SermonSeries>> GetAllSermons(bool sorted = true)
         {
-            var documents = await _sermonsCollection.Find(_ => true).ToListAsync();
+            var filter = Builders<SermonSeries>.Filter.Empty;
 
-            var allSermonsResponse = new AllSermonsResponse
+            var stages = new List<BsonDocument>
             {
-                Sermons = documents.OrderBy(i => i.StartDate)
+                new BsonDocument("$match", ConvertFilterToBsonDocument(filter))
             };
 
-            return allSermonsResponse;
+            if (sorted)
+            {
+                stages.Add(new BsonDocument("$sort", new BsonDocument(nameof(SermonSeries.StartDate), -1)));
+            }
+
+            PipelineDefinition<SermonSeries, SermonSeries> pipeline = PipelineDefinition<SermonSeries, SermonSeries>.Create(stages);
+
+            var cursor = await _sermonsCollection.AggregateAsync(pipeline);
+
+            return cursor.ToList();
+        }
+
+        /// <summary>
+        /// Get all sermon series with matching slug
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<SermonSeries>> GetSermonsBySlug(string slug)
+        {
+            var filter = Builders<SermonSeries>.Filter.Eq(l => l.Slug, slug);
+
+            var cursor = await _sermonsCollection.FindAsync(filter);
+
+            return cursor.ToList();
+        }
+
+        /// <summary>
+        /// Get the currently active series
+        /// </summary>
+        /// <returns></returns>
+        public async Task<SermonSeries> GetActiveSeries()
+        {
+            var filter = Builders<SermonSeries>.Filter.Eq(l => l.EndDate, null);
+
+            var cursor = await _sermonsCollection.FindAsync(filter);
+
+            return cursor.FirstOrDefault();
         }
 
         /// <summary>
@@ -63,7 +98,8 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             if (pageNumber >= 3)
             {
-                beginningCount = (pageNumber * 10) - 20; // we subtract 20 because the first 10 pages we only return 5
+                // we subtract 20 because on the first 2 pages we only return 5
+                beginningCount = (pageNumber * 10) - 20;
             }
 
             var totalPageNumber = 1;
@@ -82,7 +118,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             // converting this to an array first will allow us to not have to enumerate the collection multiple times
             // ToArray() just converts the DataType via reflection through a Buffer -> O(n) BUT length reads are O(1) after this
-            var totalRecordCount = totalRecord.Sermons.ToArray().Length;
+            var totalRecordCount = totalRecord.ToArray().Length;
 
             // since we know how many there are, in this method we can use that to indicate the total Pages in this method
             // Remember that pages 1 & 2 return a response of only 5
@@ -138,7 +174,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                     // because we will be loading many of them at once
                     ArtUrl = series.Thumbnail,
                     Id = series.Id,
-                    StartDate = series.StartDate.Value,
+                    StartDate = series.StartDate,
                     Title = series.Name
                 };
                 summariesList.Add(summary);
@@ -172,8 +208,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             await _sermonsCollection.InsertOneAsync(request);
 
             // respond with the inserted object
-            var inserted = await _sermonsCollection.FindAsync(
-                    Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
+            var inserted = await _sermonsCollection.FindAsync(Builders<SermonSeries>.Filter.Eq(l => l.Slug, request.Slug));
 
             var response = inserted.FirstOrDefault();
             if (response == default(SermonSeries))
@@ -196,11 +231,15 @@ namespace ThriveChurchOfficialAPI.Repositories
                 return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Sermon Series", request.Id));
             }
 
+            var filter = Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id);
+
             // updated time is now
             request.LastUpdated = DateTime.UtcNow;
 
-            var singleSeries = await _sermonsCollection.FindOneAndReplaceAsync(
-                   Builders<SermonSeries>.Filter.Eq(s => s.Id, request.Id), request);
+            var singleSeries = await _sermonsCollection.FindOneAndReplaceAsync(filter, request, new FindOneAndReplaceOptions<SermonSeries>
+            {
+                ReturnDocument = ReturnDocument.After
+            });
 
             if (singleSeries == null)
             {
@@ -228,42 +267,6 @@ namespace ThriveChurchOfficialAPI.Repositories
             var response = singleSeries.FirstOrDefault();
 
             return new SystemResponse<SermonSeries>(response, "Success!");
-        }
-
-        /// <summary>
-        /// Used to find a series for a particular unique slug
-        /// </summary>
-        /// <param name="slug"></param>
-        /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> GetSermonSeriesForSlug(string slug)
-        {
-            var singleSeries = await _sermonsCollection.FindAsync(
-                   Builders<SermonSeries>.Filter.Eq(s => s.Slug, slug));
-
-            var response = singleSeries.FirstOrDefault();
-            if (response == default(SermonSeries))
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindSermonWithSlug, slug));
-            }
-
-            return new SystemResponse<SermonSeries>(response, "Success!");
-        }
-
-        /// <summary>
-        /// Gets a sermon message for its Id
-        /// </summary>
-        /// <param name="messageId"></param>
-        /// <returns></returns>
-        public async Task<SermonMessage> GetMessageForId(string messageId)
-        {
-            // use a filter since we are looking for an Id which is a value in an array with n elements
-            var filter = Builders<SermonSeries>.Filter.ElemMatch(x => x.Messages, x => x.MessageId == messageId);
-
-            var seriesResponse = await _sermonsCollection.FindAsync(filter);
-            var series = seriesResponse.FirstOrDefault();
-            var response = series.Messages.Where(i => i.MessageId == messageId).FirstOrDefault();
-
-            return response;
         }
 
         /// <summary>

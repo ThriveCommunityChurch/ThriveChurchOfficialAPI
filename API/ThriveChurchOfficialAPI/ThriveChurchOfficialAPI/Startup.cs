@@ -70,17 +70,17 @@ namespace ThriveChurchOfficialAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // enable in-memory caching
-            services.AddMemoryCache();
-
             services.AddCors(options =>
             {
-                options.AddPolicy(MyAllowSpecificOrigins,
-                builder =>
-                {
-                    builder.WithOrigins("*");
-                });
+                options.AddPolicy(name: MyAllowSpecificOrigins,
+                                  builder =>
+                                  {
+                                      builder.WithOrigins("*").AllowAnyHeader().AllowAnyMethod();
+                                  });
             });
+
+            // enable in-memory caching
+            services.AddMemoryCache();
 
             services.AddMvc(options =>
             {
@@ -120,6 +120,10 @@ namespace ThriveChurchOfficialAPI
             // load IP rules from appsettings.json
             services.Configure<IpRateLimitPolicies>(Configuration.GetSection("IpRateLimitPolicies"));
 
+            services.AddInMemoryRateLimiting();
+
+            services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
             // inject counter and rules stores
             services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
             services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
@@ -151,6 +155,7 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IPassagesService), typeof(PassagesService));
             services.AddTransient(typeof(IConfigService), typeof(ConfigService));
             services.AddTransient(typeof(IConfigRepository), typeof(ConfigRepository));
+            services.AddTransient(typeof(IMessagesRepository), typeof(MessagesRepository));
 
             #region Hangfire Tasks
 
@@ -171,6 +176,8 @@ namespace ThriveChurchOfficialAPI
                 config.UseMongoStorage(Configuration["HangfireConnectionString"], hangfireStorageOptions);
             });
 
+            Log.Information("Services configured.");
+
             #endregion
         }
 
@@ -180,46 +187,53 @@ namespace ThriveChurchOfficialAPI
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+
+                // Enable middleware to serve generated Swagger as a JSON endpoint.
+                app.UseSwagger();
+
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // specifying the Swagger JSON endpoint.
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
+                    c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
+                    c.DefaultModelsExpandDepth(-1); // Disable swagger schemas at bottom
+                });
             }
             else
             {
                 app.UseHsts();
             }
 
-            // Enable middleware to serve generated Swagger as a JSON endpoint.
-            app.UseSwagger();
+            Log.Information("UseHsts configured.");
 
             // add exception filtering 
             app.ConfigureCustomExceptionMiddleware();
 
-            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
-            // specifying the Swagger JSON endpoint.
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
-                c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
-                c.DefaultModelsExpandDepth(-1); // Disable swagger schemas at bottom
-            });
+            Log.Information("Exception middleware configured.");
 
             #region Hangfire Tasks
 
-            // Map Dashboard to the `http://<your-app>/hf-dashboard` URL.
-            //app.UseHangfireDashboard("/hf-dashboard", new DashboardOptions { IsReadOnlyFunc = (DashboardContext context) => true }); // read only for prod
-            app.UseHangfireDashboard("/hf-dashboard");
-
             #endregion
 
-            app.UseIpRateLimiting(); // enable rate limits
+            app.UseIpRateLimiting();
+
+            Log.Information("Rate limiting configured.");
+
+            app.UseRouting();
+
+            Log.Information("Routing middleware configured.");
 
             app.UseCors(MyAllowSpecificOrigins);
 
-            app.UseRouting();
+            Log.Information("CORS middleware configured.");
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
 
+            Log.Information("Service started.");
         }
     }
 

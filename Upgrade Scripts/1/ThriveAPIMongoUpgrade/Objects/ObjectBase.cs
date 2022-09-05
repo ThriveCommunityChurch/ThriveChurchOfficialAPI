@@ -1,10 +1,10 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 using System;
 
-namespace ThriveChurchOfficialAPI.Core
+namespace ThriveAPIMongoUpgrade.Objects
 {
-    public class ObjectBase
+    internal class ObjectBase
     {
         /// <summary>
         /// Object Id

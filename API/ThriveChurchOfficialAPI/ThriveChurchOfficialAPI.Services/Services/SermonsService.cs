@@ -10,7 +10,6 @@ using System.Linq;
 using System.Collections.Generic;
 using MongoDB.Bson;
 using Hangfire;
-using ThriveChurchOfficialAPI.Core.System;
 using NCrontab;
 using Hangfire.Storage;
 
@@ -19,14 +18,23 @@ namespace ThriveChurchOfficialAPI.Services
     public class SermonsService : BaseService, ISermonsService, IDisposable
     {
         private readonly ISermonsRepository _sermonsRepository;
+        private readonly IMessagesRepository _messagesRepository;
         private readonly IMemoryCache _cache;
         private Timer _timer;
 
+        /// <summary>
+        /// Sermons Service
+        /// </summary>
+        /// <param name="sermonsRepo"></param>
+        /// <param name="messagesRepository"></param>
+        /// <param name="cache"></param>
         public SermonsService(ISermonsRepository sermonsRepo, 
+            IMessagesRepository messagesRepository,
             IMemoryCache cache)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
+            _messagesRepository = messagesRepository;
             _cache = cache;
         }
 
@@ -38,17 +46,15 @@ namespace ThriveChurchOfficialAPI.Services
             var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
 
             // we need to convert everything to the right response pattern
-            var sortedSeries = getAllSermonsResponse.Sermons.OrderByDescending(i => i.StartDate);
-
-            // for each one add only the properties we want to the list
             var responseList = new List<SermonSeriesSummary>();
-            foreach (var series in sortedSeries)
+            foreach (var series in getAllSermonsResponse)
             {
+                // for each one add only the properties we want to the list
                 var elemToAdd = new SermonSeriesSummary
                 {
                     ArtUrl = series.ArtUrl,
                     Id = series.Id,
-                    StartDate = series.StartDate.Value,
+                    StartDate = series.StartDate,
                     Title = series.Name
                 };
 
@@ -99,40 +105,71 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all SermonSeries Objets
         /// </summary>
-        public async Task<SystemResponse<SermonSeries>> CreateNewSermonSeries(CreateSermonSeriesRequest request)
+        public async Task<SystemResponse<SermonSeriesResponse>> CreateNewSermonSeries(CreateSermonSeriesRequest request)
         {
             var validRequest = CreateSermonSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
+                return new SystemResponse<SermonSeriesResponse>(true, validRequest.ErrorMessage);
             }
 
             // the Slug on the series should be unique, so if we already have one with this slug
             // return an error - because we want to avoid having bad data in our database
-            var allSermonSries = await _sermonsRepository.GetAllSermons();
-            if (allSermonSries == null || allSermonSries == default(AllSermonsResponse))
-            {
-                return null;
-            }
+            var sermonsWithSlug = await _sermonsRepository.GetSermonsBySlug(request.Slug);
 
-            var seriesWithSameSlug = allSermonSries.Sermons.Where(i => string.Equals(i.Slug, request.Slug, StringComparison.InvariantCultureIgnoreCase));
-            if (seriesWithSameSlug.Any())
+            if (sermonsWithSlug.Any())
             {
-                var foundSeries = seriesWithSameSlug.FirstOrDefault();
+                SermonSeries foundSeries = sermonsWithSlug.FirstOrDefault();
+
+                var found = new SermonSeriesResponse
+                {
+                    ArtUrl = foundSeries.ArtUrl,
+                    LastUpdated = foundSeries.LastUpdated,
+                    EndDate = foundSeries.EndDate,
+                    Id = foundSeries.Id,
+                    Name = foundSeries.Name,
+                    Slug = foundSeries.Slug,
+                    StartDate = foundSeries.StartDate,
+                    Thumbnail = foundSeries.Thumbnail,
+                    Year = $"{foundSeries.StartDate.Year}"
+                };
+
+                var messages = await _messagesRepository.GetMessagesBySeriesId(foundSeries.Id);
 
                 // there is already a sermon series with this slug, respond with one of those
-                return new SystemResponse<SermonSeries>(foundSeries, "202");
+                return new SystemResponse<SermonSeriesResponse>(found, "202");
             }
 
-            // if any of the sermon series' are currently active
+            // Check if any of the sermon series' are currently active
+            // Because we can only have 1 active series
             if (request.EndDate == null)
             {
-                var currentlyActiveSeries = allSermonSries.Sermons.Where(i => i.EndDate == null);
-                if (currentlyActiveSeries.Any())
+                var activeSeries = await _sermonsRepository.GetActiveSeries();
+
+                // if there's a value then there's an active series
+                if (activeSeries != null)
                 {
                     // one of the series' is already active
-                    var currentlyActive = currentlyActiveSeries.FirstOrDefault();
-                    return new SystemResponse<SermonSeries>(currentlyActive, "202");
+                    var currentlyActive = new SermonSeriesResponse
+                    {
+                        ArtUrl = activeSeries.ArtUrl,
+                        EndDate = activeSeries.EndDate,
+                        Id = activeSeries.Id,
+                        LastUpdated = activeSeries.LastUpdated,
+                        Name = activeSeries.Name,
+                        Slug = activeSeries.Slug,
+                        StartDate = activeSeries.StartDate,
+                        Thumbnail = activeSeries.Thumbnail,
+                        Year = $"{activeSeries.StartDate.Year}"
+                    };
+
+                    var messages = await _messagesRepository.GetMessagesBySeriesId(activeSeries.Id);
+                    if (messages != null && messages.Any())
+                    {
+                        currentlyActive.Messages = SermonMessage.ConvertToResponseList(messages);
+                    }
+
+                    return new SystemResponse<SermonSeriesResponse>(currentlyActive, "202");
                 }
             }
             else
@@ -141,9 +178,26 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // sanitise the start dates
-            request.StartDate = request.StartDate.Value.ToUniversalTime().Date;
+            request.StartDate = request.StartDate.ToUniversalTime().Date;
+
+            var sermonSeries = new SermonSeries
+            {
+                ArtUrl = request.ArtUrl,
+                EndDate = request.EndDate,
+                Name = request.Name,
+                Slug = request.Slug,
+                StartDate = request.StartDate,
+                Thumbnail = request.Thumbnail
+            };
+
+            var seriesCreatedResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
+            if (seriesCreatedResponse.HasErrors)
+            {
+                return new SystemResponse<SermonSeriesResponse>(true, seriesCreatedResponse.ErrorMessage); 
+            }
 
             var messageList = new List<SermonMessage>();
+            var createdSeries = seriesCreatedResponse.Result;
 
             foreach (var message in request.Messages)
             {
@@ -152,38 +206,47 @@ namespace ThriveChurchOfficialAPI.Services
                     AudioFileSize = message.AudioFileSize,
                     AudioDuration = message.AudioDuration,
                     // sanitise the message dates and get rid of the times
-                    Date = message.Date.Value.Date.ToUniversalTime().Date,
-                    MessageId = Guid.NewGuid().ToString(),
+                    Date = message.Date.Date.ToUniversalTime().Date,
                     AudioUrl = message.AudioUrl,
                     PassageRef = message.PassageRef,
                     Speaker = message.Speaker,
                     Title = message.Title,
-                    VideoUrl = message.VideoUrl
+                    VideoUrl = message.VideoUrl,
+                    SeriesId = createdSeries.Id
                 });
             }
 
-            var sermonSeries = new SermonSeries
+            var newMessagesResponse = await _messagesRepository.CreateNewMessages(messageList);
+            if (newMessagesResponse.HasErrors)
             {
-                ArtUrl = request.ArtUrl,
-                EndDate = request.EndDate,
-                Messages = messageList,
-                Name = request.Name,
-                Slug = request.Slug,
-                StartDate = request.StartDate,
-                Thumbnail = request.Thumbnail,
-                Year = request.Year
-            };
-
-            var creationResponse = await _sermonsRepository.CreateNewSermonSeries(sermonSeries);
-            if (creationResponse.HasErrors)
-            {
-                return new SystemResponse<SermonSeries>(true, creationResponse.ErrorMessage); 
+                return new SystemResponse<SermonSeriesResponse>(true, newMessagesResponse.ErrorMessage);
             }
 
-            // Save data in cache.
-            _cache.Set(string.Format(CacheKeys.GetSermonSeries, creationResponse.Result.Id), creationResponse.Result, PersistentCacheEntryOptions);
+            var response = new SermonSeriesResponse
+            {
+                ArtUrl = createdSeries.ArtUrl,
+                EndDate = createdSeries.EndDate,
+                Id = createdSeries.Id,
+                LastUpdated = createdSeries.LastUpdated,
+                Messages = SermonMessage.ConvertToResponseList(newMessagesResponse.Result),
+                Name = createdSeries.Name,
+                Slug = createdSeries.Slug,
+                StartDate = createdSeries.StartDate,
+                Thumbnail = createdSeries.Thumbnail,
+                Year = $"{createdSeries.StartDate.Year}"
+            };
 
-            return new SystemResponse<SermonSeries>(creationResponse.Result, "Success!");
+            // Save data in cache.
+            _cache.Set(string.Format(CacheKeys.GetSermonSeries, response.Id), response, PersistentCacheEntryOptions);
+
+            return new SystemResponse<SermonSeriesResponse>(response, "Success!");
+        }
+
+        private async Task<IEnumerable<SermonMessage>> GetMessagesBySeriesId(string seriesId)
+        {
+            var messages = await _messagesRepository.GetMessagesBySeriesId(seriesId);
+
+            return messages;
         }
 
         /// <summary>
@@ -191,66 +254,75 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> AddMessageToSermonSeries(string SeriesId, AddMessagesToSeriesRequest request)
+        public async Task<SystemResponse<SermonSeriesResponse>> AddMessageToSermonSeries(string seriesId, AddMessagesToSeriesRequest request)
         {
             var validRequest = AddMessagesToSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
+                return new SystemResponse<SermonSeriesResponse>(true, validRequest.ErrorMessage);
             }
 
-            if (string.IsNullOrEmpty(SeriesId))
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
-            }
+            var getSermonSeriesDelegate = GetSeriesById(seriesId);
+            var messagesDelegate = _messagesRepository.GetMessagesBySeriesId(seriesId);
 
-            // if we can't find it then the Id is invalid
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(SeriesId);
+            await Task.WhenAll(getSermonSeriesDelegate, messagesDelegate);
+
+            var getSermonSeriesResponse = getSermonSeriesDelegate.Result;
+            var messages = messagesDelegate.Result.ToList();
+
             if (getSermonSeriesResponse.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, getSermonSeriesResponse.ErrorMessage);
+                return new SystemResponse<SermonSeriesResponse>(true, getSermonSeriesResponse.ErrorMessage);
             }
 
-            var series = getSermonSeriesResponse.Result;
+            SermonSeries series = getSermonSeriesResponse.Result;
 
-            // add the sermon message to the response object and re-update the Mongo doc
-            var currentMessages = series.Messages.ToList();
+            // add the sermon message to mongo as 1 list
+            var newMessages = new List<SermonMessage>();
 
-            var messageList = new List<SermonMessage>();
-
-            foreach (var message in request.MessagesToAdd)
+            foreach (var message in request.MessagesToAdd.OrderByDescending(i => i.Date))
             {
-                messageList.Add(new SermonMessage
+                newMessages.Add(new SermonMessage
                 {
                     AudioFileSize = message.AudioFileSize,
                     AudioDuration = message.AudioDuration,
                     // sanitise the message dates and get rid of the times
-                    Date = message.Date.Value.Date.ToUniversalTime().Date,
-                    MessageId = Guid.NewGuid().ToString(),
+                    Date = message.Date.Date.ToUniversalTime().Date,
                     AudioUrl = message.AudioUrl,
                     PassageRef = message.PassageRef,
                     Speaker = message.Speaker,
                     Title = message.Title,
-                    VideoUrl = message.VideoUrl
+                    VideoUrl = message.VideoUrl,
+                    SeriesId = seriesId
                 });
             }
 
-            currentMessages.AddRange(messageList);
-
-            // readd the messages back to the object, This is important (see SO for  Deep Copy vs shallow copy)
-            series.Messages = currentMessages;
-
-            // find and replace the one with the updated object
-            var updateResponse = await _sermonsRepository.UpdateSermonSeries(series);
-            if(updateResponse.HasErrors)
+            var updateResponse = await _messagesRepository.CreateNewMessages(newMessages);
+            if (updateResponse.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, updateResponse.ErrorMessage);
+                return new SystemResponse<SermonSeriesResponse>(true, updateResponse.ErrorMessage);
             }
 
-            // Save data in cache.
-            _cache.Set(string.Format(CacheKeys.GetSermonSeries, updateResponse.Result.Id), updateResponse.Result, PersistentCacheEntryOptions);
+            messages.AddRange(newMessages);
 
-            return new SystemResponse<SermonSeries>(updateResponse.Result, "Success!");
+            var response = new SermonSeriesResponse
+            {
+                Id = series.Id,
+                ArtUrl = series.ArtUrl,
+                EndDate = series.EndDate,
+                LastUpdated = series.LastUpdated,
+                Messages = SermonMessage.ConvertToResponseList(messages),
+                Name = series.Name,
+                Slug = series.Slug,
+                StartDate = series.StartDate,
+                Thumbnail = series.Thumbnail,
+                Year = $"{series.StartDate.Year}"
+            };
+
+            // Save data in cache.
+            _cache.Set(string.Format(CacheKeys.GetSermonSeries, series.Id), response, PersistentCacheEntryOptions);
+
+            return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
 
         /// <summary>
@@ -261,69 +333,21 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SystemResponse<SermonMessage>> UpdateMessageInSermonSeries(string messageId, UpdateMessagesInSermonSeriesRequest request)
         {
-            // TODO: Fix this
-
             var validRequest = UpdateMessagesInSermonSeriesRequest.ValidateRequest(request);
             if (validRequest.HasErrors)
             {
                 return new SystemResponse<SermonMessage>(true, validRequest.ErrorMessage);
             }
 
-            var validGuid = Guid.TryParse(messageId, out Guid messageGuid);
-            if (!validGuid)
+            var messageResponse = await _messagesRepository.GetMessageById(messageId);
+            if (messageResponse.HasErrors)
             {
-                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.InvalidPropertyType, "messageId", "Guid"));
+                return new SystemResponse<SermonMessage>(true, messageResponse.ErrorMessage);
             }
 
-            var messageResponse = await _sermonsRepository.GetMessageForId(messageId);
-            if (messageResponse == null || messageResponse == default(SermonMessage))
-            {
-                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.UnableToFindSermonMessageWithId, messageId));
-            }
+            var messageResult = await _messagesRepository.UpdateMessageById(messageId, request.Message);
 
-            return new SystemResponse<SermonMessage>(messageResponse, "Success!");
-        }
-
-        /// <summary>
-        /// Schedule a livestream to occur regularly
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public string ScheduleLiveStream(LiveSermonsSchedulingRequest request)
-        {
-            var hangfireCreationResponse = CreateLiveStreamStartHangfire(request);
-            var hangfireEndingResponse = CreateLiveStreamEndHangfire(request);
-
-            var hangfireResponse = $"Start Job ID: {hangfireCreationResponse}\nEnd Job ID: {hangfireEndingResponse}";
-            return hangfireResponse;
-        }
-
-        private string CreateLiveStreamStartHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var jobId = request.StartSchedule;
-
-            // Upserts the recurring job data
-            RecurringJob.AddOrUpdate(jobId, () =>
-                GoLiveHangfire(request),
-                request.StartSchedule,
-                TimeZoneInfo.Local
-            );
-
-            return jobId;
-        }
-
-        private string CreateLiveStreamEndHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var jobId = request.EndSchedule;
-
-            // Upserts the recurring job data
-            RecurringJob.AddOrUpdate(jobId, () =>
-                EndLiveHangfire(request),
-                request.EndSchedule,
-                TimeZoneInfo.Local
-            );
-
-            return jobId;
+            return new SystemResponse<SermonMessage>(messageResult, "Success!");
         }
 
         /// <summary>
@@ -331,33 +355,72 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="seriesId"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonSeries>> GetSeriesForId(string seriesId)
+        public async Task<SystemResponse<SermonSeriesResponse>> GetSeriesForId(string seriesId)
         {
             if (string.IsNullOrEmpty(seriesId))
             {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "seriesId"));
+                return new SystemResponse<SermonSeriesResponse>(true, string.Format(SystemMessages.NullProperty, "seriesId"));
             }
 
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(string.Format(CacheKeys.GetSermonSeries, seriesId), out SermonSeries series))
+            if (!_cache.TryGetValue(string.Format(CacheKeys.GetSermonSeries, seriesId), out SermonSeriesResponse series))
             {
                 // Key not in cache, so get data.
                 var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
                 if (seriesResponse.HasErrors)
                 {
-                    return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
+                    return new SystemResponse<SermonSeriesResponse>(true, seriesResponse.ErrorMessage);
                 }
 
-                series = seriesResponse.Result;
+                var seriesResult = seriesResponse.Result;
+
+                var aeriesResponse = new SermonSeriesResponse
+                {
+                    ArtUrl = seriesResult.ArtUrl,
+                    EndDate = seriesResult.EndDate,
+                    Id = seriesResult.Id,
+                    LastUpdated = seriesResult.LastUpdated,
+                    Name = seriesResult.Name,
+                    Slug = seriesResult.Slug,
+                    StartDate = seriesResult.StartDate,
+                    Thumbnail = seriesResult.Thumbnail,
+                    Year = $"{seriesResult.StartDate.Year}"
+                };
+
+                var messagesResponse = await _messagesRepository.GetMessagesBySeriesId(seriesId);
+                if (messagesResponse != null && messagesResponse.Any())
+                {
+                    aeriesResponse.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
+                }
 
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), series, PersistentCacheEntryOptions);
+                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), aeriesResponse, PersistentCacheEntryOptions);
+                return new SystemResponse<SermonSeriesResponse>(aeriesResponse, "Success!");
+            }         
+
+            return new SystemResponse<SermonSeriesResponse>(series, "Success!");
+        }
+
+        private async Task<SystemResponse<SermonSeries>> GetSeriesById(string seriesId)
+        {
+            if (string.IsNullOrEmpty(seriesId))
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
             }
 
-            var orderedMessages = series.Messages.OrderByDescending(i => i.Date.Value);
-            series.Messages = orderedMessages;
+            var invalidId = ObjectId.TryParse(seriesId, out ObjectId _);
+            if (!invalidId)
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.InvalidPropertyType, "SeriesId", "ObjectId"));
+            }
 
-            return new SystemResponse<SermonSeries>(series, "Success!");
+            var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
+            if (seriesResponse.HasErrors)
+            {
+                return new SystemResponse<SermonSeries>(true, seriesResponse.ErrorMessage);
+            }
+
+            return new SystemResponse<SermonSeries>(seriesResponse.Result, "Success!");
         }
 
         /// <summary>
@@ -373,24 +436,13 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeries>(true, validRequest.ErrorMessage);
             }
 
-            if (string.IsNullOrEmpty(seriesId))
+            var getSermonSeriesResponse = await GetSeriesById(seriesId);
+            if (getSermonSeriesResponse.HasErrors)
             {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.NullProperty, "SeriesId"));
+                return new SystemResponse<SermonSeries>(true, getSermonSeriesResponse.ErrorMessage);
             }
 
-            var invalidId = ObjectId.TryParse(seriesId, out ObjectId id);
-            if (!invalidId)
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.InvalidPropertyType, "SeriesId", "ObjectId"));
-            }
-
-            var getSermonSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-            if (getSermonSeriesResponse == null)
-            {
-                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.ErrorOcurredUpdatingDocumentForKey, seriesId));
-            }
-
-            var series = getSermonSeriesResponse.Result;
+            SermonSeries series = getSermonSeriesResponse.Result;
 
             // make sure that no one can update the slug to something that already exists
             // this is not allowed
@@ -421,99 +473,7 @@ namespace ThriveChurchOfficialAPI.Services
             return new SystemResponse<SermonSeries>(response, "Success!");
         }
 
-        /// <summary>
-        /// returns a list of all Passage Objets
-        /// </summary>
-        public async Task<LiveStreamingResponse> GetLiveSermons()
-        {
-            var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
-
-            // we are not streaming so there's no need to include anything
-            var response = new LiveStreamingResponse
-            {
-                IsLive = false,
-                ExpirationTime = getLiveSermonsResponse.ExpirationTime
-            };
-
-            // if we are currently streaming then we will need to add the slug to the middle of the Facebook link
-            if (getLiveSermonsResponse.IsLive)
-            {
-                // do the business logic here friend
-                response.IsLive = true;
-                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
-                response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
-            }
-            else
-            {
-                response.NextLive = getLiveSermonsResponse.NextLive;
-            }
-
-            return response;
-        }
-
-        public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var jobId = request.StartSchedule;
-
-            CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
-            DateTime endTime = schedule.GetNextOccurrence(DateTime.Now);
-
-            var liveStreamUpdate = new LiveSermonsUpdateRequest
-            {
-                ExpirationTime = endTime
-            };
-
-            return GoLive(liveStreamUpdate);
-        }
-
-        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
-        {
-            CrontabSchedule schedule = CrontabSchedule.Parse(request.StartSchedule);
-            DateTime nextLocal = schedule.GetNextOccurrence(DateTime.Now);
-
-            List<RecurringJobDto> recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
-            var nextJobExecTime = recurringJobs.OrderBy(i => i.NextExecution.Value).First().NextExecution.Value;
-
-            // make sure that we're using UTC
-            DateTime nextLive = nextJobExecTime.ToUniversalTime();
-
-            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive(nextLive);
-
-            return;
-        }
-
-        /// <summary>
-        /// Update the LiveSermons object
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public async Task<SystemResponse<LiveStreamingResponse>> GoLive(LiveSermonsUpdateRequest request)
-        {
-            // validate the request
-            var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
-            if (validRequest.HasErrors)
-            {
-                // an error ocurred here
-                return new SystemResponse<LiveStreamingResponse>(true, validRequest.ErrorMessage);
-            }
-
-            var updateLiveSermonsResponse = await _sermonsRepository.GoLive(request);
-            if (updateLiveSermonsResponse == null)
-            {
-                return new SystemResponse<LiveStreamingResponse>(true, SystemMessages.UnableToFindLiveSermon);
-            }
-
-            // times have already been converted to UTC
-            var response = new LiveStreamingResponse
-            {
-                ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
-                IsLive = updateLiveSermonsResponse.IsLive,
-                IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null ? true : false,
-                SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null
-            };
-
-            return new SystemResponse<LiveStreamingResponse>(response, "Success!");
-        }
+        #region Live
 
         /// <summary>
         /// Updates the LiveSermon to be a special event
@@ -528,7 +488,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 return new SystemResponse<LiveStreamingResponse>(true, validationResponse.ErrorMessage);
             }
-            
+
             // Update this object for the requested fields
             var updated = new LiveSermons
             {
@@ -627,7 +587,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             // IT's now later than what the time is in the database
             if (DateTime.UtcNow.TimeOfDay > pollingResponse.StreamExpirationTime.ToUniversalTime().TimeOfDay)
-            { 
+            {
                 // update mongo to reflect that the sermon is inactive
                 await _sermonsRepository.UpdateLiveSermonsInactive();
 
@@ -660,6 +620,256 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 _timer.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Schedule a livestream to occur regularly
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public string ScheduleLiveStream(LiveSermonsSchedulingRequest request)
+        {
+            var hangfireCreationResponse = CreateLiveStreamStartHangfire(request);
+            var hangfireEndingResponse = CreateLiveStreamEndHangfire(request);
+
+            var hangfireResponse = $"Start Job ID: {hangfireCreationResponse}\nEnd Job ID: {hangfireEndingResponse}";
+            return hangfireResponse;
+        }
+
+        private string CreateLiveStreamStartHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var jobId = request.StartSchedule;
+
+            // Upserts the recurring job data
+            RecurringJob.AddOrUpdate(jobId, () =>
+                GoLiveHangfire(request),
+                request.StartSchedule,
+                TimeZoneInfo.Local
+            );
+
+            return jobId;
+        }
+
+        private string CreateLiveStreamEndHangfire(LiveSermonsSchedulingRequest request)
+        {
+            var jobId = request.EndSchedule;
+
+            // Upserts the recurring job data
+            RecurringJob.AddOrUpdate(jobId, () =>
+                EndLiveHangfire(request),
+                request.EndSchedule,
+                TimeZoneInfo.Local
+            );
+
+            return jobId;
+        }
+
+        /// <summary>
+        /// returns a list of all Passage Objets
+        /// </summary>
+        public async Task<LiveStreamingResponse> GetLiveSermons()
+        {
+            var getLiveSermonsResponse = await _sermonsRepository.GetLiveSermons();
+
+            // we are not streaming so there's no need to include anything
+            var response = new LiveStreamingResponse
+            {
+                IsLive = false,
+                ExpirationTime = getLiveSermonsResponse.ExpirationTime
+            };
+
+            // if we are currently streaming then we will need to add the slug to the middle of the Facebook link
+            if (getLiveSermonsResponse.IsLive)
+            {
+                // do the business logic here friend
+                response.IsLive = true;
+                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
+                response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
+            }
+            else
+            {
+                response.NextLive = getLiveSermonsResponse.NextLive;
+            }
+
+            return response;
+        }
+
+        public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
+        {
+            CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
+            DateTime endTime = schedule.GetNextOccurrence(DateTime.Now);
+
+            var liveStreamUpdate = new LiveSermonsUpdateRequest
+            {
+                ExpirationTime = endTime
+            };
+
+            return GoLive(liveStreamUpdate);
+        }
+
+        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
+        {
+            CrontabSchedule schedule = CrontabSchedule.Parse(request.StartSchedule);
+            DateTime nextLocal = schedule.GetNextOccurrence(DateTime.Now);
+
+            List<RecurringJobDto> recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
+            var nextJobExecTime = recurringJobs.OrderBy(i => i.NextExecution.Value).First().NextExecution.Value;
+
+            // make sure that we're using UTC
+            DateTime nextLive = nextJobExecTime.ToUniversalTime();
+
+            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive(nextLive);
+
+            return;
+        }
+
+        /// <summary>
+        /// Update the LiveSermons object
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<LiveStreamingResponse>> GoLive(LiveSermonsUpdateRequest request)
+        {
+            // validate the request
+            var validRequest = LiveSermonsUpdateRequest.ValidateRequest(request);
+            if (validRequest.HasErrors)
+            {
+                // an error ocurred here
+                return new SystemResponse<LiveStreamingResponse>(true, validRequest.ErrorMessage);
+            }
+
+            var updateLiveSermonsResponse = await _sermonsRepository.GoLive(request);
+            if (updateLiveSermonsResponse == null)
+            {
+                return new SystemResponse<LiveStreamingResponse>(true, string.Join(SystemMessages.UnableToFind, "LiveSermon"));
+            }
+
+            // times have already been converted to UTC
+            var response = new LiveStreamingResponse
+            {
+                ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
+                IsLive = updateLiveSermonsResponse.IsLive,
+                IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null ? true : false,
+                SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null
+            };
+
+            return new SystemResponse<LiveStreamingResponse>(response, "Success!");
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Updates the playcount for a sermon message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<SermonMessage>> MarkMessagePlayed(string messageId)
+        {
+            var updateResponse = await _messagesRepository.UpdateMessagePlayCount(messageId);
+            if (updateResponse == null)
+            {
+                return new SystemResponse<SermonMessage>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "message", messageId));
+            }
+
+            return new SystemResponse<SermonMessage>(updateResponse, "Success!");
+        }
+
+        /// <summary>
+        /// Gets sermon statistics
+        /// </summary>
+        /// <returns></returns>
+        public async Task<SystemResponse<SermonStatsResponse>> GetSermonStats()
+        {
+            var allSermonsDelegate = _sermonsRepository.GetAllSermons(sorted: false);
+            var allMessagesDelegate = _messagesRepository.GetAllMessages();
+
+            await Task.WhenAll(allMessagesDelegate, allSermonsDelegate);
+
+            var allSermonsResponse = allSermonsDelegate.Result;
+            var allMessagesResponse = allMessagesDelegate.Result;
+
+            if (allSermonsResponse == null || allSermonsResponse == null || !allSermonsResponse.Any())
+            {
+                return new SystemResponse<SermonStatsResponse>(true, string.Join(SystemMessages.UnableToFind, "all sermons"));
+            }
+
+            if (allMessagesResponse == null || allMessagesResponse == null || !allMessagesResponse.Any())
+            {
+                return new SystemResponse<SermonStatsResponse>(true, string.Join(SystemMessages.UnableToFind, "all sermons"));
+            }
+
+            var seriesList = allSermonsResponse.ToList();
+
+            var response = new SermonStatsResponse
+            {
+                TotalSeriesNum = seriesList.Count
+            };
+
+            Dictionary<string, SpeakerStats> speakerStats = new Dictionary<string, SpeakerStats>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, double> speakerLength = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+
+            // iterate through each message and calculate what we need to
+            // this should be O(n*m) where n = # of series and m = # messages each series 
+            foreach (var message in allMessagesResponse)
+            {
+                response.TotalMessageNum++;
+                response.TotalAudioLength += message.AudioDuration ?? 0;
+                response.TotalFileSize += message.AudioFileSize ?? 0;
+
+                // we haven't seen this speaker yet, so add them to the list
+                if (!speakerStats.ContainsKey(message.Speaker))
+                {
+                    speakerStats[message.Speaker] = new SpeakerStats
+                    {
+                        MessageCount = 1
+                    };
+                }
+                else
+                {
+                    // we've seen this speaker, so just increment
+                    speakerStats[message.Speaker].MessageCount++;
+                }
+
+                // if there's a duration then we can track that
+                if (message.AudioDuration != null && message.AudioDuration > 0 && !speakerLength.ContainsKey(message.Speaker))
+                {
+                    // assuming there's no speaker yet, we can init them with the current duration
+                    speakerLength[message.Speaker] = (double)message.AudioDuration;
+                }
+                else
+                {
+                    // just append to what we have otherwise, but if its null - we just add nothing
+                    speakerLength[message.Speaker] += message.AudioDuration ?? 0;
+                }
+            }
+
+            var finalSpeakerList = new List<SpeakerStats>();
+
+            // now we handle the speakers
+            foreach (var speaker in speakerStats)
+            {
+                double duration = 0.0;
+
+                if (speakerLength.ContainsKey(speaker.Key))
+                {
+                    duration = speakerLength[speaker.Key];
+                }
+
+                finalSpeakerList.Add(new SpeakerStats
+                {
+                    AvgLength = duration / speaker.Value.MessageCount,
+                    MessageCount = speaker.Value.MessageCount,
+                    Name = speaker.Key 
+                });
+            }
+
+            // get all the averages now that we've iterated over everything
+            response.AvgMessagesPerSeries = (double)response.TotalMessageNum / response.TotalSeriesNum;
+            response.AvgAudioLength = response.TotalAudioLength / response.TotalMessageNum;
+            response.AvgFileSize = response.TotalFileSize / response.TotalMessageNum;
+            response.SpeakerStats = finalSpeakerList.OrderByDescending(i => i.MessageCount);
+
+            return new SystemResponse<SermonStatsResponse>(response, "Success!");
         }
     }
 

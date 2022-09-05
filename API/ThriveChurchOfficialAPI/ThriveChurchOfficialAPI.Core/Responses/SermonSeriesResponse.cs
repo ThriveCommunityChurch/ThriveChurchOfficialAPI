@@ -9,17 +9,25 @@ namespace ThriveChurchOfficialAPI.Core
     /// <summary>
     /// C'tor
     /// </summary>
-    public class SermonSeries: ObjectBase
+    public class SermonSeriesResponse
     {
-        public SermonSeries()
+        public SermonSeriesResponse()
         {
+            StartDate = null;
             EndDate = null;
+            Messages = null;
             Name = null;
+            Year = null;
             Slug = null;
             Thumbnail = null;
             ArtUrl = null;
-            LastUpdated = DateTime.UtcNow;
+            LastUpdated = null;
         }
+
+        /// <summary>
+        /// ObjectId notation from Mongo
+        /// </summary>
+        public string Id { get; set; }
 
         /// <summary>
         /// The name of the sermon series
@@ -27,9 +35,14 @@ namespace ThriveChurchOfficialAPI.Core
         public string Name { get; set; }
 
         /// <summary>
+        /// This is a string notation for the year that the series is taking place
+        /// </summary>
+        public string Year { get; set; }
+
+        /// <summary>
         /// The starting date of the sermon series - we will ignore the time
         /// </summary>
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
 
         /// <summary>
         /// The ending date of the sermon series - we will ignore the time
@@ -55,6 +68,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// Used as a timestamp to indicate the last time that this object was updated
         /// </summary>
-        public DateTime LastUpdated { get; set; }
+        public DateTime? LastUpdated { get; set; }
+
+        /// <summary>
+        /// A collection of Messages spoken / given by someone within this sermon series
+        /// </summary>
+        public IEnumerable<SermonMessageResponse> Messages { get; set; }
     }
 }
