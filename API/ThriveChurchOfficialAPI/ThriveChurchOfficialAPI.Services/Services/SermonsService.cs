@@ -374,7 +374,7 @@ namespace ThriveChurchOfficialAPI.Services
 
                 var seriesResult = seriesResponse.Result;
 
-                var response = new SermonSeriesResponse
+                var cacheSeriesResponse = new SermonSeriesResponse
                 {
                     ArtUrl = seriesResult.ArtUrl,
                     EndDate = seriesResult.EndDate,
@@ -390,11 +390,12 @@ namespace ThriveChurchOfficialAPI.Services
                 var messagesResponse = await _messagesRepository.GetMessagesBySeriesId(seriesId);
                 if (messagesResponse != null && messagesResponse.Any())
                 {
-                    response.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
+                    cacheSeriesResponse.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
                 }
 
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), response, PersistentCacheEntryOptions);
+                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), cacheSeriesResponse, PersistentCacheEntryOptions);
+                return new SystemResponse<SermonSeriesResponse>(cacheSeriesResponse, "Success!");
             }         
 
             return new SystemResponse<SermonSeriesResponse>(series, "Success!");
