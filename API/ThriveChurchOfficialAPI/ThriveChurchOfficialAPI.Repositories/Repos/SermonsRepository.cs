@@ -266,6 +266,11 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             var response = singleSeries.FirstOrDefault();
 
+            if (response == null)
+            {
+                return new SystemResponse<SermonSeries>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "Sermon Series", SeriesId));
+            }
+
             return new SystemResponse<SermonSeries>(response, "Success!");
         }
 
