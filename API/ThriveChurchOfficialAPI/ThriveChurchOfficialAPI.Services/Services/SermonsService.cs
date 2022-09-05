@@ -166,7 +166,7 @@ namespace ThriveChurchOfficialAPI.Services
                     var messages = await _messagesRepository.GetMessagesBySeriesId(activeSeries.Id);
                     if (messages != null && messages.Any())
                     {
-                        currentlyActive.Messages = messages;
+                        currentlyActive.Messages = SermonMessage.ConvertToResponseList(messages);
                     }
 
                     return new SystemResponse<SermonSeriesResponse>(currentlyActive, "202");
@@ -228,7 +228,7 @@ namespace ThriveChurchOfficialAPI.Services
                 EndDate = createdSeries.EndDate,
                 Id = createdSeries.Id,
                 LastUpdated = createdSeries.LastUpdated,
-                Messages = newMessagesResponse.Result,
+                Messages = SermonMessage.ConvertToResponseList(newMessagesResponse.Result),
                 Name = createdSeries.Name,
                 Slug = createdSeries.Slug,
                 StartDate = createdSeries.StartDate,
@@ -311,7 +311,7 @@ namespace ThriveChurchOfficialAPI.Services
                 ArtUrl = series.ArtUrl,
                 EndDate = series.EndDate,
                 LastUpdated = series.LastUpdated,
-                Messages = messages,
+                Messages = SermonMessage.ConvertToResponseList(messages),
                 Name = series.Name,
                 Slug = series.Slug,
                 StartDate = series.StartDate,
@@ -390,7 +390,7 @@ namespace ThriveChurchOfficialAPI.Services
                 var messagesResponse = await _messagesRepository.GetMessagesBySeriesId(seriesId);
                 if (messagesResponse != null && messagesResponse.Any())
                 {
-                    response.Messages = messagesResponse.ToList();
+                    response.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
                 }
 
                 // Save data in cache.

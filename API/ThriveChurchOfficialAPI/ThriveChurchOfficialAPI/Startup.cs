@@ -176,6 +176,8 @@ namespace ThriveChurchOfficialAPI
                 config.UseMongoStorage(Configuration["HangfireConnectionString"], hangfireStorageOptions);
             });
 
+            Log.Information("Services configured.");
+
             #endregion
         }
 
@@ -203,28 +205,35 @@ namespace ThriveChurchOfficialAPI
                 app.UseHsts();
             }
 
+            Log.Information("UseHsts configured.");
+
             // add exception filtering 
             app.ConfigureCustomExceptionMiddleware();
 
-            #region Hangfire Tasks
+            Log.Information("Exception middleware configured.");
 
-            // Map Dashboard to the `http://<your-app>/hf-dashboard` URL.
-            //app.UseHangfireDashboard("/hf-dashboard", new DashboardOptions { IsReadOnlyFunc = (DashboardContext context) => true }); // read only for prod
-            app.UseHangfireDashboard("/hf-dashboard");
+            #region Hangfire Tasks
 
             #endregion
 
             app.UseIpRateLimiting();
 
+            Log.Information("Rate limiting configured.");
+
             app.UseRouting();
 
+            Log.Information("Routing middleware configured.");
+
             app.UseCors(MyAllowSpecificOrigins);
+
+            Log.Information("CORS middleware configured.");
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
 
+            Log.Information("Service started.");
         }
     }
 

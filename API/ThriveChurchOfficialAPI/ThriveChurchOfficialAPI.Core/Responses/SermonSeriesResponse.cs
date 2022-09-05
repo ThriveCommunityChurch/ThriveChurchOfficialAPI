@@ -73,6 +73,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// A collection of Messages spoken / given by someone within this sermon series
         /// </summary>
-        public IEnumerable<SermonMessage> Messages { get; set; }
+        public IEnumerable<SermonMessageResponse> Messages { get; set; }
     }
 }

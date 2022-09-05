@@ -3,13 +3,14 @@ using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace ThriveChurchOfficialAPI.Core
 {
     /// <summary>
     /// C'tor
     /// </summary>
-    public class SermonMessage: ObjectBase
+    public class SermonMessage : ObjectBase
     {
         /// <summary>
         /// C'tor
@@ -94,5 +95,39 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         [BsonRepresentation(BsonType.ObjectId)]
         public string SeriesId { get; set; }
+
+        /// <summary>
+        /// Convert a collection of DB objects into the API response class
+        /// </summary>
+        /// <param name="messages"></param>
+        /// <returns></returns>
+        public static IEnumerable<SermonMessageResponse> ConvertToResponseList(IEnumerable<SermonMessage> messages)
+        {
+            var messagesList = new List<SermonMessageResponse>();
+
+            if (messages == null || !messages.Any())
+            {
+                return messagesList;
+            }
+
+            foreach (var message in messages)
+            {
+                messagesList.Add(new SermonMessageResponse
+                {
+                    AudioDuration = message.AudioDuration,
+                    AudioFileSize = message.AudioFileSize,
+                    AudioUrl = message.AudioUrl,
+                    Date = message.Date,
+                    MessageId = message.Id,
+                    PassageRef = message.PassageRef,
+                    PlayCount = message.PlayCount,
+                    Speaker = message.Speaker,
+                    Title = message.Title,
+                    VideoUrl = message.VideoUrl
+                });
+            }
+
+            return messagesList;
+        }
     }
 }

@@ -219,7 +219,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
         [Produces("application/json")]
-        [HttpPost("series/message/{MessageId}/played")]
+        [HttpGet("series/message/{MessageId}/played")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         public async Task<ActionResult<SermonMessage>> MarkMessagePlayed([BindRequired] string MessageId)
