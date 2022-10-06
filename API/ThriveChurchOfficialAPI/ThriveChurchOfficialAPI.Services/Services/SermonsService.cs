@@ -280,7 +280,7 @@ namespace ThriveChurchOfficialAPI.Services
             // add the sermon message to mongo as 1 list
             var newMessages = new List<SermonMessage>();
 
-            foreach (var message in request.MessagesToAdd.OrderByDescending(i => i.Date))
+            foreach (var message in request.MessagesToAdd)
             {
                 newMessages.Add(new SermonMessage
                 {
@@ -311,7 +311,7 @@ namespace ThriveChurchOfficialAPI.Services
                 ArtUrl = series.ArtUrl,
                 EndDate = series.EndDate,
                 LastUpdated = series.LastUpdated,
-                Messages = SermonMessage.ConvertToResponseList(messages),
+                Messages = SermonMessage.ConvertToResponseList(messages.OrderByDescending(i => i.Date)),
                 Name = series.Name,
                 Slug = series.Slug,
                 StartDate = series.StartDate,

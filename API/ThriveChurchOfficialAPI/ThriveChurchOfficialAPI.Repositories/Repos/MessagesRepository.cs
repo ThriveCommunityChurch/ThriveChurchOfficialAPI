@@ -90,7 +90,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             var stages = new List<BsonDocument>
             {
                 new BsonDocument("$match", ConvertFilterToBsonDocument(filter)),
-                new BsonDocument("$sort", new BsonDocument(nameof(SermonSeries.StartDate), -1))
+                new BsonDocument("$sort", new BsonDocument(nameof(SermonMessage.Date), -1))
             };
 
             PipelineDefinition<SermonMessage, SermonMessage> pipeline = PipelineDefinition<SermonMessage, SermonMessage>.Create(stages);
