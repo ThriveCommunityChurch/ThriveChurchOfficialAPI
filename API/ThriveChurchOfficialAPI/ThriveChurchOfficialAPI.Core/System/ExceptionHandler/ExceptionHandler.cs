@@ -77,6 +77,9 @@ namespace ThriveChurchOfficialAPI.Core.System.ExceptionHandler
                 }
                 catch (Exception e)
                 {
+                    // This only gets called when someone is trying to attack us via Log4j. But we don't run Apache.
+                    // so in the end this really isn't an exception for us.
+
                     Log.Fatal(string.Format(SystemMessages.ExceptionMessage, exceptionId, e));
                     Log.Fatal("ABOVE ERROR OCURRED WHEN ATTEMPTING TO READ INFO ON UNKNOWN CALLER.");
                 }
