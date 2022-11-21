@@ -805,14 +805,23 @@ namespace ThriveChurchOfficialAPI.Services
 
             Dictionary<string, SpeakerStats> speakerStats = new Dictionary<string, SpeakerStats>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, double> speakerLength = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, int> seriesLength = new Dictionary<string, int>();
+            SermonMessage longestMessage = null;
+
+            foreach (var seriesItem in seriesList)
+            {
+                seriesLength.Add(seriesItem.Id, 0);
+            }
 
             // iterate through each message and calculate what we need to
             // this should be O(n*m) where n = # of series and m = # messages each series 
-            foreach (var message in allMessagesResponse)
+            foreach (SermonMessage message in allMessagesResponse)
             {
                 response.TotalMessageNum++;
                 response.TotalAudioLength += message.AudioDuration ?? 0;
                 response.TotalFileSize += message.AudioFileSize ?? 0;
+
+                seriesLength[message.SeriesId]++;
 
                 // we haven't seen this speaker yet, so add them to the list
                 if (!speakerStats.ContainsKey(message.Speaker))
@@ -831,6 +840,17 @@ namespace ThriveChurchOfficialAPI.Services
                 // if there's a duration then we can track that
                 if (message.AudioDuration != null && message.AudioDuration > 0 && !speakerLength.ContainsKey(message.Speaker))
                 {
+                    // assuming there's no long message (default) let's just set it to the current one
+                    if (longestMessage == null)
+                    {
+                        longestMessage = message;
+                    }
+                    // If this message is longer than the current one selected then let's change it
+                    else if (message.AudioDuration > longestMessage.AudioDuration)
+                    {
+                        longestMessage = message;
+                    }
+
                     // assuming there's no speaker yet, we can init them with the current duration
                     speakerLength[message.Speaker] = (double)message.AudioDuration;
                 }
@@ -866,6 +886,7 @@ namespace ThriveChurchOfficialAPI.Services
             response.AvgAudioLength = response.TotalAudioLength / response.TotalMessageNum;
             response.AvgFileSize = response.TotalFileSize / response.TotalMessageNum;
             response.SpeakerStats = finalSpeakerList.OrderByDescending(i => i.MessageCount);
+            SermonSeries longestSeries = seriesLength.Any() ? seriesList.First(i => i.Id == seriesLength.OrderByDescending(j => j.Value).First().Key) : null;
 
             return new SystemResponse<SermonStatsResponse>(response, "Success!");
         }
