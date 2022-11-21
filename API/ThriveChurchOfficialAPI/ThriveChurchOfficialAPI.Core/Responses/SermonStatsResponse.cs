@@ -47,5 +47,15 @@ namespace ThriveChurchOfficialAPI.Core
         /// A collection of each speaker and stats associated with each speaker
         /// </summary>
         public IEnumerable<SpeakerStats> SpeakerStats { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LongestSeriesData LongestSeriesInfo { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public LongestMessagedata LongestMessageInfo { get; set; }
     }
 }
