@@ -41,19 +41,29 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons()
         {
-            var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
+            var getAllSermonsTask = _sermonsRepository.GetAllSermons();
+            var getAllMessagesTask = _messagesRepository.GetAllMessages();
+
+            await Task.WhenAll(getAllSermonsTask, getAllMessagesTask);
+
+            var getAllMessagesResponse = getAllMessagesTask.Result;
+            var getAllSermonsResponse = getAllSermonsTask.Result;
+
+            Dictionary<string, int> messageCountBySeries = getAllMessagesResponse.GroupBy(i => i.SeriesId).ToDictionary(Key => Key.Key, Value => Value.Count());
 
             // we need to convert everything to the right response pattern
-            var responseList = new List<SermonSeriesSummary>();
+            var responseList = new List<AllSermonSeriesSummary>();
             foreach (var series in getAllSermonsResponse)
             {
                 // for each one add only the properties we want to the list
-                var elemToAdd = new SermonSeriesSummary
+                var elemToAdd = new AllSermonSeriesSummary
                 {
                     ArtUrl = series.ArtUrl,
                     Id = series.Id,
                     StartDate = series.StartDate,
-                    Title = series.Name
+                    Title = series.Name,
+                    MessageCount = messageCountBySeries.ContainsKey(series.Id) ? messageCountBySeries[series.Id] : 0,
+                    EndDate = series.EndDate
                 };
 
                 responseList.Add(elemToAdd);
