@@ -847,7 +847,7 @@ namespace ThriveChurchOfficialAPI.Services
                 }
 
                 // if there's a duration then we can track that
-                if (message.AudioDuration != null && message.AudioDuration > 0 && !speakerLength.ContainsKey(message.Speaker))
+                if (message.AudioDuration != null && message.AudioDuration > 0)
                 {
                     // assuming there's no long message (default) let's just set it to the current one
                     if (longestMessage == null)
@@ -876,13 +876,16 @@ namespace ThriveChurchOfficialAPI.Services
                         };
                     }
 
-                    // assuming there's no speaker yet, we can init them with the current duration
-                    speakerLength[message.Speaker] = (double)message.AudioDuration;
-                }
-                else
-                {
-                    // just append to what we have otherwise, but if its null - we just add nothing
-                    speakerLength[message.Speaker] += message.AudioDuration ?? 0;
+                    if (!speakerLength.ContainsKey(message.Speaker))
+                    {
+                        // assuming there's no speaker yet, we can init them with the current duration
+                        speakerLength[message.Speaker] = message.AudioDuration.Value;
+                    }
+                    else
+                    {
+                        // just append to what we have otherwise, but if its null - we just add nothing
+                        speakerLength[message.Speaker] += message.AudioDuration.Value;
+                    }
                 }
             }
 
