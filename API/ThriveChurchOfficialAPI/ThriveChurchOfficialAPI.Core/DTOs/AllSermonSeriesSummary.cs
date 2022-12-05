@@ -45,5 +45,10 @@ namespace ThriveChurchOfficialAPI.Core
         /// The number of messages currently in this series
         /// </summary>
         public int? MessageCount { get; set; }
+
+        /// <summary>
+        /// The last time that the series was updated
+        /// </summary>
+        public DateTime LastUpdated { get; set; }
     }
 }

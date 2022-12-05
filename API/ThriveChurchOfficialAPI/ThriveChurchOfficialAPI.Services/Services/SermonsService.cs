@@ -58,12 +58,13 @@ namespace ThriveChurchOfficialAPI.Services
                 // for each one add only the properties we want to the list
                 var elemToAdd = new AllSermonSeriesSummary
                 {
-                    ArtUrl = series.ArtUrl,
+                    ArtUrl = series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate,
                     Title = series.Name,
                     MessageCount = messageCountBySeries.ContainsKey(series.Id) ? messageCountBySeries[series.Id] : 0,
-                    EndDate = series.EndDate
+                    EndDate = series.EndDate,
+                    LastUpdated = series.LastUpdated
                 };
 
                 responseList.Add(elemToAdd);
@@ -250,13 +251,6 @@ namespace ThriveChurchOfficialAPI.Services
             return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
 
-        private async Task<IEnumerable<SermonMessage>> GetMessagesBySeriesId(string seriesId)
-        {
-            var messages = await _messagesRepository.GetMessagesBySeriesId(seriesId);
-
-            return messages;
-        }
-
         /// <summary>
         /// Adds a new spoken message to a sermon series
         /// </summary>
@@ -310,6 +304,9 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 return new SystemResponse<SermonSeriesResponse>(true, updateResponse.ErrorMessage);
             }
+
+            // now that this message was added let's make sure we capture that there was a change to the series
+            await _sermonsRepository.UpdateSeriesLastUpdated(seriesId);
 
             messages.AddRange(newMessages);
 

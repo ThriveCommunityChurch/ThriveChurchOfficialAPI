@@ -41,5 +41,12 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="pageNumber"></param>
         /// <returns></returns>
         Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber);
+
+        /// <summary>
+        /// Updates the last time a sermon series was updated
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <returns></returns>
+        Task<DateTime> UpdateSeriesLastUpdated(string SeriesId);
     }
 }

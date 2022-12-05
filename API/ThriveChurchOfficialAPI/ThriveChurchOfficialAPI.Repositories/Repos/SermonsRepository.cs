@@ -275,6 +275,23 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
+        /// Updates the last time a sermon series was updated
+        /// </summary>
+        /// <param name="SeriesId"></param>
+        /// <returns></returns>
+        public async Task<DateTime> UpdateSeriesLastUpdated(string SeriesId)
+        {
+            var timestamp = DateTime.UtcNow;
+
+            var update = Builders<SermonSeries>.Update.Set(i => i.LastUpdated, timestamp);
+            var filter = Builders<SermonSeries>.Filter.Eq(i => i.Id, SeriesId);
+
+            var updateResponse = await _sermonsCollection.UpdateOneAsync(filter, update);
+
+            return timestamp;
+        }
+
+        /// <summary>
         /// Returns all Sermon Series' from MongoDB - including active sermon series'
         /// </summary>
         /// <returns></returns>
