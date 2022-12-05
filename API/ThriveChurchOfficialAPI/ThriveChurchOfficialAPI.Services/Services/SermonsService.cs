@@ -688,7 +688,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // do the business logic here friend
                 response.IsLive = true;
-                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
+                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null;
                 response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
             }
             else
@@ -754,7 +754,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
                 IsLive = updateLiveSermonsResponse.IsLive,
-                IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null ? true : false,
+                IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null,
                 SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null
             };
 
@@ -813,11 +813,13 @@ namespace ThriveChurchOfficialAPI.Services
             Dictionary<string, SpeakerStats> speakerStats = new Dictionary<string, SpeakerStats>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, double> speakerLength = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, int> seriesLength = new Dictionary<string, int>();
-            SermonMessage longestMessage = null;
+            Dictionary<string, SermonSeries> seriesById = new Dictionary<string, SermonSeries>();
+            SermonMessageSummary longestMessage = null;
 
             foreach (var seriesItem in seriesList)
             {
                 seriesLength.Add(seriesItem.Id, 0);
+                seriesById[seriesItem.Id] = seriesItem;
             }
 
             // iterate through each message and calculate what we need to
@@ -850,12 +852,28 @@ namespace ThriveChurchOfficialAPI.Services
                     // assuming there's no long message (default) let's just set it to the current one
                     if (longestMessage == null)
                     {
-                        longestMessage = message;
+                        longestMessage = new SermonMessageSummary
+                        {
+                            AudioDuration = message.AudioDuration.Value,
+                            Date = message.Date.Value,
+                            Speaker = message.Speaker,
+                            Title = message.Title,
+                            SeriesArt = seriesById[message.SeriesId].Thumbnail,
+                            SeriesName = seriesById[message.SeriesId].Name
+                        };
                     }
                     // If this message is longer than the current one selected then let's change it
                     else if (message.AudioDuration > longestMessage.AudioDuration)
                     {
-                        longestMessage = message;
+                        longestMessage = new SermonMessageSummary
+                        {
+                            AudioDuration = message.AudioDuration.Value,
+                            Date = message.Date.Value,
+                            Speaker = message.Speaker,
+                            Title = message.Title,
+                            SeriesArt = seriesById[message.SeriesId].Thumbnail,
+                            SeriesName = seriesById[message.SeriesId].Name
+                        };
                     }
 
                     // assuming there's no speaker yet, we can init them with the current duration
@@ -894,6 +912,23 @@ namespace ThriveChurchOfficialAPI.Services
             response.AvgFileSize = response.TotalFileSize / response.TotalMessageNum;
             response.SpeakerStats = finalSpeakerList.OrderByDescending(i => i.MessageCount);
             SermonSeries longestSeries = seriesLength.Any() ? seriesList.First(i => i.Id == seriesLength.OrderByDescending(j => j.Value).First().Key) : null;
+
+            if (longestSeries != null)
+            {
+                response.LongestSeries = new LongestSermonSeriesSummary
+                {
+                    ArtUrl = longestSeries.Thumbnail,
+                    Id = longestSeries.Id,
+                    SeriesLength = seriesLength[longestSeries.Id],
+                    StartDate = longestSeries.StartDate,
+                    Title = longestSeries.Name
+                };
+            }
+
+            if (longestMessage != null)
+            {
+                response.LongestMessage = longestMessage;
+            }
 
             return new SystemResponse<SermonStatsResponse>(response, "Success!");
         }
