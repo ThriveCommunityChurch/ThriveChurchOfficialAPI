@@ -19,6 +19,6 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// Collection of Sermon Series summaries
         /// </summary>
-        public IEnumerable<SermonSeriesSummary> Summaries { get; set; }
+        public IEnumerable<AllSermonSeriesSummary> Summaries { get; set; }
     }
 }

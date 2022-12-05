@@ -41,19 +41,30 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons()
         {
-            var getAllSermonsResponse = await _sermonsRepository.GetAllSermons();
+            var getAllSermonsTask = _sermonsRepository.GetAllSermons();
+            var getAllMessagesTask = _messagesRepository.GetAllMessages();
+
+            await Task.WhenAll(getAllSermonsTask, getAllMessagesTask);
+
+            var getAllMessagesResponse = getAllMessagesTask.Result;
+            var getAllSermonsResponse = getAllSermonsTask.Result;
+
+            Dictionary<string, int> messageCountBySeries = getAllMessagesResponse.GroupBy(i => i.SeriesId).ToDictionary(Key => Key.Key, Value => Value.Count());
 
             // we need to convert everything to the right response pattern
-            var responseList = new List<SermonSeriesSummary>();
+            var responseList = new List<AllSermonSeriesSummary>();
             foreach (var series in getAllSermonsResponse)
             {
                 // for each one add only the properties we want to the list
-                var elemToAdd = new SermonSeriesSummary
+                var elemToAdd = new AllSermonSeriesSummary
                 {
-                    ArtUrl = series.ArtUrl,
+                    ArtUrl = series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate,
-                    Title = series.Name
+                    Title = series.Name,
+                    MessageCount = messageCountBySeries.ContainsKey(series.Id) ? messageCountBySeries[series.Id] : 0,
+                    EndDate = series.EndDate,
+                    LastUpdated = series.LastUpdated
                 };
 
                 responseList.Add(elemToAdd);
@@ -240,13 +251,6 @@ namespace ThriveChurchOfficialAPI.Services
             return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
 
-        private async Task<IEnumerable<SermonMessage>> GetMessagesBySeriesId(string seriesId)
-        {
-            var messages = await _messagesRepository.GetMessagesBySeriesId(seriesId);
-
-            return messages;
-        }
-
         /// <summary>
         /// Adds a new spoken message to a sermon series
         /// </summary>
@@ -300,6 +304,9 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 return new SystemResponse<SermonSeriesResponse>(true, updateResponse.ErrorMessage);
             }
+
+            // now that this message was added let's make sure we capture that there was a change to the series
+            await _sermonsRepository.UpdateSeriesLastUpdated(seriesId);
 
             messages.AddRange(newMessages);
 
@@ -681,7 +688,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // do the business logic here friend
                 response.IsLive = true;
-                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null ? true : false;
+                response.IsSpecialEvent = getLiveSermonsResponse.SpecialEventTimes != null;
                 response.SpecialEventTimes = getLiveSermonsResponse.SpecialEventTimes ?? null;
             }
             else
@@ -747,7 +754,7 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 ExpirationTime = updateLiveSermonsResponse.ExpirationTime,
                 IsLive = updateLiveSermonsResponse.IsLive,
-                IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null ? true : false,
+                IsSpecialEvent = updateLiveSermonsResponse.SpecialEventTimes != null,
                 SpecialEventTimes = updateLiveSermonsResponse.SpecialEventTimes ?? null
             };
 
@@ -805,14 +812,25 @@ namespace ThriveChurchOfficialAPI.Services
 
             Dictionary<string, SpeakerStats> speakerStats = new Dictionary<string, SpeakerStats>(StringComparer.OrdinalIgnoreCase);
             Dictionary<string, double> speakerLength = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, int> seriesLength = new Dictionary<string, int>();
+            Dictionary<string, SermonSeries> seriesById = new Dictionary<string, SermonSeries>();
+            SermonMessageSummary longestMessage = null;
+
+            foreach (var seriesItem in seriesList)
+            {
+                seriesLength.Add(seriesItem.Id, 0);
+                seriesById[seriesItem.Id] = seriesItem;
+            }
 
             // iterate through each message and calculate what we need to
             // this should be O(n*m) where n = # of series and m = # messages each series 
-            foreach (var message in allMessagesResponse)
+            foreach (SermonMessage message in allMessagesResponse)
             {
                 response.TotalMessageNum++;
                 response.TotalAudioLength += message.AudioDuration ?? 0;
                 response.TotalFileSize += message.AudioFileSize ?? 0;
+
+                seriesLength[message.SeriesId]++;
 
                 // we haven't seen this speaker yet, so add them to the list
                 if (!speakerStats.ContainsKey(message.Speaker))
@@ -829,15 +847,45 @@ namespace ThriveChurchOfficialAPI.Services
                 }
 
                 // if there's a duration then we can track that
-                if (message.AudioDuration != null && message.AudioDuration > 0 && !speakerLength.ContainsKey(message.Speaker))
+                if (message.AudioDuration != null && message.AudioDuration > 0)
                 {
-                    // assuming there's no speaker yet, we can init them with the current duration
-                    speakerLength[message.Speaker] = (double)message.AudioDuration;
-                }
-                else
-                {
-                    // just append to what we have otherwise, but if its null - we just add nothing
-                    speakerLength[message.Speaker] += message.AudioDuration ?? 0;
+                    // assuming there's no long message (default) let's just set it to the current one
+                    if (longestMessage == null)
+                    {
+                        longestMessage = new SermonMessageSummary
+                        {
+                            AudioDuration = message.AudioDuration.Value,
+                            Date = message.Date.Value,
+                            Speaker = message.Speaker,
+                            Title = message.Title,
+                            SeriesArt = seriesById[message.SeriesId].Thumbnail,
+                            SeriesName = seriesById[message.SeriesId].Name
+                        };
+                    }
+                    // If this message is longer than the current one selected then let's change it
+                    else if (message.AudioDuration > longestMessage.AudioDuration)
+                    {
+                        longestMessage = new SermonMessageSummary
+                        {
+                            AudioDuration = message.AudioDuration.Value,
+                            Date = message.Date.Value,
+                            Speaker = message.Speaker,
+                            Title = message.Title,
+                            SeriesArt = seriesById[message.SeriesId].Thumbnail,
+                            SeriesName = seriesById[message.SeriesId].Name
+                        };
+                    }
+
+                    if (!speakerLength.ContainsKey(message.Speaker))
+                    {
+                        // assuming there's no speaker yet, we can init them with the current duration
+                        speakerLength[message.Speaker] = message.AudioDuration.Value;
+                    }
+                    else
+                    {
+                        // just append to what we have otherwise, but if its null - we just add nothing
+                        speakerLength[message.Speaker] += message.AudioDuration.Value;
+                    }
                 }
             }
 
@@ -866,6 +914,24 @@ namespace ThriveChurchOfficialAPI.Services
             response.AvgAudioLength = response.TotalAudioLength / response.TotalMessageNum;
             response.AvgFileSize = response.TotalFileSize / response.TotalMessageNum;
             response.SpeakerStats = finalSpeakerList.OrderByDescending(i => i.MessageCount);
+            SermonSeries longestSeries = seriesLength.Any() ? seriesList.First(i => i.Id == seriesLength.OrderByDescending(j => j.Value).First().Key) : null;
+
+            if (longestSeries != null)
+            {
+                response.LongestSeries = new LongestSermonSeriesSummary
+                {
+                    ArtUrl = longestSeries.Thumbnail,
+                    Id = longestSeries.Id,
+                    SeriesLength = seriesLength[longestSeries.Id],
+                    StartDate = longestSeries.StartDate,
+                    Title = longestSeries.Name
+                };
+            }
+
+            if (longestMessage != null)
+            {
+                response.LongestMessage = longestMessage;
+            }
 
             return new SystemResponse<SermonStatsResponse>(response, "Success!");
         }
