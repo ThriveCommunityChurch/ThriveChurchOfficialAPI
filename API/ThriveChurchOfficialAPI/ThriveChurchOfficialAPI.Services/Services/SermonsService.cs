@@ -10,6 +10,7 @@ using MongoDB.Bson;
 using Hangfire;
 using NCrontab;
 using Hangfire.Storage;
+using System.Globalization;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -19,6 +20,8 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly IMessagesRepository _messagesRepository;
         private readonly IMemoryCache _cache;
         private Timer _timer;
+
+        CultureInfo culture = new CultureInfo("en-US");
 
         /// <summary>
         /// Sermons Service
@@ -777,6 +780,209 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return new SystemResponse<SermonMessage>(updateResponse, "Success!");
+        }
+
+        /// <summary>
+        /// Returns a series of data for display in a chart
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="chartType"></param>
+        /// <param name="displayType"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<SermonStatsChartResponse>> GetSermonsStatsChartData(DateTime? startDate, DateTime? endDate, StatsChartType chartType, StatsAggregateDisplayType displayType)
+        {
+            if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
+            {
+                return new SystemResponse<SermonStatsChartResponse>(true, SystemMessages.EndDateMustBeAfterStartDate);
+            }
+
+            var response = new SermonStatsChartResponse();
+
+            switch (chartType)
+            {
+                case StatsChartType.AudioDuration:
+                    response = await GenerateAudioDurationData(startDate, endDate, displayType);
+                    break;
+
+                default:
+                    break;
+            }
+
+            return new SystemResponse<SermonStatsChartResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Values generated are averages for each display type between the requested dates
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="displayType"></param>
+        /// <returns></returns>
+        private async Task<SermonStatsChartResponse> GenerateAudioDurationData(DateTime? startDate, DateTime? endDate, StatsAggregateDisplayType displayType)
+        {
+            var response = new SermonStatsChartResponse();
+            var dataCollection = new List<SermonStatsChartData>();
+
+            var messages = await _messagesRepository.GetMessageByDateRange(startDate, endDate);
+            if (messages.Any())
+            {
+                switch(displayType)
+                {
+                    case StatsAggregateDisplayType.Daily:
+                        response.Data = messages.Select(i => new SermonStatsChartData 
+                        { 
+                            Date = i.Date.Value, 
+                            Value = i.AudioDuration
+                        }).OrderBy(i => i.Date);
+                        break;
+
+                    case StatsAggregateDisplayType.Weekly:
+                        var weeklyData = messages.GroupBy(i => new { i.Date.Value.Year, Week = GetWeekOfYear(i.Date.Value) });
+                        foreach (var weekPerYear in weeklyData)
+                        {
+                            DateTime weekOf = FirstDateOfWeek(weekPerYear.Key.Year, weekPerYear.Key.Week);
+                            int countForWeek = 0;
+                            double? totDuration = null;
+
+                            // need to calculate the averages
+                            foreach (var messageThisWeek in weekPerYear)
+                            {
+                                if (messageThisWeek.AudioDuration.HasValue)
+                                {
+                                    // the average only counts if there's a value
+                                    countForWeek++;
+
+                                    if (totDuration == null)
+                                    {
+                                        totDuration = messageThisWeek.AudioDuration;
+                                    }
+                                    else
+                                    {
+                                        totDuration += messageThisWeek.AudioDuration;
+                                    }
+                                }
+                            }
+
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = weekOf,
+                                Value = totDuration.HasValue ? totDuration.Value / countForWeek : null
+                            });
+                        }
+                        response.Data = dataCollection.OrderBy(i => i.Date); ;
+                        break;
+
+                    case StatsAggregateDisplayType.Monthly:
+                        var monthlyData = messages.GroupBy(i => new { i.Date.Value.Year, i.Date.Value.Month });
+                        foreach (var monthPerYear in monthlyData)
+                        {
+                            DateTime monthOf = new DateTime(monthPerYear.Key.Year, monthPerYear.Key.Month, 1);
+                            int countForMonth = 0;
+                            double? totDuration = null;
+
+                            // need to calculate the averages
+                            foreach (var messageThisMonth in monthPerYear)
+                            {
+                                if (messageThisMonth.AudioDuration.HasValue)
+                                {
+                                    // the average only counts if there's a value
+                                    countForMonth++;
+
+                                    if (totDuration == null)
+                                    {
+                                        totDuration = messageThisMonth.AudioDuration;
+                                    }
+                                    else
+                                    {
+                                        totDuration += messageThisMonth.AudioDuration;
+                                    }
+                                }
+                            }
+
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = monthOf,
+                                Value = totDuration.HasValue ? totDuration.Value / countForMonth : null
+                            });
+                        }
+                        response.Data = dataCollection.OrderBy(i => i.Date); ;
+                        break;
+
+                    case StatsAggregateDisplayType.Yearly:
+                        var yearlyData = messages.GroupBy(i => new { i.Date.Value.Year});
+                        foreach (var messagesPerYear in yearlyData)
+                        {
+                            DateTime yearOf = new DateTime(messagesPerYear.Key.Year, 1, 1);
+                            int countForYear = 0;
+                            double? totDuration = null;
+
+                            // need to calculate the averages
+                            foreach (var messageThisYear in messagesPerYear)
+                            {
+                                if (messageThisYear.AudioDuration.HasValue)
+                                {
+                                    // the average only counts if there's a value
+                                    countForYear++;
+
+                                    if (totDuration == null)
+                                    {
+                                        totDuration = messageThisYear.AudioDuration;
+                                    }
+                                    else
+                                    {
+                                        totDuration += messageThisYear.AudioDuration;
+                                    }
+                                }
+                            }
+
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = yearOf,
+                                Value = totDuration.HasValue ? totDuration.Value / countForYear : null
+                            });
+                        }
+                        response.Data = dataCollection.OrderBy(i => i.Date);
+                        break;
+                }
+            }
+
+            return response;
+        }
+
+        private DateTime FirstDateOfWeek(int year, int weekNum)
+        {
+            DateTime jan1 = new DateTime(year, 1, 1);
+
+            int daysOffset = DayOfWeek.Sunday - jan1.DayOfWeek;
+            DateTime firstMonday = jan1.AddDays(daysOffset);
+
+            Calendar calendar = culture.Calendar;
+            int firstWeek = calendar.GetWeekOfYear(firstMonday, CalendarWeekRule.FirstDay, DayOfWeek.Sunday);
+
+            if (firstWeek <= 1)
+            {
+                weekNum -= 1;
+            }
+
+            DateTime result = firstMonday.AddDays(weekNum * 7);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Returns the week that the date is on
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        private int GetWeekOfYear(DateTime date)
+        {
+            // Gets the Calendar instance associated with a CultureInfo.
+            Calendar calendar = culture.Calendar;
+
+            int week = calendar.GetWeekOfYear(date, CalendarWeekRule.FirstDay, DayOfWeek.Sunday);
+
+            return week;
         }
 
         /// <summary>
