@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
 namespace ThriveChurchOfficialAPI.Services
@@ -103,5 +104,15 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="messageId"></param>
         /// <returns></returns>
         Task<SystemResponse<SermonMessage>> MarkMessagePlayed(string messageId);
+
+        /// <summary>
+        /// Returns a series of data for display in a chart
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="chartType"></param>
+        /// <param name="displayType"></param>
+        /// <returns></returns>
+        Task<SystemResponse<SermonStatsChartResponse>> GetSermonsStatsChartData(DateTime? startDate, DateTime? endDate, StatsChartType chartType, StatsAggregateDisplayType displayType);
     }
 }

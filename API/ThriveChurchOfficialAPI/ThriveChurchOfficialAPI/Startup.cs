@@ -42,6 +42,7 @@ using Hangfire;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Converters;
 using Microsoft.OpenApi.Models;
+using System.Text.Json.Serialization;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -102,11 +103,12 @@ namespace ThriveChurchOfficialAPI
             });
 
             // Preserve Casing of JSON Objects
-            services.AddControllers()
-                .AddNewtonsoftJson(options =>
+            services
+                .AddControllers()
+                .AddJsonOptions(options =>
                 {
-                    options.SerializerSettings.ContractResolver = new DefaultContractResolver();
-                    options.SerializerSettings.Converters.Add(new StringEnumConverter());
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    options.JsonSerializerOptions.PropertyNamingPolicy = null;
                 });
 
             // Add functionality to inject IOptions<T>

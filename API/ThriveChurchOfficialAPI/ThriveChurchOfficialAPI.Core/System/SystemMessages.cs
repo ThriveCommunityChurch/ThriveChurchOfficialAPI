@@ -24,6 +24,7 @@
         public const string InvalidConfigCSVFormat = "Invalid configuration CSV format.";
         public const string ConfigValuesNotFound = "One or more configuration values not found for requested keys.";
         public const string EndDateMustBeAfterStartDate = "EndDate must be an ISO-8601 DateTime after StartDate.";
+        public const string StartDateAndEnddateMustBothHaveValues = "StartDate and EndDate must both have values.";
         public const string InvalidPropertyType = "the property {0} is not the correct type of {1}.";
         public const string ConnectionMissingFromAppSettings = "{0} is a required configuation parameter. Please add it to the AppSettings.json and restart the application.";
         public const string OverrideMissingFromAppSettings = "Attempting to override 'EsvApiKey' within your appsettings.json but were unable to parse the value into a bool. " +

@@ -73,6 +73,27 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
+        /// Gets a message using the specified (dual inclusive) date range
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<SermonMessage>> GetMessageByDateRange(DateTime? startDate, DateTime? endDate)
+        {
+            var filter = Builders<SermonMessage>.Filter.Empty;
+
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                filter &= Builders<SermonMessage>.Filter.Gte(s => s.Date, startDate);
+                filter &= Builders<SermonMessage>.Filter.Lte(s => s.Date, endDate);
+            }
+
+            var cursor = await _messagesCollection.FindAsync(filter);
+
+            return cursor.ToList();
+        }
+
+        /// <summary>
         /// Gets a collection of messages using their series Id references
         /// </summary>
         /// <param name="seriesId"></param>

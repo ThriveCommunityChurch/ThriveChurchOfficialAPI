@@ -386,5 +386,30 @@ namespace ThriveChurchOfficialAPI.Controllers
 
             return response.Result;
         }
+
+        /// <summary>
+        /// Get Stats for all sermons
+        /// </summary>
+        /// <returns>Live Streaming info</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("stats/chart")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<SermonStatsChartResponse>> GetSermonsStatsChartData(DateTime? startDate = null, 
+            DateTime? endDate = null, 
+            StatsChartType chartType = StatsChartType.Unknown, 
+            StatsAggregateDisplayType displayType = StatsAggregateDisplayType.Monthly)
+        {
+            var response = await _sermonsService.GetSermonsStatsChartData(startDate, endDate, chartType, displayType);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400);
+            }
+
+            return response.Result;
+        }
     }
 }
