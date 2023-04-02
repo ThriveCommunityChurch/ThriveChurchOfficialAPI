@@ -29,7 +29,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="startDate"></param>
         /// <param name="endDate"></param>
         /// <returns></returns>
-        Task<IEnumerable<SermonMessage>> GetMessageByDateRange(DateTime? startDate, DateTime? endDate);
+        Task<IEnumerable<SermonMessage>> GetMessageByDateRange(DateTime? startDate = null, DateTime? endDate = null);
 
         /// <summary>
         /// Gets a collection of messages using their series Id references

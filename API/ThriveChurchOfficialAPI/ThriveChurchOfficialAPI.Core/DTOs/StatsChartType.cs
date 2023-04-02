@@ -21,6 +21,16 @@ namespace ThriveChurchOfficialAPI.Core
         /// <summary>
         /// Chart audio duration over time
         /// </summary>
-        AudioDuration
+        AudioDuration,
+
+        /// <summary>
+        /// Aggregate file size increase over time. Value at start date contains aggregate of data until that point in time.
+        /// </summary> 
+        TotAudioFileSize,
+
+        /// <summary>
+        /// Aggregate audio duration increase over time. Value at start date contains aggregate of data until that point in time.
+        /// </summary>
+        TotAudioDuration
     }
 }

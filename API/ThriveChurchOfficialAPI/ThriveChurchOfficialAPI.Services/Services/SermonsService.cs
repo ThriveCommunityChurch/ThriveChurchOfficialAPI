@@ -11,6 +11,7 @@ using Hangfire;
 using NCrontab;
 using Hangfire.Storage;
 using System.Globalization;
+using System.Reflection;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -794,7 +795,13 @@ namespace ThriveChurchOfficialAPI.Services
         {
             if (startDate.HasValue && endDate.HasValue && startDate.Value > endDate.Value)
             {
+                // this case is both have values and start is after end
                 return new SystemResponse<SermonStatsChartResponse>(true, SystemMessages.EndDateMustBeAfterStartDate);
+            }
+            else if ((startDate.HasValue && !endDate.HasValue) || (!startDate.HasValue && endDate.HasValue))
+            {
+                // this case is one has a value and the other doesn't
+                return new SystemResponse<SermonStatsChartResponse>(true, SystemMessages.StartDateAndEnddateMustBothHaveValues);
             }
 
             var response = new SermonStatsChartResponse();
@@ -805,11 +812,231 @@ namespace ThriveChurchOfficialAPI.Services
                     response = await GenerateAudioDurationData(startDate, endDate, displayType);
                     break;
 
+                case StatsChartType.TotAudioFileSize:
+                    response = await GenerateAggregateDataForProperty<SermonMessage>(startDate, endDate, nameof(SermonMessage.AudioFileSize), displayType);
+                    break;
+
+                case StatsChartType.TotAudioDuration:
+                    response = await GenerateAggregateDataForProperty<SermonMessage>(startDate, endDate, nameof(SermonMessage.AudioDuration), displayType);
+                    break;
+
                 default:
                     break;
             }
 
             return new SystemResponse<SermonStatsChartResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Values generated are averages for each display type between the requested dates
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="displayType"></param>
+        /// <returns></returns>
+        private async Task<SermonStatsChartResponse> GenerateAggregateDataForProperty<T>(DateTime? startDate, DateTime? endDate, string property, StatsAggregateDisplayType displayType)
+        {
+            /*
+             * IMPORTANT NOTE:
+             * Overall, both requested dates act as INCLUSIVE in the graph...
+             * 
+             * This method is also dynamic, meaning you can request nearly any property and it will just work.
+             * 
+             * This means that data at the start of the requested period, will contain an aggregation of all the messages prior to that start or end point.
+             * If a message happens on that date, we're going to include it in the results.
+             * 
+             * Here's an example.
+             * 
+             * We have 10 messages that occurred "before" relative to the requested range. 
+             * The last message occurs on the same date as is in the request for the start range.
+             *
+             * So, the way this would actually work is:
+             *     1) We include that first data item in the graph, even though it happened on the same day
+             *     2) Every message within that range, 5 items lets say would add up to the 150Mb total
+             *     3) In the end the graph will display 100Mb -> 150Mb where each message bumps the aggreate by 10Mb since that's its size.
+             *  
+             *  Hope that makes this make much more sense.
+             *  This is probably going to look a little confusing.
+             * 
+             */ 
+
+            var response = new SermonStatsChartResponse();
+            var dataCollection = new List<SermonStatsChartData>();
+
+            // If we get all the data and we can evaluate it all at once
+            var messages = await _messagesRepository.GetMessageByDateRange();
+
+            List<SermonMessage> messagesToEvaluate = new List<SermonMessage>();
+
+            double? rollingTotal = null;
+            if (startDate.HasValue)
+            {
+                double? previousSize = null;
+
+                // it's better to do 1 loop and do all the logic we need in here rather than doing it in 3 LINQ querries
+                foreach (var message in messages)
+                {
+                    if (message.Date < startDate)
+                    {
+                        previousSize = CalculateRollingTotal(previousSize, GetPropertyValue(message, property));
+                    }
+                    else if (message.Date >= startDate && message.Date <= endDate)
+                    {
+                        messagesToEvaluate.Add(message);
+                    }
+                }
+
+                // Anything that happened BEFORE the requested date range, we're using that as our placeholder point. The graph won't actually start here.
+                rollingTotal = previousSize == 0.0 ? null : previousSize;
+            }
+            else
+            {
+                // we're just using the full range
+                messagesToEvaluate = messages.ToList();
+            }
+
+            if (messagesToEvaluate.Any())
+            {
+                switch (displayType)
+                {
+                    case StatsAggregateDisplayType.Daily:
+
+                        foreach (var message in messagesToEvaluate.OrderBy(i => i.Date)) 
+                        {
+                            // since we're showing an aggregated total, we need to append the current file to that
+                            rollingTotal = CalculateRollingTotal(rollingTotal, GetPropertyValue(message, property));
+
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = message.Date.Value,
+                                Value = rollingTotal
+                            });
+                        }
+
+                        response.Data = dataCollection;
+                        break;
+
+                    case StatsAggregateDisplayType.Weekly:
+                        var weeklyData = messagesToEvaluate.GroupBy(i => new { i.Date.Value.Year, Week = GetWeekOfYear(i.Date.Value) });
+
+                        foreach (var weekPerYear in weeklyData.OrderBy(i => i.Key.Year).ThenBy(i => i.Key.Week))
+                        {
+                            DateTime weekOf = FirstDateOfWeek(weekPerYear.Key.Year, weekPerYear.Key.Week);
+
+                            // grab the total for the whole week
+                            foreach (var message in weekPerYear)
+                            {
+                                // since we're showing an aggregated total, we need to append the current file to that
+                                rollingTotal = CalculateRollingTotal(rollingTotal, GetPropertyValue(message, property));
+                            }
+
+                            // append the new data for the week rather than each single message
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = weekOf,
+                                Value = rollingTotal
+                            });
+                        }
+
+                        response.Data = dataCollection;
+                        break;
+
+                    case StatsAggregateDisplayType.Monthly:
+                        var monthlyData = messagesToEvaluate.GroupBy(i => new { i.Date.Value.Year, i.Date.Value.Month });
+
+                        foreach (var monthPerYear in monthlyData.OrderBy(i => i.Key.Year).ThenBy(i => i.Key.Month))
+                        {
+                            DateTime monthOf = new DateTime(monthPerYear.Key.Year, monthPerYear.Key.Month, 1);
+
+                            // grab the total for the whole month
+                            foreach (var message in monthPerYear)
+                            {
+                                // since we're showing an aggregated total, we need to append the current file to that
+                                rollingTotal = CalculateRollingTotal(rollingTotal, GetPropertyValue(message, property));
+                            }
+
+                            // append the new data for the month rather than each single message
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = monthOf,
+                                Value = rollingTotal
+                            });
+                        }
+
+                        response.Data = dataCollection;
+                        break;
+
+                    case StatsAggregateDisplayType.Yearly:
+                        var yearlyData = messagesToEvaluate.GroupBy(i => new { i.Date.Value.Year });
+
+                        foreach (var messagesPerYear in yearlyData.OrderBy(i => i.Key.Year))
+                        {
+                            DateTime yearOf = new DateTime(messagesPerYear.Key.Year, 1, 1);
+
+                            // grab the total for the whole year
+                            foreach (var message in messagesPerYear)
+                            {
+                                // since we're showing an aggregated total, we need to append the current file to that
+                                rollingTotal = CalculateRollingTotal(rollingTotal, GetPropertyValue(message, property));
+                            }
+
+                            // append the new data for the year rather than each single message
+                            dataCollection.Add(new SermonStatsChartData
+                            {
+                                Date = yearOf,
+                                Value = rollingTotal
+                            });
+                        }
+
+                        response.Data = dataCollection;
+                        break;
+                }
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Get the value for the requested property at runtime.
+        /// We're using dynamic here because the type could be anything.
+        /// 
+        /// It's up to the caller to know what type the response should be.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
+        private static dynamic GetPropertyValue<T>(T sourceObject, string propertyName)
+        {
+            Type type = sourceObject.GetType();
+
+            // Very important to use binding flags here, because otherwise we won't be able to find the property we're looking for.
+            // This can be an issue for some properties. Since we're doing Public, we also need the other 2.
+            PropertyInfo property = type.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+
+            return property.GetValue(sourceObject, null);
+        }
+
+
+        /// <summary>
+        /// Calculates a rolling total based on the new value passed
+        /// </summary>
+        /// <param name="total"></param>
+        /// <param name="newValue"></param>
+        /// <returns></returns>
+        private double? CalculateRollingTotal(double? total, double? newValue)
+        {
+            if (!total.HasValue)
+            {
+                total = newValue;
+            }
+            else
+            {
+                // since we're showing an aggregated total, we need to append the current file to that
+                total += newValue ?? 0.0;
+            }
+
+            return total;
         }
 
         /// <summary>
