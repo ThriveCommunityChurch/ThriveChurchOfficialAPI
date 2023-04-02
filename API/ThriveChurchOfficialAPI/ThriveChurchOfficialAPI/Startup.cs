@@ -111,9 +111,6 @@ namespace ThriveChurchOfficialAPI
                     options.JsonSerializerOptions.PropertyNamingPolicy = null;
                 });
 
-
-            //services.Configure<JsonOptions>(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-
             // Add functionality to inject IOptions<T>
             services.AddOptions();
 
