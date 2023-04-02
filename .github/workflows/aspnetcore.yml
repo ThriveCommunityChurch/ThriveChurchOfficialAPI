@@ -1,0 +1,24 @@
+name: ASP.NET Core CI
+
+on: 
+  pull_request:
+    branches:
+    - dev
+    - master
+
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 2.2.402
+    - name: Restore NuGet Packages
+      run: dotnet restore "API\ThriveChurchOfficialAPI\ThriveChurchOfficialAPI.sln"
+    - name: Build with dotnet
+      run: dotnet build -c Release "API\ThriveChurchOfficialAPI\ThriveChurchOfficialAPI.sln"
