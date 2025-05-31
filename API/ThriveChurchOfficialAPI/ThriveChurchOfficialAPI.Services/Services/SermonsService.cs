@@ -86,8 +86,9 @@ namespace ThriveChurchOfficialAPI.Services
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber)
+        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber, bool highResImg = false)
         {
             // Page num canonot be 0, and neg page numbers make no sense
             if (pageNumber <= 0 || pageNumber >= 1474836500)
@@ -101,7 +102,7 @@ namespace ThriveChurchOfficialAPI.Services
             if (!_cache.TryGetValue(string.Format(CacheKeys.GetPagedSermons, pageNumber), out SystemResponse<SermonsSummaryPagedResponse> pagedSermonsResponse))
             {
                 // Key not in cache, so get data.
-                pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+                pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber, highResImg);
 
                 if (pagedSermonsResponse.HasErrors)
                 {

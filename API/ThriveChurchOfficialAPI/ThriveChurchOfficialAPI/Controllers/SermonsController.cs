@@ -72,9 +72,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("paged")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber)
+        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber, bool highResImg = false)
         {
-            var response = await _sermonsService.GetPagedSermons(PageNumber);
+            var response = await _sermonsService.GetPagedSermons(PageNumber, highResImg);
 
             if (response.HasErrors)
             {

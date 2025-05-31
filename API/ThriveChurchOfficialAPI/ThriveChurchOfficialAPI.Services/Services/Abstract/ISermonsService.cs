@@ -61,8 +61,9 @@ namespace ThriveChurchOfficialAPI.Services
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber);
+        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber, bool highResImg = false);
 
         /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer

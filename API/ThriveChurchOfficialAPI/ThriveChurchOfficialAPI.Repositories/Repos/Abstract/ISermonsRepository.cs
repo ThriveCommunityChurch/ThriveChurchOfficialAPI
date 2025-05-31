@@ -39,8 +39,9 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Returns a paged collection of summarized sermon data
         /// </summary>
         /// <param name="pageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber);
+        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber, bool highResImg = false);
 
         /// <summary>
         /// Updates the last time a sermon series was updated
