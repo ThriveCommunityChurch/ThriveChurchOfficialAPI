@@ -40,9 +40,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons()
+        public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
-            var response = await _sermonsService.GetAllSermons();
+            var response = await _sermonsService.GetAllSermons(highResImg);
 
             if (response.HasErrors)
             {
@@ -65,6 +65,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// &#8901; The response will contain the total number of pages.
         /// </remarks>
         /// <param name="PageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns>Paged Sermon Data</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>

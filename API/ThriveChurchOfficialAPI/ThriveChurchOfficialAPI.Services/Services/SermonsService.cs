@@ -43,7 +43,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons()
+        public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
             var getAllSermonsTask = _sermonsRepository.GetAllSermons();
             var getAllMessagesTask = _messagesRepository.GetAllMessages();
@@ -62,7 +62,7 @@ namespace ThriveChurchOfficialAPI.Services
                 // for each one add only the properties we want to the list
                 var elemToAdd = new AllSermonSeriesSummary
                 {
-                    ArtUrl = series.Thumbnail,
+                    ArtUrl = highResImg ? series.ArtUrl : series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate,
                     Title = series.Name,
