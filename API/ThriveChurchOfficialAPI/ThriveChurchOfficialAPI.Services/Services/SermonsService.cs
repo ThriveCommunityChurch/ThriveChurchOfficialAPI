@@ -357,6 +357,9 @@ namespace ThriveChurchOfficialAPI.Services
 
             var messageResult = await _messagesRepository.UpdateMessageById(messageId, request.Message);
 
+            // clear cache when update was successful
+            _cache.Remove(string.Format(CacheKeys.GetSermonSeries, messageResult.SeriesId));
+
             return new SystemResponse<SermonMessage>(messageResult, "Success!");
         }
 
