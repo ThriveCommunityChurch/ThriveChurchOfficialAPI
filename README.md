@@ -37,4 +37,3 @@ You will need to make sure you have the following settings in your `AppSettings.
      - `"BaseUrl": "https://bucket-name.s3.us-east-1.amazonaws.com"`,
      - `"MaxFileSizeMB": 50`,
      - `"AllowedExtensions": [ ".mp3" ]`
-}
