@@ -1,7 +1,7 @@
 /*
     MIT License
 
-    Copyright (c) 2023 Thrive Community Church
+    Copyright (c) 2026 Thrive Community Church
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -22,27 +22,31 @@
     SOFTWARE.
 */
 
-using System;
+using AspNetCoreRateLimit;
+using Hangfire;
+using Hangfire.Mongo;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Server.IISIntegration;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Swashbuckle.AspNetCore.Swagger;
-using ThriveChurchOfficialAPI.Services;
-using ThriveChurchOfficialAPI.Repositories;
-using AspNetCoreRateLimit;
-using System.Reflection;
-using System.IO;
-using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using Microsoft.Extensions.Hosting;
-using Serilog;
-using Hangfire.Mongo;
-using Hangfire;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json.Converters;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
+using Serilog;
+using Swashbuckle.AspNetCore.Swagger;
+using System;
+using System.IO;
+using System.Reflection;
 using System.Text.Json.Serialization;
+using ThriveChurchOfficialAPI.Core;
+using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
+using ThriveChurchOfficialAPI.Repositories;
+using ThriveChurchOfficialAPI.Services;
 
 namespace ThriveChurchOfficialAPI
 {
@@ -90,6 +94,24 @@ namespace ThriveChurchOfficialAPI
                 options.MaxModelValidationErrors = 50;
             })
             .SetCompatibilityVersion(CompatibilityVersion.Latest);
+
+            // Configure request size limits for file uploads
+            services.Configure<IISServerOptions>(options =>
+            {
+                options.MaxRequestBodySize = 52428800; // 50MB in bytes
+            });
+
+            services.Configure<KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = 52428800; // 50MB in bytes
+            });
+
+            services.Configure<FormOptions>(options =>
+            {
+                options.ValueLengthLimit = int.MaxValue;
+                options.MultipartBodyLengthLimit = 52428800; // 50MB in bytes
+                options.MultipartHeadersLengthLimit = int.MaxValue;
+            });
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
@@ -147,6 +169,7 @@ namespace ThriveChurchOfficialAPI
             services.Configure<AppSettings>(options => Configuration.GetSection("MongoConnectionString").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("OverrideEsvApiKey").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("EmailPW").Bind(options));
+            services.Configure<AwsSettings>(options => Configuration.GetSection("S3").Bind(options));
 
             services.AddSingleton(Configuration);
 
@@ -158,6 +181,7 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IConfigService), typeof(ConfigService));
             services.AddTransient(typeof(IConfigRepository), typeof(ConfigRepository));
             services.AddTransient(typeof(IMessagesRepository), typeof(MessagesRepository));
+            services.AddTransient(typeof(IS3Repository), typeof(S3Repository));
 
             #region Hangfire Tasks
 

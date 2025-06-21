@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="AspNetCoreRateLimit" Version="4.0.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.100.14" />
     <PackageReference Include="Hangfire" Version="1.7.25" />
     <PackageReference Include="Hangfire.Mongo" Version="0.6.7" />
     <PackageReference Include="Microsoft.AspNetCore.App" />

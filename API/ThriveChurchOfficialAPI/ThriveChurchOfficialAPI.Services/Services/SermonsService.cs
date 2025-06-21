@@ -1,17 +1,18 @@
-using System;
-using System.Threading.Tasks;
-using System.Threading;
+using Hangfire;
+using Hangfire.Storage;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using MongoDB.Bson;
+using NCrontab;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
-using System.Linq;
-using System.Collections.Generic;
-using MongoDB.Bson;
-using Hangfire;
-using NCrontab;
-using Hangfire.Storage;
-using System.Globalization;
-using System.Reflection;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -20,6 +21,7 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMessagesRepository _messagesRepository;
         private readonly IMemoryCache _cache;
+        private readonly IS3Repository _s3Repository;
         private Timer _timer;
 
         CultureInfo culture = new CultureInfo("en-US");
@@ -30,14 +32,17 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="sermonsRepo"></param>
         /// <param name="messagesRepository"></param>
         /// <param name="cache"></param>
-        public SermonsService(ISermonsRepository sermonsRepo, 
+        /// <param name="s3Repository"></param>
+        public SermonsService(ISermonsRepository sermonsRepo,
             IMessagesRepository messagesRepository,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IS3Repository s3Repository)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
             _messagesRepository = messagesRepository;
             _cache = cache;
+            _s3Repository = s3Repository;
         }
 
         /// <summary>
@@ -1371,6 +1376,23 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return new SystemResponse<SermonStatsResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Uploads an audio file to S3 and returns the public URL
+        /// </summary>
+        /// <param name="request">The file stream to upload</param>
+        /// <returns>SystemResponse containing the S3 URL or error message</returns>
+        public async Task<SystemResponse<string>> UploadAudioFileAsync(HttpRequest request)
+        {
+            try
+            {
+                return await _s3Repository.UploadAudioFileAsync(request);
+            }
+            catch (Exception ex)
+            {
+                return new SystemResponse<string>(true, $"Upload failed: {ex.Message}");
+            }
         }
     }
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -115,5 +116,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="displayType"></param>
         /// <returns></returns>
         Task<SystemResponse<SermonStatsChartResponse>> GetSermonsStatsChartData(DateTime? startDate, DateTime? endDate, StatsChartType chartType, StatsAggregateDisplayType displayType);
+
+        /// <summary>
+        /// Uploads an audio file to S3 and returns the public URL
+        /// </summary>
+        /// <param name="request">The file stream to upload</param>
+        /// <returns>SystemResponse containing the S3 URL or error message</returns>
+        Task<SystemResponse<string>> UploadAudioFileAsync(HttpRequest request);
     }
 }
