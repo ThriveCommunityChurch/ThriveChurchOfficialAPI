@@ -29,3 +29,11 @@ You will need to make sure you have the following settings in your `AppSettings.
       - _Set to_ `"true"` _if you want to skip the ckeck for your API Key._
       - _Set to_ `"false"` _if you want to use the PassagesController and make requests. NOTE: If this setting is set to false and no API Key is found, the application will throw an exception._
   4. `IpRateLimiting` - Use this for setting your configurable Rate Limiting settings. See [RateLimits.md](https://github.com/ThriveCommunityChurch/ThriveChurchOfficialAPI/blob/master/RateLimits.md) for more information.
+  5. `S3` - Use this if you'd like to store your audio files in an S3 bucket. This can store your AWS credentials, but its recommended to [in fact not do this](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#update-access-keys) for long-term access (we'll likely change this later to improve this for all sensitive options in AppSettings.json).
+     - `"BucketName": "bucket-name"`,
+     - `"AccessKey": "AKIA..."`,
+     - `"SecretKey": "..."`,
+     - `"Region": "us-east-1"`,
+     - `"BaseUrl": "https://bucket-name.s3.us-east-1.amazonaws.com"`,
+     - `"MaxFileSizeMB": 50`,
+     - `"AllowedExtensions": [ ".mp3" ]`

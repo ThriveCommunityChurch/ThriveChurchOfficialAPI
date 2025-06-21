@@ -163,6 +163,13 @@ namespace ThriveChurchOfficialAPI.Repositories
             // use a filter since we are looking for an Id which is a value in an array with n elements
             var filter = Builders<SermonMessage>.Filter.Eq(x => x.Id, messageId);
             var update = Builders<SermonMessage>.Update.Set(x => x.LastUpdated, DateTime.UtcNow)
+                                                       .Set(x => x.AudioDuration, message.AudioDuration)
+                                                       .Set(x => x.AudioFileSize, message.AudioFileSize)
+                                                       .Set(x => x.AudioUrl, message.AudioUrl)
+                                                       .Set(x => x.Date, message.Date)
+                                                       .Set(x => x.Speaker, message.Speaker)
+                                                       .Set(x => x.Title, message.Title)
+                                                       .Set(x => x.VideoUrl, message.VideoUrl)
                                                        .Set(x => x.PassageRef, message.PassageRef);
 
             var messageResponse = await _messagesCollection.FindOneAndUpdateAsync(filter, update,

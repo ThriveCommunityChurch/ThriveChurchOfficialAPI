@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -9,7 +10,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// <summary>
         /// returns a list of all Sermon Series'
         /// </summary>
-        Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons();
+        Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false);
 
         /// <summary>
         /// Creates a new Sermon Series
@@ -61,8 +62,9 @@ namespace ThriveChurchOfficialAPI.Services
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns></returns>
-        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber);
+        Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber, bool highResImg = false);
 
         /// <summary>
         /// Reset the LiveSermons object back to it's origional state & stop async timer
@@ -114,5 +116,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="displayType"></param>
         /// <returns></returns>
         Task<SystemResponse<SermonStatsChartResponse>> GetSermonsStatsChartData(DateTime? startDate, DateTime? endDate, StatsChartType chartType, StatsAggregateDisplayType displayType);
+
+        /// <summary>
+        /// Uploads an audio file to S3 and returns the public URL
+        /// </summary>
+        /// <param name="request">The file stream to upload</param>
+        /// <returns>SystemResponse containing the S3 URL or error message</returns>
+        Task<SystemResponse<string>> UploadAudioFileAsync(HttpRequest request);
     }
 }

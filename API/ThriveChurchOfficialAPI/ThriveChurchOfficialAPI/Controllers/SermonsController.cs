@@ -1,10 +1,9 @@
-using System;
-using System.Net;
-using System.Threading.Tasks;
+using Amazon.Runtime.Internal;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
+using System;
+using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Services;
 
@@ -40,9 +39,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons()
+        public async Task<ActionResult<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
-            var response = await _sermonsService.GetAllSermons();
+            var response = await _sermonsService.GetAllSermons(highResImg);
 
             if (response.HasErrors)
             {
@@ -65,6 +64,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// &#8901; The response will contain the total number of pages.
         /// </remarks>
         /// <param name="PageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns>Paged Sermon Data</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
@@ -72,9 +72,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpGet("paged")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber)
+        public async Task<ActionResult<SermonsSummaryPagedResponse>> GetPagedSermons([BindRequired] int PageNumber, bool highResImg = false)
         {
-            var response = await _sermonsService.GetPagedSermons(PageNumber);
+            var response = await _sermonsService.GetPagedSermons(PageNumber, highResImg);
 
             if (response.HasErrors)
             {
@@ -404,6 +404,28 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.GetSermonsStatsChartData(startDate, endDate, chartType, displayType);
 
+            if (response.HasErrors)
+            {
+                return StatusCode(400);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Upload an audio file to S3 storage
+        /// </summary>
+        /// <param name="file">The audio file to upload</param>
+        /// <returns>JSON response with the S3 URL</returns>
+        /// <response code="200">OK - Returns the S3 URL</response>
+        /// <response code="400">Bad Request - File validation failed or upload error</response>
+        [Produces("application/json")]
+        [HttpPost("audio/upload")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<string>> UploadAudioFile()
+        {
+            var response = await _sermonsService.UploadAudioFileAsync(Request);
             if (response.HasErrors)
             {
                 return StatusCode(400);

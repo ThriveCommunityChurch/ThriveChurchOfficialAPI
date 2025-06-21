@@ -83,8 +83,9 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber)
+        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber, bool highResImg = false)
         {
             // determine which number of sermon series to request & which ones to return
             var responseCount = 10;
@@ -170,9 +171,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             {
                 var summary = new SermonSeriesSummary
                 {
-                    // Use the thumbnail URL for these summaries, 
-                    // because we will be loading many of them at once
-                    ArtUrl = series.Thumbnail,
+                    ArtUrl = highResImg ? series.ArtUrl : series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate,
                     Title = series.Name

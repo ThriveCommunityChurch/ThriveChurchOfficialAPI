@@ -1,17 +1,18 @@
-using System;
-using System.Threading.Tasks;
-using System.Threading;
+using Hangfire;
+using Hangfire.Storage;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
+using MongoDB.Bson;
+using NCrontab;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
-using System.Linq;
-using System.Collections.Generic;
-using MongoDB.Bson;
-using Hangfire;
-using NCrontab;
-using Hangfire.Storage;
-using System.Globalization;
-using System.Reflection;
 
 namespace ThriveChurchOfficialAPI.Services
 {
@@ -20,6 +21,7 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMessagesRepository _messagesRepository;
         private readonly IMemoryCache _cache;
+        private readonly IS3Repository _s3Repository;
         private Timer _timer;
 
         CultureInfo culture = new CultureInfo("en-US");
@@ -30,20 +32,23 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="sermonsRepo"></param>
         /// <param name="messagesRepository"></param>
         /// <param name="cache"></param>
-        public SermonsService(ISermonsRepository sermonsRepo, 
+        /// <param name="s3Repository"></param>
+        public SermonsService(ISermonsRepository sermonsRepo,
             IMessagesRepository messagesRepository,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IS3Repository s3Repository)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
             _messagesRepository = messagesRepository;
             _cache = cache;
+            _s3Repository = s3Repository;
         }
 
         /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
-        public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons()
+        public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
             var getAllSermonsTask = _sermonsRepository.GetAllSermons();
             var getAllMessagesTask = _messagesRepository.GetAllMessages();
@@ -62,7 +67,7 @@ namespace ThriveChurchOfficialAPI.Services
                 // for each one add only the properties we want to the list
                 var elemToAdd = new AllSermonSeriesSummary
                 {
-                    ArtUrl = series.Thumbnail,
+                    ArtUrl = highResImg ? series.ArtUrl : series.Thumbnail,
                     Id = series.Id,
                     StartDate = series.StartDate,
                     Title = series.Name,
@@ -86,8 +91,9 @@ namespace ThriveChurchOfficialAPI.Services
         /// Recieve Sermon Series in a paged format
         /// </summary>
         /// <param name="pageNumber"></param>
+        /// <param name="highResImg"></param>
         /// <returns></returns>
-        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber)
+        public async Task<SystemResponse<SermonsSummaryPagedResponse>> GetPagedSermons(int pageNumber, bool highResImg = false)
         {
             // Page num canonot be 0, and neg page numbers make no sense
             if (pageNumber <= 0 || pageNumber >= 1474836500)
@@ -101,7 +107,7 @@ namespace ThriveChurchOfficialAPI.Services
             if (!_cache.TryGetValue(string.Format(CacheKeys.GetPagedSermons, pageNumber), out SystemResponse<SermonsSummaryPagedResponse> pagedSermonsResponse))
             {
                 // Key not in cache, so get data.
-                pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber);
+                pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber, highResImg);
 
                 if (pagedSermonsResponse.HasErrors)
                 {
@@ -355,6 +361,9 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var messageResult = await _messagesRepository.UpdateMessageById(messageId, request.Message);
+
+            // clear cache when update was successful
+            _cache.Remove(string.Format(CacheKeys.GetSermonSeries, messageResult.SeriesId));
 
             return new SystemResponse<SermonMessage>(messageResult, "Success!");
         }
@@ -1367,6 +1376,23 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return new SystemResponse<SermonStatsResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Uploads an audio file to S3 and returns the public URL
+        /// </summary>
+        /// <param name="request">The file stream to upload</param>
+        /// <returns>SystemResponse containing the S3 URL or error message</returns>
+        public async Task<SystemResponse<string>> UploadAudioFileAsync(HttpRequest request)
+        {
+            try
+            {
+                return await _s3Repository.UploadAudioFileAsync(request);
+            }
+            catch (Exception ex)
+            {
+                return new SystemResponse<string>(true, $"Upload failed: {ex.Message}");
+            }
         }
     }
 
