@@ -2,6 +2,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
+using Serilog;
 using System;
 using System.IO;
 using System.Linq;
@@ -99,11 +100,13 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
             catch (AmazonS3Exception ex)
             {
-                return new SystemResponse<string>(true, $"AWS S3 Error: {ex.Message}");
+                Log.Fatal($"AWS S3 Error: {ex.Message}");
+                throw;
             }
             catch (Exception ex)
             {
-                return new SystemResponse<string>(true, $"Upload failed: {ex.Message}");
+                Log.Fatal($"Unknown Error: {ex.Message}");
+                throw;
             }
         }
 
