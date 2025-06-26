@@ -37,3 +37,14 @@ You will need to make sure you have the following settings in your `AppSettings.
      - `"BaseUrl": "https://bucket-name.s3.us-east-1.amazonaws.com"`,
      - `"MaxFileSizeMB": 50`,
      - `"AllowedExtensions": [ ".mp3" ]`
+  6. `JWT` - **Required for Authentication** - Use this for configuring JWT token authentication for protected API endpoints. All non-GET endpoints require valid JWT authentication.
+     - `"SecretKey": "YourSecureRandomKey256BitsLong"` - **CRITICAL**: Use a cryptographically secure random key in production (minimum 256 bits)
+     - `"Issuer": "YourIssuer"` - Token issuer identifier
+     - `"Audience": "YourAudience"` - Token audience identifier
+     - `"ExpirationMinutes": 60` - JWT token expiration time in minutes
+     - `"RefreshTokenExpirationDays": 7` - Refresh token expiration time in days
+
+## Authentication & JWT Configuration
+
+The API uses JWT (JSON Web Token) authentication for all endpoints that modify data (POST, PUT, DELETE). GET endpoints remain public for read-only access.
+

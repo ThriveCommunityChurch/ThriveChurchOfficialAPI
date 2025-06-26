@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.32413.511
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36212.18 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ThriveChurchOfficialAPI", "ThriveChurchOfficialAPI\ThriveChurchOfficialAPI.csproj", "{4C2E9EA6-25B3-4475-B4DF-39FE11526649}"
 EndProject
@@ -10,6 +10,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ThriveChurchOfficialAPI.Repositories", "ThriveChurchOfficialAPI.Repositories\ThriveChurchOfficialAPI.Repositories.csproj", "{3F5B9FFF-F46C-4B89-B5E9-E8E6057BECB8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ThriveChurchOfficialAPI.Core", "ThriveChurchOfficialAPI.Core\ThriveChurchOfficialAPI.Core.csproj", "{B6AC0372-7A18-4225-9841-019D4A78CA4A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminUserCreator", "AdminUserCreator\AdminUserCreator.csproj", "{9984D21A-D0E3-5E27-461E-39CDD9746C87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThriveChurchOfficialAPI.Tests", "ThriveChurchOfficialAPI.Tests\ThriveChurchOfficialAPI.Tests.csproj", "{CDAC265B-23E3-ED31-D613-A082A4A217E9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +37,14 @@ Global
 		{B6AC0372-7A18-4225-9841-019D4A78CA4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6AC0372-7A18-4225-9841-019D4A78CA4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6AC0372-7A18-4225-9841-019D4A78CA4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9984D21A-D0E3-5E27-461E-39CDD9746C87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9984D21A-D0E3-5E27-461E-39CDD9746C87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9984D21A-D0E3-5E27-461E-39CDD9746C87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9984D21A-D0E3-5E27-461E-39CDD9746C87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDAC265B-23E3-ED31-D613-A082A4A217E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDAC265B-23E3-ED31-D613-A082A4A217E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDAC265B-23E3-ED31-D613-A082A4A217E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDAC265B-23E3-ED31-D613-A082A4A217E9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
