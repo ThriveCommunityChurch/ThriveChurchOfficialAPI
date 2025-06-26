@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Caching.Memory;
@@ -81,10 +82,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>SermonsSummary object</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPost("values")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<string>> SetConfigValues([FromBody] SetConfigRequest request)
         {
             var response = await _configService.SetConfigValues(request);
@@ -103,10 +107,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>SermonsSummary object</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPost("values/csv")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<string>> SetConfigValuesFromCSV([FromBody] string csv)
         {
             var response = await _configService.SetConfigValuesFromCSV(csv);
