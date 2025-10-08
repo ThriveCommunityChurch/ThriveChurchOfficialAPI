@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -56,5 +57,10 @@ namespace ThriveChurchOfficialAPI.Core
         /// Unique identifier of the message
         /// </summary>
         public string MessageId { get; set; }
+
+        /// <summary>
+        /// A collection of tags categorizing this message by topic/theme
+        /// </summary>
+        public IEnumerable<MessageTag> Tags { get; set; }
     }
 }
