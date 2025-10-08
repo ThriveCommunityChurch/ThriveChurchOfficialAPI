@@ -140,6 +140,8 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 SermonSeries foundSeries = sermonsWithSlug.FirstOrDefault();
 
+                var messages = await _messagesRepository.GetMessagesBySeriesId(foundSeries.Id);
+
                 var found = new SermonSeriesResponse
                 {
                     ArtUrl = foundSeries.ArtUrl,
@@ -150,10 +152,9 @@ namespace ThriveChurchOfficialAPI.Services
                     Slug = foundSeries.Slug,
                     StartDate = foundSeries.StartDate,
                     Thumbnail = foundSeries.Thumbnail,
-                    Year = $"{foundSeries.StartDate.Year}"
+                    Year = $"{foundSeries.StartDate.Year}",
+                    Tags = GetUniqueTagsFromMessages(messages)
                 };
-
-                var messages = await _messagesRepository.GetMessagesBySeriesId(foundSeries.Id);
 
                 // there is already a sermon series with this slug, respond with one of those
                 return new SystemResponse<SermonSeriesResponse>(found, "202");
@@ -186,6 +187,7 @@ namespace ThriveChurchOfficialAPI.Services
                     if (messages != null && messages.Any())
                     {
                         currentlyActive.Messages = SermonMessage.ConvertToResponseList(messages);
+                        currentlyActive.Tags = GetUniqueTagsFromMessages(messages);
                     }
 
                     return new SystemResponse<SermonSeriesResponse>(currentlyActive, "202");
@@ -231,7 +233,8 @@ namespace ThriveChurchOfficialAPI.Services
                     Speaker = message.Speaker,
                     Title = message.Title,
                     VideoUrl = message.VideoUrl,
-                    SeriesId = createdSeries.Id
+                    SeriesId = createdSeries.Id,
+                    Tags = message.Tags?.ToList() ?? new List<MessageTag>()
                 });
             }
 
@@ -252,7 +255,8 @@ namespace ThriveChurchOfficialAPI.Services
                 Slug = createdSeries.Slug,
                 StartDate = createdSeries.StartDate,
                 Thumbnail = createdSeries.Thumbnail,
-                Year = $"{createdSeries.StartDate.Year}"
+                Year = $"{createdSeries.StartDate.Year}",
+                Tags = GetUniqueTagsFromMessages(newMessagesResponse.Result)
             };
 
             // Save data in cache.
@@ -305,7 +309,8 @@ namespace ThriveChurchOfficialAPI.Services
                     Speaker = message.Speaker,
                     Title = message.Title,
                     VideoUrl = message.VideoUrl,
-                    SeriesId = seriesId
+                    SeriesId = seriesId,
+                    Tags = message.Tags?.ToList() ?? new List<MessageTag>()
                 });
             }
 
@@ -331,7 +336,8 @@ namespace ThriveChurchOfficialAPI.Services
                 Slug = series.Slug,
                 StartDate = series.StartDate,
                 Thumbnail = series.Thumbnail,
-                Year = $"{series.StartDate.Year}"
+                Year = $"{series.StartDate.Year}",
+                Tags = GetUniqueTagsFromMessages(messages)
             };
 
             // Save data in cache.
@@ -391,8 +397,7 @@ namespace ThriveChurchOfficialAPI.Services
                 }
 
                 var seriesResult = seriesResponse.Result;
-
-                var aeriesResponse = new SermonSeriesResponse
+                var seriesResponseObj = new SermonSeriesResponse
                 {
                     ArtUrl = seriesResult.ArtUrl,
                     EndDate = seriesResult.EndDate,
@@ -408,12 +413,13 @@ namespace ThriveChurchOfficialAPI.Services
                 var messagesResponse = await _messagesRepository.GetMessagesBySeriesId(seriesId);
                 if (messagesResponse != null && messagesResponse.Any())
                 {
-                    aeriesResponse.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
+                    seriesResponseObj.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
+                    seriesResponseObj.Tags = GetUniqueTagsFromMessages(messagesResponse);
                 }
 
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), aeriesResponse, PersistentCacheEntryOptions);
-                return new SystemResponse<SermonSeriesResponse>(aeriesResponse, "Success!");
+                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), seriesResponseObj, PersistentCacheEntryOptions);
+                return new SystemResponse<SermonSeriesResponse>(seriesResponseObj, "Success!");
             }         
 
             return new SystemResponse<SermonSeriesResponse>(series, "Success!");
@@ -1393,6 +1399,34 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 return new SystemResponse<string>(true, $"Upload failed: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Aggregates unique tags from a collection of sermon messages
+        /// </summary>
+        /// <param name="messages">Collection of sermon messages</param>
+        /// <returns>Distinct list of tags from all messages</returns>
+        private IEnumerable<MessageTag> GetUniqueTagsFromMessages(IEnumerable<SermonMessage> messages)
+        {
+            if (messages == null || !messages.Any())
+            {
+                return new List<MessageTag>();
+            }
+
+            var uniqueTags = new HashSet<MessageTag>();
+
+            foreach (var message in messages)
+            {
+                if (message.Tags != null)
+                {
+                    foreach (var tag in message.Tags)
+                    {
+                        uniqueTags.Add(tag);
+                    }
+                }
+            }
+
+            return uniqueTags;
         }
     }
 

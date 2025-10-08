@@ -29,3 +29,6 @@ launchSettings.json
 # Mac files
 *.DS_Store
 *._DS_Store
+*.log
+
+.vscode/

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace ThriveChurchOfficialAPI.Core
@@ -13,6 +14,7 @@ namespace ThriveChurchOfficialAPI.Core
             PassageRef = null;
             Speaker = null;
             Title = null;
+            Tags = new List<MessageTag>();
         }
 
         /// <summary>
@@ -66,6 +68,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         [DataType(DataType.Date)]
         public DateTime Date { get; set; }
+
+        /// <summary>
+        /// A collection of tags categorizing this message by topic/theme
+        /// </summary>
+        public IEnumerable<MessageTag> Tags { get; set; }
 
         /// <summary>
         /// Validates the object

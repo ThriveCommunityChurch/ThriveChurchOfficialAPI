@@ -27,6 +27,7 @@ namespace ThriveChurchOfficialAPI.Core
             Date = null;
             PlayCount = 0;
             LastUpdated = DateTime.UtcNow;
+            Tags = new List<MessageTag>();
         }
 
         /// <summary>
@@ -98,6 +99,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string SeriesId { get; set; }
 
         /// <summary>
+        /// A collection of tags categorizing this message by topic/theme
+        /// </summary>
+        public List<MessageTag> Tags { get; set; }
+
+        /// <summary>
         /// Convert a collection of DB objects into the API response class
         /// </summary>
         /// <param name="messages"></param>
@@ -124,7 +130,8 @@ namespace ThriveChurchOfficialAPI.Core
                     PlayCount = message.PlayCount,
                     Speaker = message.Speaker,
                     Title = message.Title,
-                    VideoUrl = message.VideoUrl
+                    VideoUrl = message.VideoUrl,
+                    Tags = message.Tags
                 });
             }
 
