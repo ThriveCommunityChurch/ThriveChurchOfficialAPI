@@ -232,6 +232,7 @@ namespace ThriveChurchOfficialAPI.Services
                     PassageRef = message.PassageRef,
                     Speaker = message.Speaker,
                     Title = message.Title,
+                    Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     SeriesId = createdSeries.Id,
                     Tags = message.Tags?.ToList() ?? new List<MessageTag>()
@@ -308,6 +309,7 @@ namespace ThriveChurchOfficialAPI.Services
                     PassageRef = message.PassageRef,
                     Speaker = message.Speaker,
                     Title = message.Title,
+                    Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     SeriesId = seriesId,
                     Tags = message.Tags?.ToList() ?? new List<MessageTag>()
