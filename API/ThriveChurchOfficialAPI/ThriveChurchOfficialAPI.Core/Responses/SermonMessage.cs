@@ -24,6 +24,7 @@ namespace ThriveChurchOfficialAPI.Core
             PassageRef = null;
             Speaker = null;
             Title = null;
+            Summary = null;
             Date = null;
             PlayCount = 0;
             LastUpdated = DateTime.UtcNow;
@@ -75,6 +76,12 @@ namespace ThriveChurchOfficialAPI.Core
         [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Title'. This property is required.")]
         [DataType(DataType.Text)]
         public string Title { get; set; }
+
+        /// <summary>
+        /// A brief text summary/description of the sermon message
+        /// </summary>
+        [DataType(DataType.Text)]
+        public string Summary { get; set; }
 
         /// <summary>
         /// The date that this message was given - we will ignore the time
@@ -130,6 +137,7 @@ namespace ThriveChurchOfficialAPI.Core
                     PlayCount = message.PlayCount,
                     Speaker = message.Speaker,
                     Title = message.Title,
+                    Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     Tags = message.Tags
                 });

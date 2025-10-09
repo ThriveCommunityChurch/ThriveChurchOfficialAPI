@@ -44,6 +44,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string Title { get; set; }
 
         /// <summary>
+        /// A brief text summary/description of the sermon message
+        /// </summary>
+        public string Summary { get; set; }
+
+        /// <summary>
         /// The date that this message was given - we will ignore the time
         /// </summary>
         public DateTime? Date { get; set; }
