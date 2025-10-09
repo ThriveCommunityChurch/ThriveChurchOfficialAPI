@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -41,6 +42,8 @@ using Serilog;
 using Swashbuckle.AspNetCore.Swagger;
 using System;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using ThriveChurchOfficialAPI.Core;
@@ -83,6 +86,27 @@ namespace ThriveChurchOfficialAPI
                                       builder.WithOrigins("*").AllowAnyHeader().AllowAnyMethod();
                                   });
             });
+
+            #region Response Compression
+
+            // Add response compression for mobile bandwidth optimization
+            services.AddResponseCompression(options =>
+            {
+                options.EnableForHttps = true; // Enable compression for HTTPS
+                options.Providers.Add<GzipCompressionProvider>();
+
+                // Add MIME types to compress (JSON responses)
+                options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+                    new[] { "application/json", "text/json" });
+            });
+
+            // Configure Gzip compression level
+            services.Configure<GzipCompressionProviderOptions>(options =>
+            {
+                options.Level = CompressionLevel.Fastest; // Balance between speed and compression ratio
+            });
+
+            #endregion
 
             // enable in-memory caching
             services.AddMemoryCache();
@@ -210,6 +234,11 @@ namespace ThriveChurchOfficialAPI
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Enable response compression (must be early in pipeline)
+            app.UseResponseCompression();
+
+            Log.Information("Response compression configured.");
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -217,12 +246,12 @@ namespace ThriveChurchOfficialAPI
                 // Enable middleware to serve generated Swagger as a JSON endpoint.
                 app.UseSwagger();
 
-                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.), 
+                // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
                 // specifying the Swagger JSON endpoint.
                 app.UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Thrive Church Official API v1");
-                    c.RoutePrefix = "swagger"; // enable swagger at ~/swagger  
+                    c.RoutePrefix = "swagger"; // enable swagger at ~/swagger
                     c.DefaultModelsExpandDepth(-1); // Disable swagger schemas at bottom
                 });
             }
@@ -233,7 +262,7 @@ namespace ThriveChurchOfficialAPI
 
             Log.Information("UseHsts configured.");
 
-            // add exception filtering 
+            // add exception filtering
             app.ConfigureCustomExceptionMiddleware();
 
             Log.Information("Exception middleware configured.");
