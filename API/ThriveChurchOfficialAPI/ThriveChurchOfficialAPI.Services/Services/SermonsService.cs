@@ -489,6 +489,7 @@ namespace ThriveChurchOfficialAPI.Services
             series.Thumbnail = request.Thumbnail;
             series.ArtUrl = request.ArtUrl;
             series.Slug = request.Slug;
+            series.Summary = request.Summary;
 
             var updateResponse = await _sermonsRepository.UpdateSermonSeries(series);
             if (updateResponse.HasErrors)
