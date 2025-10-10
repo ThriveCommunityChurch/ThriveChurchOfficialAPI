@@ -24,9 +24,11 @@ namespace ThriveChurchOfficialAPI.Core
             PassageRef = null;
             Speaker = null;
             Title = null;
+            Summary = null;
             Date = null;
             PlayCount = 0;
             LastUpdated = DateTime.UtcNow;
+            Tags = new List<MessageTag>();
         }
 
         /// <summary>
@@ -76,6 +78,12 @@ namespace ThriveChurchOfficialAPI.Core
         public string Title { get; set; }
 
         /// <summary>
+        /// A brief text summary/description of the sermon message
+        /// </summary>
+        [DataType(DataType.Text)]
+        public string Summary { get; set; }
+
+        /// <summary>
         /// The date that this message was given - we will ignore the time
         /// </summary>
         [DataType(DataType.Date)]
@@ -96,6 +104,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         [BsonRepresentation(BsonType.ObjectId)]
         public string SeriesId { get; set; }
+
+        /// <summary>
+        /// A collection of tags categorizing this message by topic/theme
+        /// </summary>
+        public List<MessageTag> Tags { get; set; }
 
         /// <summary>
         /// Convert a collection of DB objects into the API response class
@@ -124,7 +137,9 @@ namespace ThriveChurchOfficialAPI.Core
                     PlayCount = message.PlayCount,
                     Speaker = message.Speaker,
                     Title = message.Title,
-                    VideoUrl = message.VideoUrl
+                    Summary = message.Summary,
+                    VideoUrl = message.VideoUrl,
+                    Tags = message.Tags
                 });
             }
 

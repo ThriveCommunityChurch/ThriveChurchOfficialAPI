@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -43,6 +44,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string Title { get; set; }
 
         /// <summary>
+        /// A brief text summary/description of the sermon message
+        /// </summary>
+        public string Summary { get; set; }
+
+        /// <summary>
         /// The date that this message was given - we will ignore the time
         /// </summary>
         public DateTime? Date { get; set; }
@@ -56,5 +62,10 @@ namespace ThriveChurchOfficialAPI.Core
         /// Unique identifier of the message
         /// </summary>
         public string MessageId { get; set; }
+
+        /// <summary>
+        /// A collection of tags categorizing this message by topic/theme
+        /// </summary>
+        public IEnumerable<MessageTag> Tags { get; set; }
     }
 }

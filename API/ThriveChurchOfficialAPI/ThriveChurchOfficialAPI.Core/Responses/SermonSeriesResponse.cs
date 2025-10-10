@@ -22,6 +22,8 @@ namespace ThriveChurchOfficialAPI.Core
             Thumbnail = null;
             ArtUrl = null;
             LastUpdated = null;
+            Tags = new List<MessageTag>();
+            Summary = null;
         }
 
         /// <summary>
@@ -74,5 +76,15 @@ namespace ThriveChurchOfficialAPI.Core
         /// A collection of Messages spoken / given by someone within this sermon series
         /// </summary>
         public IEnumerable<SermonMessageResponse> Messages { get; set; }
+
+        /// <summary>
+        /// A collection of unique tags from all messages in this series, categorizing the series by topic/theme
+        /// </summary>
+        public IEnumerable<MessageTag> Tags { get; set; }
+
+        /// <summary>
+        /// The overall description of the sermon series as a whole
+        /// </summary>
+        public string Summary { get; set; }
     }
 }

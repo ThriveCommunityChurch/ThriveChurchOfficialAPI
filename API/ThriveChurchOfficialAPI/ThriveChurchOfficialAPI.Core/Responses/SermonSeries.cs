@@ -19,6 +19,7 @@ namespace ThriveChurchOfficialAPI.Core
             Thumbnail = null;
             ArtUrl = null;
             LastUpdated = DateTime.UtcNow;
+            Summary = null;
         }
 
         /// <summary>
@@ -56,5 +57,10 @@ namespace ThriveChurchOfficialAPI.Core
         /// Used as a timestamp to indicate the last time that this object was updated
         /// </summary>
         public DateTime LastUpdated { get; set; }
+
+        /// <summary>
+        /// The overall description of the sermon series as a whole
+        /// </summary>
+        public string Summary { get; set; }
     }
 }
