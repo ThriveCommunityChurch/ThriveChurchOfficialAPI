@@ -13,6 +13,7 @@ namespace ThriveChurchOfficialAPI.Core
             Thumbnail = null;
             ArtUrl = null;
             Slug = null;
+            Summary = null;
         }
 
         /// <summary>
@@ -59,6 +60,12 @@ namespace ThriveChurchOfficialAPI.Core
         [Required(AllowEmptyStrings = false, ErrorMessage = "No non-empty value given for property 'Slug'. This property is required.")]
         [DataType(DataType.Text)]
         public string Slug { get; set; }
+
+        /// <summary>
+        /// The overall description of the sermon series as a whole
+        /// </summary>
+        [DataType(DataType.Text)]
+        public string Summary { get; set; }
 
         public static ValidationResponse ValidateRequest(SermonSeriesUpdateRequest request)
         {

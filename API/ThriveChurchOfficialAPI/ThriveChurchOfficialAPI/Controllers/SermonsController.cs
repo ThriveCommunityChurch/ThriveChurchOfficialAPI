@@ -415,7 +415,6 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <summary>
         /// Upload an audio file to S3 storage
         /// </summary>
-        /// <param name="file">The audio file to upload</param>
         /// <returns>JSON response with the S3 URL</returns>
         /// <response code="200">OK - Returns the S3 URL</response>
         /// <response code="400">Bad Request - File validation failed or upload error</response>
