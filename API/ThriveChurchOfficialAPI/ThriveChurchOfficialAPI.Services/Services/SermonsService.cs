@@ -153,7 +153,8 @@ namespace ThriveChurchOfficialAPI.Services
                     StartDate = foundSeries.StartDate,
                     Thumbnail = foundSeries.Thumbnail,
                     Year = $"{foundSeries.StartDate.Year}",
-                    Tags = GetUniqueTagsFromMessages(messages)
+                    Tags = GetUniqueTagsFromMessages(messages),
+                    Summary = foundSeries.Summary
                 };
 
                 // there is already a sermon series with this slug, respond with one of those
@@ -188,6 +189,7 @@ namespace ThriveChurchOfficialAPI.Services
                     {
                         currentlyActive.Messages = SermonMessage.ConvertToResponseList(messages);
                         currentlyActive.Tags = GetUniqueTagsFromMessages(messages);
+                        currentlyActive.Summary = activeSeries.Summary;
                     }
 
                     return new SystemResponse<SermonSeriesResponse>(currentlyActive, "202");
@@ -257,7 +259,8 @@ namespace ThriveChurchOfficialAPI.Services
                 StartDate = createdSeries.StartDate,
                 Thumbnail = createdSeries.Thumbnail,
                 Year = $"{createdSeries.StartDate.Year}",
-                Tags = GetUniqueTagsFromMessages(newMessagesResponse.Result)
+                Tags = GetUniqueTagsFromMessages(newMessagesResponse.Result),
+                Summary = createdSeries.Summary
             };
 
             // Save data in cache.
@@ -339,7 +342,8 @@ namespace ThriveChurchOfficialAPI.Services
                 StartDate = series.StartDate,
                 Thumbnail = series.Thumbnail,
                 Year = $"{series.StartDate.Year}",
-                Tags = GetUniqueTagsFromMessages(messages)
+                Tags = GetUniqueTagsFromMessages(messages),
+                Summary = series.Summary
             };
 
             // Save data in cache.
@@ -417,6 +421,7 @@ namespace ThriveChurchOfficialAPI.Services
                 {
                     seriesResponseObj.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
                     seriesResponseObj.Tags = GetUniqueTagsFromMessages(messagesResponse);
+                    seriesResponseObj.Summary = seriesResult.Summary;
                 }
 
                 // Save data in cache.
