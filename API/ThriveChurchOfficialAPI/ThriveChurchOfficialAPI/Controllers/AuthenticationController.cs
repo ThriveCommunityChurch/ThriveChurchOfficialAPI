@@ -45,7 +45,7 @@ namespace ThriveChurchOfficialAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var response = await _authenticationService.LoginAsync(request);
+            var response = await _authenticationService.LoginAsync(Request.HttpContext, request);
 
             if (response.HasErrors)
             {

@@ -30,5 +30,5 @@ launchSettings.json
 *.DS_Store
 *._DS_Store
 *.log
-
+*.http
 .vscode/

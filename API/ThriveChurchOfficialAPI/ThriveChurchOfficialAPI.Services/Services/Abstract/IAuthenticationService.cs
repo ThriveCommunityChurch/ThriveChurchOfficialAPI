@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -13,7 +14,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request">Login request with credentials</param>
         /// <returns>Login response with JWT token if successful</returns>
-        Task<SystemResponse<LoginResponse>> LoginAsync(LoginRequest request);
+        Task<SystemResponse<LoginResponse>> LoginAsync(HttpContext webRequest, LoginRequest request);
 
         /// <summary>
         /// Refresh a JWT token using a refresh token

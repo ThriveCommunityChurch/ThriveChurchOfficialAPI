@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
+using Serilog;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -13,16 +13,19 @@ namespace ThriveChurchOfficialAPI.Repositories
     public class RefreshTokenRepository : RepositoryBase<RefreshToken>, IRefreshTokenRepository
     {
         private readonly IMongoCollection<RefreshToken> _refreshTokens;
+        private readonly ILogger _logger;
         private const string COLLECTION_NAME = "RefreshTokens";
 
         /// <summary>
         /// Refresh Token Repository Constructor
         /// </summary>
         /// <param name="configuration">Configuration for database connection</param>
-        public RefreshTokenRepository(IConfiguration configuration) : base(configuration)
+        public RefreshTokenRepository(IConfiguration configuration, ILogger logger) 
+            : base(configuration)
         {
             _refreshTokens = DB.GetCollection<RefreshToken>(COLLECTION_NAME);
-            
+            _logger = logger;
+
             // Create indexes for performance
             CreateIndexes();
         }
@@ -65,7 +68,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             catch (Exception ex)
             {
                 // Log the error but don't fail startup
-                Console.WriteLine($"Warning: Could not create refresh token indexes: {ex.Message}");
+                _logger.Warning($"Warning: Could not create refresh token indexes: {ex.Message}");
             }
         }
 

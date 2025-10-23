@@ -1,4 +1,5 @@
 using BCrypt.Net;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -26,7 +27,10 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="jwtService">JWT service for token generation</param>
         /// <param name="refreshTokenRepository">Refresh token repository for token management</param>
         /// <param name="logger">Logger for internal error logging</param>
-        public AuthenticationService(IUserRepository userRepository, IJwtService jwtService, IRefreshTokenRepository refreshTokenRepository, ILogger<AuthenticationService> logger)
+        public AuthenticationService(IUserRepository userRepository, 
+            IJwtService jwtService, 
+            IRefreshTokenRepository refreshTokenRepository, 
+            ILogger<AuthenticationService> logger)
         {
             _userRepository = userRepository;
             _jwtService = jwtService;
@@ -39,7 +43,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request">Login request with credentials</param>
         /// <returns>Login response with JWT token if successful</returns>
-        public async Task<SystemResponse<LoginResponse>> LoginAsync(LoginRequest request)
+        public async Task<SystemResponse<LoginResponse>> LoginAsync(HttpRequest webRequest, LoginRequest request)
         {
             try
             {
@@ -111,7 +115,8 @@ namespace ThriveChurchOfficialAPI.Services
                 var refreshTokenResult = await _refreshTokenRepository.CreateRefreshTokenAsync(refreshToken);
                 if (refreshTokenResult.HasErrors)
                 {
-                    return new SystemResponse<LoginResponse>(true, $"Error creating refresh token: {refreshTokenResult.ErrorMessage}");
+                    _logger.LogError($"Error creating refresh token: {refreshTokenResult.ErrorMessage}");
+                    return new SystemResponse<LoginResponse>(true, AuthenticationMessages.LoginFailed);
                 }
 
                 var loginResponse = new LoginResponse
