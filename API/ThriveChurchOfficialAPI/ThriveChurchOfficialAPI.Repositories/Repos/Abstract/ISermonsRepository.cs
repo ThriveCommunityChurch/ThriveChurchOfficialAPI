@@ -49,5 +49,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="SeriesId"></param>
         /// <returns></returns>
         Task<DateTime> UpdateSeriesLastUpdated(string SeriesId);
+
+        /// <summary>
+        /// Search for series that contain messages with at least one of the specified tags
+        /// </summary>
+        /// <param name="tags">Tags to search for</param>
+        /// <param name="sortDirection">Sort direction by start date</param>
+        /// <returns>Collection of matching series</returns>
+        Task<IEnumerable<SermonSeries>> SearchSeriesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection);
     }
 }

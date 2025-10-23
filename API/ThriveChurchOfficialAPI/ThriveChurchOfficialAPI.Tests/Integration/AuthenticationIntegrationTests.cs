@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
@@ -17,6 +19,8 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
         private Mock<IUserRepository> _mockUserRepository;
         private Mock<IRefreshTokenRepository> _mockRefreshTokenRepository;
         private Mock<ILogger<AuthenticationService>> _mockLogger;
+        private Mock<HttpContext> _mockHttpContext;
+        private Mock<ConnectionInfo> _mockConnectionInfo;
         private IJwtService _jwtService;
         private IAuthenticationService _authenticationService;
         private JwtSettings _jwtSettings;
@@ -40,6 +44,13 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
             _mockUserRepository = new Mock<IUserRepository>();
             _mockRefreshTokenRepository = new Mock<IRefreshTokenRepository>();
             _mockLogger = new Mock<ILogger<AuthenticationService>>();
+
+            // Setup mock HttpContext with fake IP address
+            _mockHttpContext = new Mock<HttpContext>();
+            _mockConnectionInfo = new Mock<ConnectionInfo>();
+            _mockConnectionInfo.Setup(c => c.RemoteIpAddress).Returns(IPAddress.Parse("10.0.0.50"));
+            _mockHttpContext.Setup(c => c.Connection).Returns(_mockConnectionInfo.Object);
+
             _jwtService = new JwtService(Options.Create(_jwtSettings));
             _authenticationService = new AuthenticationService(_mockUserRepository.Object, _jwtService, _mockRefreshTokenRepository.Object, _mockLogger.Object);
 
@@ -78,7 +89,7 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
                 .ReturnsAsync(new SystemResponse<RefreshToken>(new RefreshToken(), "Token created"));
 
             // Act - Login
-            var loginResult = await _authenticationService.LoginAsync(loginRequest);
+            var loginResult = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
 
             // Assert - Login successful
             Assert.IsFalse(loginResult.HasErrors);
@@ -119,7 +130,7 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
                 .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
 
             // Act
-            var loginResult = await _authenticationService.LoginAsync(loginRequest);
+            var loginResult = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
 
             // Assert
             Assert.IsTrue(loginResult.HasErrors);
@@ -151,7 +162,7 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
                 .ReturnsAsync(new SystemResponse<User>(inactiveUser, "User found"));
 
             // Act
-            var loginResult = await _authenticationService.LoginAsync(loginRequest);
+            var loginResult = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
 
             // Assert
             Assert.IsTrue(loginResult.HasErrors);
@@ -173,7 +184,7 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
                 .ReturnsAsync(new SystemResponse<User>(null, "User not found"));
 
             // Act
-            var loginResult = await _authenticationService.LoginAsync(loginRequest);
+            var loginResult = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
 
             // Assert
             Assert.IsTrue(loginResult.HasErrors);

@@ -7,6 +7,8 @@ using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
 
+using SortDirection = ThriveChurchOfficialAPI.Core.SortDirection;
+
 namespace ThriveChurchOfficialAPI.Repositories
 {
     /// <summary>
@@ -195,6 +197,32 @@ namespace ThriveChurchOfficialAPI.Repositories
             var cursor = await _messagesCollection.FindAsync(filter);
 
             return cursor.ToList();
+        }
+
+        /// <summary>
+        /// Search for messages that contain at least one of the specified tags
+        /// </summary>
+        /// <param name="tags">Tags to search for</param>
+        /// <param name="sortDirection">Sort direction by date</param>
+        /// <returns>Collection of matching messages</returns>
+        public async Task<IEnumerable<SermonMessage>> SearchMessagesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection)
+        {
+            // Create filter for messages that contain any of the specified tags
+            var filter = Builders<SermonMessage>.Filter.AnyIn(m => m.Tags, tags);
+
+            // Apply sort based on direction
+            IFindFluent<SermonMessage, SermonMessage> query = _messagesCollection.Find(filter);
+
+            if (sortDirection == SortDirection.Ascending)
+            {
+                query = query.SortBy(m => m.Date);
+            }
+            else
+            {
+                query = query.SortByDescending(m => m.Date);
+            }
+
+            return await query.ToListAsync();
         }
     }
 }

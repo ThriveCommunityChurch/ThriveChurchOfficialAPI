@@ -82,7 +82,7 @@ namespace ThriveChurchOfficialAPI.Controllers
                 return BadRequest(ModelState);
             }
 
-            var response = await _authenticationService.RefreshTokenAsync(request);
+            var response = await _authenticationService.RefreshTokenAsync(Request.HttpContext, request);
 
             if (response.HasErrors)
             {

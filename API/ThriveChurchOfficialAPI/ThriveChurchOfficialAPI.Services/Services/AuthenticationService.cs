@@ -43,7 +43,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request">Login request with credentials</param>
         /// <returns>Login response with JWT token if successful</returns>
-        public async Task<SystemResponse<LoginResponse>> LoginAsync(HttpRequest webRequest, LoginRequest request)
+        public async Task<SystemResponse<LoginResponse>> LoginAsync(HttpContext webRequest, LoginRequest request)
         {
             try
             {
@@ -109,7 +109,7 @@ namespace ThriveChurchOfficialAPI.Services
                     Token = refreshTokenValue,
                     UserId = user.Id,
                     ExpiresAt = DateTime.UtcNow.AddDays(7), // 7 days for refresh token
-                    CreatedByIp = null // TODO: Get IP from HTTP context if needed
+                    CreatedByIp = GetClientIpAddress(webRequest)
                 };
 
                 var refreshTokenResult = await _refreshTokenRepository.CreateRefreshTokenAsync(refreshToken);
@@ -141,7 +141,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request">Refresh token request</param>
         /// <returns>New login response with fresh JWT token</returns>
-        public async Task<SystemResponse<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request)
+        public async Task<SystemResponse<LoginResponse>> RefreshTokenAsync(HttpContext webRequest, RefreshTokenRequest request)
         {
             try
             {
@@ -221,7 +221,7 @@ namespace ThriveChurchOfficialAPI.Services
                     Token = newRefreshTokenValue,
                     UserId = user.Id,
                     ExpiresAt = DateTime.UtcNow.AddDays(7), // 7 days for refresh token
-                    CreatedByIp = null // TODO: Get IP from HTTP context if needed
+                    CreatedByIp = GetClientIpAddress(webRequest)
                 };
 
                 var newRefreshTokenResult = await _refreshTokenRepository.CreateRefreshTokenAsync(newRefreshToken);
@@ -343,6 +343,28 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 // Log the error but don't fail the login process
                 _logger.LogError(ex, "Error recording failed login attempt for user: {UserId}", userId);
+            }
+        }
+
+        /// <summary>
+        /// Extract client IP address from HTTP context
+        /// </summary>
+        /// <param name="httpContext">HTTP context containing connection information</param>
+        /// <returns>Client IP address as string, or null if not available</returns>
+        private string GetClientIpAddress(HttpContext httpContext)
+        {
+            try
+            {
+                if (httpContext?.Connection?.RemoteIpAddress != null)
+                {
+                    return httpContext.Connection.RemoteIpAddress.ToString();
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to extract client IP address from HTTP context");
+                return null;
             }
         }
 

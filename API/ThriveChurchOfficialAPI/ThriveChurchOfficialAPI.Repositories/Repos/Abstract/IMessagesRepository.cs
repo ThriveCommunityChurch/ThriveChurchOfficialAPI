@@ -58,5 +58,13 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="message"></param>
         /// <returns></returns>
         Task<SermonMessage> UpdateMessageById(string messageId, SermonMessageRequest message);
+
+        /// <summary>
+        /// Search for messages that contain at least one of the specified tags
+        /// </summary>
+        /// <param name="tags">Tags to search for</param>
+        /// <param name="sortDirection">Sort direction by date</param>
+        /// <returns>Collection of matching messages</returns>
+        Task<IEnumerable<SermonMessage>> SearchMessagesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection);
     }
 }

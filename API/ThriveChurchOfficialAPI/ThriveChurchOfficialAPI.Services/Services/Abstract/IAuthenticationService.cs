@@ -21,7 +21,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request">Refresh token request</param>
         /// <returns>New login response with fresh JWT token</returns>
-        Task<SystemResponse<LoginResponse>> RefreshTokenAsync(RefreshTokenRequest request);
+        Task<SystemResponse<LoginResponse>> RefreshTokenAsync(HttpContext webRequest, RefreshTokenRequest request);
 
         /// <summary>
         /// Validate user credentials against stored password hash

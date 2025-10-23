@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -35,7 +36,7 @@ namespace ThriveChurchOfficialAPI.Tests.Controllers
             var loginRequest = new LoginRequest { Username = "testuser", Password = "password" };
             var loginResponse = new LoginResponse { Token = "test.token" };
 
-            _mockAuthenticationService.Setup(s => s.LoginAsync(loginRequest))
+            _mockAuthenticationService.Setup(s => s.LoginAsync(It.IsAny<HttpContext>(), loginRequest))
                 .ReturnsAsync(new SystemResponse<LoginResponse>(loginResponse, "Success"));
 
             // Act
@@ -51,7 +52,7 @@ namespace ThriveChurchOfficialAPI.Tests.Controllers
             // Arrange
             var loginRequest = new LoginRequest { Username = "testuser", Password = "password" };
 
-            _mockAuthenticationService.Setup(s => s.LoginAsync(loginRequest))
+            _mockAuthenticationService.Setup(s => s.LoginAsync(It.IsAny<HttpContext>(), loginRequest))
                 .ReturnsAsync(new SystemResponse<LoginResponse>(true, "Invalid username or password"));
 
             // Act
@@ -67,7 +68,7 @@ namespace ThriveChurchOfficialAPI.Tests.Controllers
             // Arrange
             var loginRequest = new LoginRequest { Username = "testuser", Password = "password" };
 
-            _mockAuthenticationService.Setup(s => s.LoginAsync(loginRequest))
+            _mockAuthenticationService.Setup(s => s.LoginAsync(It.IsAny<HttpContext>(), loginRequest))
                 .ReturnsAsync(new SystemResponse<LoginResponse>(true, "Username and password are required"));
 
             // Act
@@ -88,7 +89,7 @@ namespace ThriveChurchOfficialAPI.Tests.Controllers
             var refreshRequest = new RefreshTokenRequest { RefreshToken = "valid-token" };
             var loginResponse = new LoginResponse { Token = "new.token" };
 
-            _mockAuthenticationService.Setup(s => s.RefreshTokenAsync(refreshRequest))
+            _mockAuthenticationService.Setup(s => s.RefreshTokenAsync(It.IsAny<HttpContext>(), refreshRequest))
                 .ReturnsAsync(new SystemResponse<LoginResponse>(loginResponse, "Success"));
 
             // Act
