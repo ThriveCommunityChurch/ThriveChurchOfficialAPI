@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -123,5 +124,18 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request">The file stream to upload</param>
         /// <returns>SystemResponse containing the S3 URL or error message</returns>
         Task<SystemResponse<string>> UploadAudioFileAsync(HttpRequest request);
+
+        /// <summary>
+        /// Search for messages or series by tags
+        /// </summary>
+        /// <param name="request">Tag search request</param>
+        /// <returns>Matching messages or series</returns>
+        Task<SystemResponse<SearchResponse>> Search(SearchRequest request);
+
+        /// <summary>
+        /// Gets all unique speaker names
+        /// </summary>
+        /// <returns>Collection of unique speaker names</returns>
+        Task<SystemResponse<IEnumerable<string>>> GetUniqueSpeakers();
     }
 }

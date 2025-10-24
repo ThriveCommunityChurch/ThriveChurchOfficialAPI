@@ -1436,6 +1436,113 @@ namespace ThriveChurchOfficialAPI.Services
 
             return uniqueTags;
         }
+
+        /// <summary>
+        /// Search for messages or series
+        /// </summary>
+        /// <param name="request">Search request</param>
+        /// <returns>Matching messages or series</returns>
+        public async Task<SystemResponse<SearchResponse>> Search(SearchRequest request)
+        {
+            // Validation using the request's static method
+            var validationResponse = SearchRequest.ValidateRequest(request);
+            if (validationResponse.HasErrors)
+            {
+                return new SystemResponse<SearchResponse>(true, validationResponse.ErrorMessage);
+            }
+
+            var response = new SearchResponse();
+
+            if (request.SearchTarget == SearchTarget.Messages)
+            {
+                // Search messages
+                var messages = await _messagesRepository.SearchMessagesByTags(
+                    request.Tags,
+                    request.SortDirection);
+
+                if (messages != null && messages.Any())
+                {
+                    response.Messages = SermonMessage.ConvertToResponseList(messages);
+                }
+            }
+            else if (request.SearchTarget == SearchTarget.Series)
+            {
+                // Search series
+                var series = await _sermonsRepository.SearchSeriesByTags(
+                    request.Tags,
+                    request.SortDirection);
+
+                if (series != null && series.Any())
+                {
+                    response.Series = await ConvertSeriesToResponse(series);
+                }
+            }
+            else if (request.SearchTarget == SearchTarget.Speaker)
+            {
+                // Search messages by speaker - only returns messages, not series
+                var messages = await _messagesRepository.SearchMessagesBySpeaker(
+                    request.SearchValue,
+                    request.SortDirection);
+
+                if (messages != null && messages.Any())
+                {
+                    response.Messages = SermonMessage.ConvertToResponseList(messages);
+                }
+            }
+
+            return new SystemResponse<SearchResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Helper method to convert series to response objects with messages and tags
+        /// </summary>
+        /// <param name="series">Collection of sermon series</param>
+        /// <returns>Collection of sermon series response objects</returns>
+        private async Task<IEnumerable<SermonSeriesResponse>> ConvertSeriesToResponse(IEnumerable<SermonSeries> series)
+        {
+            var responseList = new List<SermonSeriesResponse>();
+
+            foreach (var s in series)
+            {
+                var messages = await _messagesRepository.GetMessagesBySeriesId(s.Id);
+
+                var seriesResponse = new SermonSeriesResponse
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Year = $"{s.StartDate.Year}",
+                    StartDate = s.StartDate,
+                    EndDate = s.EndDate,
+                    Slug = s.Slug,
+                    Thumbnail = s.Thumbnail,
+                    ArtUrl = s.ArtUrl,
+                    LastUpdated = s.LastUpdated,
+                    Summary = s.Summary,
+                    Messages = SermonMessage.ConvertToResponseList(messages),
+                    Tags = GetUniqueTagsFromMessages(messages)
+                };
+
+                responseList.Add(seriesResponse);
+            }
+
+            return responseList;
+        }
+
+        /// <summary>
+        /// Gets all unique speaker names
+        /// </summary>
+        /// <returns>Collection of unique speaker names</returns>
+        public async Task<SystemResponse<IEnumerable<string>>> GetUniqueSpeakers()
+        {
+            var speakers = await _messagesRepository.GetUniqueSpeakers();
+
+            if (speakers == null || !speakers.Any())
+            {
+                return new SystemResponse<IEnumerable<string>>(new List<string>(), "No speakers found");
+            }
+
+            return new SystemResponse<IEnumerable<string>>(speakers, "Success!");
+        }
     }
 
     /// <summary>

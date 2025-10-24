@@ -1,8 +1,10 @@
 using Amazon.Runtime.Internal;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Services;
@@ -91,8 +93,11 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns></returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPost("series")]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<SermonSeriesResponse>> CreateNewSermonSeries([FromBody] CreateSermonSeriesRequest request)
         {
             var response = await _sermonsService.CreateNewSermonSeries(request);
@@ -144,10 +149,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>SermonSeries object</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPut("series/{SeriesId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<SermonSeries>> ModifySermonSeries([BindRequired] string SeriesId, [FromBody] SermonSeriesUpdateRequest request)
         {
             var response = await _sermonsService.ModifySermonSeries(SeriesId, request);
@@ -168,10 +176,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>SermonSeries Object</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPost("series/{SeriesId}/message")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<SermonSeriesResponse>> AddMessagesToSermonSeries([BindRequired] string SeriesId, [FromBody] AddMessagesToSeriesRequest request)
         {
             var response = await _sermonsService.AddMessageToSermonSeries(SeriesId, request);
@@ -192,10 +203,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>An updated sermon message</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPut("series/message/{MessageId}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<SermonMessage>> UpdateMessagesInSermonSeries([BindRequired] string MessageId, [FromBody] UpdateMessagesInSermonSeriesRequest request)
         {
             var response = await _sermonsService.UpdateMessageInSermonSeries(MessageId, request);
@@ -265,10 +279,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>LiveSermon Object</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPost("live")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<LiveStreamingResponse>> GoLive([FromBody] LiveSermonsUpdateRequest request)
         {
             var response = await _sermonsService.GoLive(request);
@@ -286,9 +303,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// </summary>
         /// <param name="request"></param>
         /// <returns>LiveSermon Object</returns>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [HttpPut("live/special")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<LiveStreamingResponse>> UpdateLiveForSpecialEvents([FromBody] LiveSermonsSpecialEventUpdateRequest request)
         {
             var response = await _sermonsService.UpdateLiveForSpecialEvents(request);
@@ -306,9 +326,12 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// </summary>
         /// <param name="request"></param>
         /// <returns>LiveSermon Object</returns>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [HttpPost("live/schedule")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public ActionResult<string> ScheduleLivestreams([FromBody] LiveSermonsSchedulingRequest request)
         {
             var response = _sermonsService.ScheduleLiveStream(request);
@@ -344,15 +367,18 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
-        /// End a livestream 
+        /// End a livestream
         /// </summary>
         /// <returns>LiveSermon Object</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpDelete("live")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<LiveSermons>> UpdateLiveSermonsInactive()
         {
             var response = await _sermonsService.UpdateLiveSermonsInactive();
@@ -418,10 +444,13 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// <returns>JSON response with the S3 URL</returns>
         /// <response code="200">OK - Returns the S3 URL</response>
         /// <response code="400">Bad Request - File validation failed or upload error</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
         [Produces("application/json")]
         [HttpPost("audio/upload")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
         public async Task<ActionResult<string>> UploadAudioFile()
         {
             var response = await _sermonsService.UploadAudioFileAsync(Request);
@@ -431,6 +460,51 @@ namespace ThriveChurchOfficialAPI.Controllers
             }
 
             return response.Result;
+        }
+
+        /// <summary>
+        /// Search for messages or series
+        /// </summary>
+        /// <param name="request">search request</param>
+        /// <returns>Matching messages or series</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpPost("search")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<SearchResponse>> Search([FromBody] SearchRequest request)
+        {
+            var response = await _sermonsService.Search(request);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Get all unique speaker names
+        /// </summary>
+        /// <returns>List of unique speaker names</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("speakers")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<IEnumerable<string>>> GetUniqueSpeakers()
+        {
+            var response = await _sermonsService.GetUniqueSpeakers();
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return Ok(response.Result);
         }
     }
 }

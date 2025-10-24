@@ -7,6 +7,8 @@ using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
 
+using SortDirection = ThriveChurchOfficialAPI.Core.SortDirection;
+
 namespace ThriveChurchOfficialAPI.Repositories
 {
     /// <summary>
@@ -16,6 +18,7 @@ namespace ThriveChurchOfficialAPI.Repositories
     {
         private readonly IMongoCollection<SermonSeries> _sermonsCollection;
         private readonly IMongoCollection<LiveSermons> _livestreamCollection;
+        private readonly IMongoCollection<SermonMessage> _messagesCollection;
 
         /// <summary>
         /// Sermons Repo C'tor
@@ -26,6 +29,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             _sermonsCollection = DB.GetCollection<SermonSeries>("Series");
             _livestreamCollection = DB.GetCollection<LiveSermons>("Livestream");
+            _messagesCollection = DB.GetCollection<SermonMessage>("Messages");
         }
 
         /// <summary>
@@ -412,6 +416,73 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
 
             return updatedLiveSermon;
+        }
+
+        /// <summary>
+        /// Search for series that contain messages with at least one of the specified tags
+        /// </summary>
+        /// <param name="tags">Tags to search for</param>
+        /// <param name="sortDirection">Sort direction by start date</param>
+        /// <returns>Collection of matching series</returns>
+        public async Task<IEnumerable<SermonSeries>> SearchSeriesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection)
+        {
+            // Convert tags to their integer values for MongoDB query
+            var tagValues = tags.Select(t => (int)t).ToList();
+
+            // Determine sort direction
+            var sortOrder = sortDirection == SortDirection.Ascending ? 1 : -1;
+
+            // Build aggregation pipeline starting from Messages collection
+            var stages = new List<BsonDocument>
+            {
+                // Stage 1: Filter messages that have at least one matching tag
+                new BsonDocument("$match", new BsonDocument
+                {
+                    { "Tags", new BsonDocument("$in", new BsonArray(tagValues)) }
+                }),
+
+                // Stage 2: Lookup the series for each matching message
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Series" },
+                    { "localField", "SeriesId" },
+                    { "foreignField", "_id" },
+                    { "as", "series" }
+                }),
+
+                // Stage 3: Unwind the series array (each message has one series)
+                new BsonDocument("$unwind", "$series"),
+
+                // Stage 4: Replace root with the series document
+                new BsonDocument("$replaceRoot", new BsonDocument
+                {
+                    { "newRoot", "$series" }
+                }),
+
+                // Stage 5: Group by series _id to get unique series (multiple messages can belong to same series)
+                new BsonDocument("$group", new BsonDocument
+                {
+                    { "_id", "$_id" },
+                    { "doc", new BsonDocument("$first", "$$ROOT") }
+                }),
+
+                // Stage 6: Replace root again to get the series document back
+                new BsonDocument("$replaceRoot", new BsonDocument
+                {
+                    { "newRoot", "$doc" }
+                }),
+
+                // Stage 7: Sort by StartDate
+                new BsonDocument("$sort", new BsonDocument("StartDate", sortOrder))
+            };
+
+            // Execute pipeline on Messages collection (not Series!)
+            PipelineDefinition<SermonMessage, SermonSeries> pipeline =
+                PipelineDefinition<SermonMessage, SermonSeries>.Create(stages);
+
+            var cursor = await _messagesCollection.AggregateAsync(pipeline);
+
+            return cursor.ToList();
         }
     }
 }

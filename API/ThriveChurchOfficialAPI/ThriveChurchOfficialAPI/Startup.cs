@@ -25,6 +25,7 @@
 using AspNetCoreRateLimit;
 using Hangfire;
 using Hangfire.Mongo;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
@@ -35,6 +36,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -45,6 +47,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.Json.Serialization;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
@@ -137,6 +140,12 @@ namespace ThriveChurchOfficialAPI
                 options.MultipartHeadersLengthLimit = int.MaxValue;
             });
 
+            services.AddHsts(options =>
+            {
+                options.MaxAge = TimeSpan.FromDays(365);
+                options.IncludeSubDomains = true;
+            });
+
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
@@ -146,6 +155,31 @@ namespace ThriveChurchOfficialAPI
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
+
+                // Add JWT Authentication to Swagger
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "Bearer"
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        new string[] {}
+                    }
+                });
             });
 
             // Preserve Casing of JSON Objects
@@ -194,8 +228,42 @@ namespace ThriveChurchOfficialAPI
             services.Configure<AppSettings>(options => Configuration.GetSection("OverrideEsvApiKey").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("EmailPW").Bind(options));
             services.Configure<AwsSettings>(options => Configuration.GetSection("S3").Bind(options));
+            services.Configure<JwtSettings>(options => Configuration.GetSection("JWT").Bind(options));
 
             services.AddSingleton(Configuration);
+
+            #region JWT Authentication Configuration
+
+            // Configure JWT Authentication
+            var jwtSettings = Configuration.GetSection("JWT");
+            var secretKey = jwtSettings["SecretKey"];
+            var key = Encoding.ASCII.GetBytes(secretKey);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.RequireHttpsMetadata = true;
+                options.SaveToken = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidateAudience = true,
+                    ValidAudience = jwtSettings["Audience"],
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromSeconds(60)
+                };
+            });
+
+            services.AddAuthorization();
+
+            #endregion
 
             // Manually register DI dependencies
             services.AddTransient(typeof(ISermonsService), typeof(SermonsService));
@@ -206,6 +274,12 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IConfigRepository), typeof(ConfigRepository));
             services.AddTransient(typeof(IMessagesRepository), typeof(MessagesRepository));
             services.AddTransient(typeof(IS3Repository), typeof(S3Repository));
+
+            // Authentication services
+            services.AddTransient(typeof(IUserRepository), typeof(UserRepository));
+            services.AddTransient(typeof(IRefreshTokenRepository), typeof(RefreshTokenRepository));
+            services.AddTransient(typeof(IAuthenticationService), typeof(AuthenticationService));
+            services.AddTransient(typeof(IJwtService), typeof(JwtService));
 
             #region Hangfire Tasks
 
@@ -282,6 +356,12 @@ namespace ThriveChurchOfficialAPI
             app.UseCors(MyAllowSpecificOrigins);
 
             Log.Information("CORS middleware configured.");
+
+            // Add authentication and authorization middleware
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            Log.Information("Authentication and authorization middleware configured.");
 
             app.UseEndpoints(endpoints =>
             {
