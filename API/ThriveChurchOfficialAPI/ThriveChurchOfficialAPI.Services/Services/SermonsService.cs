@@ -1477,6 +1477,18 @@ namespace ThriveChurchOfficialAPI.Services
                     response.Series = await ConvertSeriesToResponse(series);
                 }
             }
+            else if (request.SearchTarget == SearchTarget.Speaker)
+            {
+                // Search messages by speaker - only returns messages, not series
+                var messages = await _messagesRepository.SearchMessagesBySpeaker(
+                    request.SearchValue,
+                    request.SortDirection);
+
+                if (messages != null && messages.Any())
+                {
+                    response.Messages = SermonMessage.ConvertToResponseList(messages);
+                }
+            }
 
             return new SystemResponse<TagSearchResponse>(response, "Success!");
         }
@@ -1514,6 +1526,22 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return responseList;
+        }
+
+        /// <summary>
+        /// Gets all unique speaker names
+        /// </summary>
+        /// <returns>Collection of unique speaker names</returns>
+        public async Task<SystemResponse<IEnumerable<string>>> GetUniqueSpeakers()
+        {
+            var speakers = await _messagesRepository.GetUniqueSpeakers();
+
+            if (speakers == null || !speakers.Any())
+            {
+                return new SystemResponse<IEnumerable<string>>(new List<string>(), "No speakers found");
+            }
+
+            return new SystemResponse<IEnumerable<string>>(speakers, "Success!");
         }
     }
 

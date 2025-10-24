@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 using SortDirection = ThriveChurchOfficialAPI.Core.SortDirection;
 
@@ -211,6 +212,69 @@ namespace ThriveChurchOfficialAPI.Repositories
             var filter = Builders<SermonMessage>.Filter.AnyIn(m => m.Tags, tags);
 
             // Apply sort based on direction
+            IFindFluent<SermonMessage, SermonMessage> query = _messagesCollection.Find(filter);
+
+            if (sortDirection == SortDirection.Ascending)
+            {
+                query = query.SortBy(m => m.Date);
+            }
+            else
+            {
+                query = query.SortByDescending(m => m.Date);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Gets all unique speaker names from sermon messages
+        /// </summary>
+        /// <returns>Collection of unique speaker names</returns>
+        public async Task<IEnumerable<string>> GetUniqueSpeakers()
+        {
+            // Use aggregation pipeline to get distinct speakers
+            var stages = new List<BsonDocument>
+            {
+                // Stage 1: Group by Speaker to get unique values
+                new BsonDocument("$group", new BsonDocument
+                {
+                    { "_id", "$Speaker" }
+                }),
+
+                // Stage 2: Sort alphabetically
+                new BsonDocument("$sort", new BsonDocument("_id", 1)),
+
+                // Stage 3: Project to return just the speaker name
+                new BsonDocument("$project", new BsonDocument
+                {
+                    { "_id", 0 },
+                    { "speaker", "$_id" }
+                })
+            };
+
+            PipelineDefinition<SermonMessage, BsonDocument> pipeline =
+                PipelineDefinition<SermonMessage, BsonDocument>.Create(stages);
+
+            var cursor = await _messagesCollection.AggregateAsync(pipeline);
+            var results = await cursor.ToListAsync();
+
+            // Extract speaker names from BsonDocuments
+            return results.Select(doc => doc["speaker"].AsString).ToList();
+        }
+
+        /// <summary>
+        /// Search for messages by speaker name
+        /// </summary>
+        /// <param name="speaker">Speaker name to search for (case-insensitive)</param>
+        /// <param name="sortDirection">Sort direction by date</param>
+        /// <returns>Collection of matching messages</returns>
+        public async Task<IEnumerable<SermonMessage>> SearchMessagesBySpeaker(string speaker, SortDirection sortDirection)
+        {
+            // Case-insensitive exact match using regex
+            var filter = Builders<SermonMessage>.Filter.Regex(
+                m => m.Speaker,
+                new BsonRegularExpression($"^{Regex.Escape(speaker.Trim())}$", "i"));
+
             IFindFluent<SermonMessage, SermonMessage> query = _messagesCollection.Find(filter);
 
             if (sortDirection == SortDirection.Ascending)

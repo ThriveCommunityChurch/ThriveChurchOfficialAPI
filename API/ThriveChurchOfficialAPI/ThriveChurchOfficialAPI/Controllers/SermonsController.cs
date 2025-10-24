@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Services;
@@ -482,6 +483,28 @@ namespace ThriveChurchOfficialAPI.Controllers
             }
 
             return response.Result;
+        }
+
+        /// <summary>
+        /// Get all unique speaker names
+        /// </summary>
+        /// <returns>List of unique speaker names</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("speakers")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<IEnumerable<string>>> GetUniqueSpeakers()
+        {
+            var response = await _sermonsService.GetUniqueSpeakers();
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return Ok(response.Result);
         }
     }
 }

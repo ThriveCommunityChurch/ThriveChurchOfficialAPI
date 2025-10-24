@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
 
@@ -130,5 +131,11 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request">Tag search request</param>
         /// <returns>Matching messages or series</returns>
         Task<SystemResponse<TagSearchResponse>> SearchByTags(TagSearchRequest request);
+
+        /// <summary>
+        /// Gets all unique speaker names
+        /// </summary>
+        /// <returns>Collection of unique speaker names</returns>
+        Task<SystemResponse<IEnumerable<string>>> GetUniqueSpeakers();
     }
 }

@@ -13,18 +13,16 @@ namespace ThriveChurchOfficialAPI.Repositories
     public class RefreshTokenRepository : RepositoryBase<RefreshToken>, IRefreshTokenRepository
     {
         private readonly IMongoCollection<RefreshToken> _refreshTokens;
-        private readonly ILogger _logger;
         private const string COLLECTION_NAME = "RefreshTokens";
 
         /// <summary>
         /// Refresh Token Repository Constructor
         /// </summary>
         /// <param name="configuration">Configuration for database connection</param>
-        public RefreshTokenRepository(IConfiguration configuration, ILogger logger) 
+        public RefreshTokenRepository(IConfiguration configuration)
             : base(configuration)
         {
             _refreshTokens = DB.GetCollection<RefreshToken>(COLLECTION_NAME);
-            _logger = logger;
 
             // Create indexes for performance
             CreateIndexes();
@@ -68,7 +66,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             catch (Exception ex)
             {
                 // Log the error but don't fail startup
-                _logger.Warning($"Warning: Could not create refresh token indexes: {ex.Message}");
+                Log.Warning($"Warning: Could not create refresh token indexes: {ex.Message}");
             }
         }
 
