@@ -5,9 +5,9 @@ namespace ThriveChurchOfficialAPI.Core
     /// <summary>
     /// Response object for tag-based search results
     /// </summary>
-    public class TagSearchResponse
+    public class SearchResponse
     {
-        public TagSearchResponse()
+        public SearchResponse()
         {
             Messages = new List<SermonMessageResponse>();
             Series = new List<SermonSeriesResponse>();

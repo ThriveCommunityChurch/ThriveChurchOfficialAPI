@@ -463,9 +463,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
-        /// Search for messages or series by tags
+        /// Search for messages or series
         /// </summary>
-        /// <param name="request">Tag search request</param>
+        /// <param name="request">search request</param>
         /// <returns>Matching messages or series</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
@@ -473,9 +473,9 @@ namespace ThriveChurchOfficialAPI.Controllers
         [HttpPost("search")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
-        public async Task<ActionResult<TagSearchResponse>> SearchByTags([FromBody] TagSearchRequest request)
+        public async Task<ActionResult<SearchResponse>> Search([FromBody] SearchRequest request)
         {
-            var response = await _sermonsService.SearchByTags(request);
+            var response = await _sermonsService.Search(request);
 
             if (response.HasErrors)
             {

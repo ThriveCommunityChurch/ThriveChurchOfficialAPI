@@ -1438,20 +1438,20 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// Search for messages or series by tags
+        /// Search for messages or series
         /// </summary>
-        /// <param name="request">Tag search request</param>
+        /// <param name="request">Search request</param>
         /// <returns>Matching messages or series</returns>
-        public async Task<SystemResponse<TagSearchResponse>> SearchByTags(TagSearchRequest request)
+        public async Task<SystemResponse<SearchResponse>> Search(SearchRequest request)
         {
             // Validation using the request's static method
-            var validationResponse = TagSearchRequest.ValidateRequest(request);
+            var validationResponse = SearchRequest.ValidateRequest(request);
             if (validationResponse.HasErrors)
             {
-                return new SystemResponse<TagSearchResponse>(true, validationResponse.ErrorMessage);
+                return new SystemResponse<SearchResponse>(true, validationResponse.ErrorMessage);
             }
 
-            var response = new TagSearchResponse();
+            var response = new SearchResponse();
 
             if (request.SearchTarget == SearchTarget.Messages)
             {
@@ -1490,7 +1490,7 @@ namespace ThriveChurchOfficialAPI.Services
                 }
             }
 
-            return new SystemResponse<TagSearchResponse>(response, "Success!");
+            return new SystemResponse<SearchResponse>(response, "Success!");
         }
 
         /// <summary>

@@ -130,7 +130,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="request">Tag search request</param>
         /// <returns>Matching messages or series</returns>
-        Task<SystemResponse<TagSearchResponse>> SearchByTags(TagSearchRequest request);
+        Task<SystemResponse<SearchResponse>> Search(SearchRequest request);
 
         /// <summary>
         /// Gets all unique speaker names

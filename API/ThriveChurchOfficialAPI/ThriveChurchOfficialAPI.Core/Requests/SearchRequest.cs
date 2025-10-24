@@ -7,9 +7,9 @@ namespace ThriveChurchOfficialAPI.Core
     /// <summary>
     /// Request object for searching messages or series by tags
     /// </summary>
-    public class TagSearchRequest
+    public class SearchRequest
     {
-        public TagSearchRequest()
+        public SearchRequest()
         {
             Tags = new List<MessageTag>();
         }
@@ -42,7 +42,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         /// <param name="request">The request to validate</param>
         /// <returns>ValidationResponse indicating success or failure</returns>
-        public static ValidationResponse ValidateRequest(TagSearchRequest request)
+        public static ValidationResponse ValidateRequest(SearchRequest request)
         {
             if (request == null)
             {
