@@ -1462,7 +1462,7 @@ namespace ThriveChurchOfficialAPI.Services
 
                 if (messages != null && messages.Any())
                 {
-                    response.Messages = SermonMessage.ConvertToResponseList(messages);
+                    response.Messages = messages;
                 }
             }
             else if (request.SearchTarget == SearchTarget.Series)
