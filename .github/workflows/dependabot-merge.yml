@@ -12,9 +12,6 @@ jobs:
       pull-requests: write
       contents: write
 
-    # Optional: only run for Dependabot PRs
-    if: ${{ github.actor == 'dependabot[bot]' }}
-
     steps:
       - uses: actions/checkout@v3
       - uses: fastify/github-action-merge-dependabot@v3
