@@ -64,6 +64,11 @@ namespace ThriveChurchOfficialAPI.Core
         public string MessageId { get; set; }
 
         /// <summary>
+        /// Unique identifier of the series that this message is part of
+        /// </summary>
+        public string SeriesId { get; set; }
+
+        /// <summary>
         /// A collection of tags categorizing this message by topic/theme
         /// </summary>
         public IEnumerable<MessageTag> Tags { get; set; }

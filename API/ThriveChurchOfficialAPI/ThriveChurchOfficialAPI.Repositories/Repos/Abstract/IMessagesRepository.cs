@@ -64,8 +64,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="tags">Tags to search for</param>
         /// <param name="sortDirection">Sort direction by date</param>
-        /// <returns>Collection of matching messages</returns>
-        Task<IEnumerable<SermonMessage>> SearchMessagesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection);
+        /// <returns>Collection of matching messages as SermonMessageResponse</returns>
+        Task<IEnumerable<SermonMessageResponse>> SearchMessagesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection);
 
         /// <summary>
         /// Gets all unique speaker names from sermon messages

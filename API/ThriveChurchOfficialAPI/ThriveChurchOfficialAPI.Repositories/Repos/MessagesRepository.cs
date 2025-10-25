@@ -205,25 +205,70 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// </summary>
         /// <param name="tags">Tags to search for</param>
         /// <param name="sortDirection">Sort direction by date</param>
-        /// <returns>Collection of matching messages</returns>
-        public async Task<IEnumerable<SermonMessage>> SearchMessagesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection)
+        /// <returns>Collection of matching messages as SermonMessageResponse</returns>
+        public async Task<IEnumerable<SermonMessageResponse>> SearchMessagesByTags(IEnumerable<MessageTag> tags, SortDirection sortDirection)
         {
-            // Create filter for messages that contain any of the specified tags
-            var filter = Builders<SermonMessage>.Filter.AnyIn(m => m.Tags, tags);
+            // Convert tags to their integer values for MongoDB query
+            var tagValues = tags.Select(t => (int)t).ToList();
 
-            // Apply sort based on direction
-            IFindFluent<SermonMessage, SermonMessage> query = _messagesCollection.Find(filter);
+            // Determine sort direction
+            var sortOrder = sortDirection == SortDirection.Ascending ? 1 : -1;
 
-            if (sortDirection == SortDirection.Ascending)
+            // Build aggregation pipeline - filter first for best performance
+            var stages = new List<BsonDocument>
             {
-                query = query.SortBy(m => m.Date);
-            }
-            else
-            {
-                query = query.SortByDescending(m => m.Date);
-            }
+                // Stage 1: Filter messages that have at least one matching tag
+                new BsonDocument("$match", new BsonDocument
+                {
+                    { "Tags", new BsonDocument("$in", new BsonArray(tagValues)) }
+                }),
 
-            return await query.ToListAsync();
+                // Stage 2: Lookup the series for each matching message to get SeriesId
+                new BsonDocument("$lookup", new BsonDocument
+                {
+                    { "from", "Series" },
+                    { "localField", "SeriesId" },
+                    { "foreignField", "_id" },
+                    { "as", "series" }
+                }),
+
+                // Stage 3: Unwind the series array (each message has one series)
+                new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$series" },
+                    { "preserveNullAndEmptyArrays", true }
+                }),
+
+                // Stage 4: Sort by Date
+                new BsonDocument("$sort", new BsonDocument("Date", sortOrder)),
+
+                // Stage 5: Project into SermonMessageResponse format
+                new BsonDocument("$project", new BsonDocument
+                {
+                    { "_id", 0 },
+                    { "MessageId", "$_id" },
+                    { "SeriesId", "$series._id" },
+                    { "AudioUrl", 1 },
+                    { "AudioDuration", 1 },
+                    { "AudioFileSize", 1 },
+                    { "VideoUrl", 1 },
+                    { "PassageRef", 1 },
+                    { "Speaker", 1 },
+                    { "Title", 1 },
+                    { "Summary", 1 },
+                    { "Date", 1 },
+                    { "PlayCount", 1 },
+                    { "Tags", 1 }
+                })
+            };
+
+            // Execute pipeline on Messages collection
+            PipelineDefinition<SermonMessage, SermonMessageResponse> pipeline =
+                PipelineDefinition<SermonMessage, SermonMessageResponse>.Create(stages);
+
+            var cursor = await _messagesCollection.AggregateAsync(pipeline);
+
+            return cursor.ToList();
         }
 
         /// <summary>
