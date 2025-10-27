@@ -435,10 +435,12 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         }
 
         [TestMethod]
-        public async Task ImportSermonData_NonExistentSeriesId_SkipsSeriesAndAddsToSkippedItems()
+        public async Task ImportSermonData_NonExistentSeriesId_InsertsNewSeries()
         {
             // Arrange
             var seriesId = "507f1f77bcf86cd799439011";
+            var newSeries = CreateTestSermonSeries(seriesId, "Test Series", "test-series");
+
             var request = new ImportSermonDataRequest
             {
                 Series = new List<SermonSeriesResponse>
@@ -457,6 +459,15 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId(seriesId))
                 .ReturnsAsync(new SystemResponse<SermonSeries>(true, "Series not found"));
 
+            _mockSermonsRepository.Setup(r => r.CreateNewSermonSeries(It.IsAny<SermonSeries>()))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(newSeries, "Success"));
+
+            // Setup cache remove
+            object cacheValue;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+            _mockCache.Setup(c => c.Remove(It.IsAny<object>()));
+
             // Act
             var result = await _sermonsService.ImportSermonData(request);
 
@@ -464,22 +475,26 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             Assert.IsNotNull(result);
             Assert.IsFalse(result.HasErrors);
             Assert.AreEqual(1, result.Result.TotalSeriesProcessed);
-            Assert.AreEqual(0, result.Result.TotalSeriesUpdated);
-            Assert.AreEqual(1, result.Result.TotalSeriesSkipped);
-            Assert.AreEqual(1, result.Result.SkippedItems.Count());
+            Assert.AreEqual(1, result.Result.TotalSeriesUpdated); // Upserted (inserted)
+            Assert.AreEqual(0, result.Result.TotalSeriesSkipped);
+            Assert.AreEqual(0, result.Result.SkippedItems.Count());
 
-            var skippedItem = result.Result.SkippedItems.First();
-            Assert.AreEqual(seriesId, skippedItem.Id);
-            Assert.AreEqual("Series", skippedItem.Type);
+            // Verify CreateNewSermonSeries was called
+            _mockSermonsRepository.Verify(r => r.CreateNewSermonSeries(It.Is<SermonSeries>(s =>
+                s.Id == seriesId &&
+                s.Name == "Test Series" &&
+                s.Slug == "test-series"
+            )), Times.Once);
         }
 
         [TestMethod]
-        public async Task ImportSermonData_NonExistentMessageId_SkipsMessageAndAddsToSkippedItems()
+        public async Task ImportSermonData_NonExistentMessageId_InsertsNewMessage()
         {
             // Arrange
             var seriesId = "507f1f77bcf86cd799439011";
             var messageId = "507f1f77bcf86cd799439012";
             var existingSeries = CreateTestSermonSeries(seriesId, "Test Series", "test-series");
+            var newMessage = CreateTestSermonMessage(messageId, seriesId, "Test Message");
 
             var request = new ImportSermonDataRequest
             {
@@ -515,6 +530,9 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetMessageById(messageId))
                 .ReturnsAsync(new SystemResponse<SermonMessage>(true, "Message not found"));
 
+            _mockMessagesRepository.Setup(r => r.CreateNewMessages(It.IsAny<IEnumerable<SermonMessage>>()))
+                .ReturnsAsync(new SystemResponse<IEnumerable<SermonMessage>>(new[] { newMessage }, "Success"));
+
             // Setup cache remove
             object cacheValue;
             _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
@@ -528,13 +546,18 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             Assert.IsNotNull(result);
             Assert.IsFalse(result.HasErrors);
             Assert.AreEqual(1, result.Result.TotalMessagesProcessed);
-            Assert.AreEqual(0, result.Result.TotalMessagesUpdated);
-            Assert.AreEqual(1, result.Result.TotalMessagesSkipped);
-            Assert.AreEqual(1, result.Result.SkippedItems.Count());
+            Assert.AreEqual(1, result.Result.TotalMessagesUpdated); // Upserted (inserted)
+            Assert.AreEqual(0, result.Result.TotalMessagesSkipped);
+            Assert.AreEqual(0, result.Result.SkippedItems.Count());
 
-            var skippedItem = result.Result.SkippedItems.First();
-            Assert.AreEqual(messageId, skippedItem.Id);
-            Assert.AreEqual("Message", skippedItem.Type);
+            // Verify CreateNewMessages was called
+            _mockMessagesRepository.Verify(r => r.CreateNewMessages(It.Is<IEnumerable<SermonMessage>>(msgs =>
+                msgs.Count() == 1 &&
+                msgs.First().Id == messageId &&
+                msgs.First().SeriesId == seriesId &&
+                msgs.First().Title == "Test Message" &&
+                msgs.First().Speaker == "Test Speaker"
+            )), Times.Once);
         }
 
         #endregion

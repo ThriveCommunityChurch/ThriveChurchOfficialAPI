@@ -133,6 +133,7 @@ namespace ThriveChurchOfficialAPI.Core
                     AudioUrl = message.AudioUrl,
                     Date = message.Date,
                     MessageId = message.Id,
+                    SeriesId = message.SeriesId,
                     PassageRef = message.PassageRef,
                     PlayCount = message.PlayCount,
                     Speaker = message.Speaker,
