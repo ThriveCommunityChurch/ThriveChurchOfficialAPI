@@ -506,5 +506,56 @@ namespace ThriveChurchOfficialAPI.Controllers
 
             return Ok(response.Result);
         }
+
+        /// <summary>
+        /// Export all sermon series and message data as JSON for backup purposes
+        /// </summary>
+        /// <returns>Export data containing all series and messages with metadata</returns>
+        /// <response code="200">OK - Export successful</response>
+        /// <response code="401">Unauthorized - JWT authentication required</response>
+        /// <response code="500">Internal Server Error - Export operation failed</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpPost("export")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<ExportSermonDataResponse>> ExportAllSermonData()
+        {
+            var response = await _sermonsService.ExportAllSermonData();
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return Ok(response.Result);
+        }
+
+        /// <summary>
+        /// Import sermon series and message data from JSON for restore purposes
+        /// </summary>
+        /// <param name="request">Import request containing series and messages to update</param>
+        /// <returns>Import statistics including updated and skipped items</returns>
+        /// <response code="200">OK - Import successful</response>
+        /// <response code="400">Bad Request - Validation failed</response>
+        /// <response code="401">Unauthorized - JWT authentication required</response>
+        /// <response code="500">Internal Server Error - Import operation failed</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpPost("import")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<ImportSermonDataResponse>> ImportSermonData([FromBody] ImportSermonDataRequest request)
+        {
+            var response = await _sermonsService.ImportSermonData(request);
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return Ok(response.Result);
+        }
     }
 }

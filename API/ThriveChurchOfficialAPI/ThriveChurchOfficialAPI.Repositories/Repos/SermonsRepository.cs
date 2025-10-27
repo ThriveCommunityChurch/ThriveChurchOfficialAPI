@@ -345,7 +345,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             return new SystemResponse<LiveSermons>(response, "Success!");
         }
-        
+
         /// <summary>
         /// Updates the LiveStreaming object in Mongo
         /// </summary>
@@ -403,7 +403,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             // make the change to reflect that this sermon was just updated
             liveSermonsResponse.IsLive = false;
             liveSermonsResponse.SpecialEventTimes = null;
-            
+
             if (nextLive.HasValue && nextLive.Value.Kind == DateTimeKind.Utc)
             {
                 liveSermonsResponse.NextLive = nextLive;
