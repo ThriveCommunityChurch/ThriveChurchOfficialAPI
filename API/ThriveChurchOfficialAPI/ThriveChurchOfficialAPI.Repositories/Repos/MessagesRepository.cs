@@ -1,12 +1,12 @@
-﻿using System;
-using Microsoft.Extensions.Configuration;
-using MongoDB.Driver;
+﻿using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
+using MongoDB.Driver;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 using SortDirection = ThriveChurchOfficialAPI.Core.SortDirection;
 
@@ -246,8 +246,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                 new BsonDocument("$project", new BsonDocument
                 {
                     { "_id", 0 },
-                    { "MessageId", "$_id" },
-                    { "SeriesId", "$series._id" },
+                    { "MessageId", new BsonDocument("$toString", "$_id" )},
+                    { "SeriesId", new BsonDocument("$toString", "$series._id" )},
                     { "AudioUrl", 1 },
                     { "AudioDuration", 1 },
                     { "AudioFileSize", 1 },
