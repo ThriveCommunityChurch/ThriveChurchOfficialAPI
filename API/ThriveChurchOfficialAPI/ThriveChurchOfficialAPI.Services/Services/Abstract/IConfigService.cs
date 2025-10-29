@@ -11,14 +11,20 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="setting"></param>
         /// <returns></returns>
-        Task<SystemResponse<ConfigurationResponse>> GetConfigValue(string setting);  
-        
+        Task<SystemResponse<ConfigurationResponse>> GetConfigValue(string setting);
+
         /// <summary>
         /// Get a value for a config setting
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
         Task<SystemResponse<ConfigurationCollectionResponse>> GetConfigValues(IEnumerable<string> Keys);
+
+        /// <summary>
+        /// Get all config settings
+        /// </summary>
+        /// <returns></returns>
+        Task<SystemResponse<ConfigurationCollectionResponse>> GetAllConfigs();
 
         /// <summary>
         /// Set values for config settings
@@ -33,5 +39,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="csv"></param>
         /// <returns></returns>
         Task<SystemResponse<string>> SetConfigValuesFromCSV(string csv);
+
+        /// <summary>
+        /// Delete a config setting by key
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <returns></returns>
+        Task<SystemResponse<string>> DeleteConfig(string setting);
     }
 }

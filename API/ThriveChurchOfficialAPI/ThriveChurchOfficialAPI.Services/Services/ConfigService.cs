@@ -308,5 +308,71 @@ namespace ThriveChurchOfficialAPI.Services
 
             return new SystemResponse<ConfigurationCollectionResponse>(response, "Success!");
         }
+
+        /// <summary>
+        /// Get all config settings
+        /// </summary>
+        /// <returns></returns>
+        public async Task<SystemResponse<ConfigurationCollectionResponse>> GetAllConfigs()
+        {
+            var settingResponse = await _configRepository.GetAllConfigs();
+            if (settingResponse.HasErrors)
+            {
+                return new SystemResponse<ConfigurationCollectionResponse>(true, settingResponse.ErrorMessage);
+            }
+
+            var foundValues = settingResponse.Result;
+            var finalList = new List<ConfigurationResponse>();
+
+            foreach (var setting in foundValues)
+            {
+                var config = new ConfigurationResponse
+                {
+                    Key = setting.Key,
+                    Value = setting.Value,
+                    Type = setting.Type
+                };
+
+                finalList.Add(config);
+
+                // Cache each config as we retrieve them
+                _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
+            }
+
+            var response = new ConfigurationCollectionResponse
+            {
+                Configs = finalList
+            };
+
+            return new SystemResponse<ConfigurationCollectionResponse>(response, "Success!");
+        }
+
+        /// <summary>
+        /// Delete a config setting by key
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<string>> DeleteConfig(string setting)
+        {
+            #region Validations
+
+            if (string.IsNullOrWhiteSpace(setting))
+            {
+                return new SystemResponse<string>(true, SystemMessages.EmptyRequest);
+            }
+
+            #endregion
+
+            var deleteResponse = await _configRepository.DeleteConfig(setting);
+            if (deleteResponse.HasErrors)
+            {
+                return new SystemResponse<string>(true, deleteResponse.ErrorMessage);
+            }
+
+            // Remove from cache
+            _cache.Remove(string.Format(CacheKeys.GetConfig, setting));
+
+            return new SystemResponse<string>(deleteResponse.Result, "Success!");
+        }
     }
 }

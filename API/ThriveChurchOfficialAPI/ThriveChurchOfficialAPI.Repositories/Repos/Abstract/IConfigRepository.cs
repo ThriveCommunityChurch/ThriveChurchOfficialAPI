@@ -21,10 +21,23 @@ namespace ThriveChurchOfficialAPI.Repositories
         Task<SystemResponse<IEnumerable<ConfigSetting>>> GetConfigValues(IEnumerable<string> request);
 
         /// <summary>
+        /// Get all config settings
+        /// </summary>
+        /// <returns></returns>
+        Task<SystemResponse<IEnumerable<ConfigSetting>>> GetAllConfigs();
+
+        /// <summary>
         /// Set values for config settings
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
         Task<SystemResponse<string>> SetConfigValues(SetConfigRequest request);
+
+        /// <summary>
+        /// Delete a config setting by key
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <returns></returns>
+        Task<SystemResponse<string>> DeleteConfig(string setting);
     }
 }
