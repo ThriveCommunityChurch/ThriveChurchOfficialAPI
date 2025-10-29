@@ -247,6 +247,25 @@ namespace ThriveChurchOfficialAPI.Repositories
         }
 
         /// <summary>
+        /// Get all config settings
+        /// </summary>
+        /// <returns></returns>
+        public async Task<SystemResponse<IEnumerable<ConfigSetting>>> GetAllConfigs()
+        {
+            var filter = Builders<ConfigSetting>.Filter.Empty;
+
+            var cursor = await _configCollection.FindAsync(filter);
+
+            var found = cursor.ToList();
+            if (found == null || !found.Any())
+            {
+                return new SystemResponse<IEnumerable<ConfigSetting>>(true, SystemMessages.UnableToFindConfigs);
+            }
+
+            return new SystemResponse<IEnumerable<ConfigSetting>>(found, "Success!");
+        }
+
+        /// <summary>
         /// Set values for config settings
         /// </summary>
         /// <param name="request"></param>
@@ -276,6 +295,29 @@ namespace ThriveChurchOfficialAPI.Repositories
             var updateResponse = $"{request.Configurations.Count()} configurations updated";
 
             return new SystemResponse<string>(updateResponse, "Success!");
+        }
+
+        /// <summary>
+        /// Delete a config setting by key
+        /// </summary>
+        /// <param name="setting"></param>
+        /// <returns></returns>
+        public async Task<SystemResponse<string>> DeleteConfig(string setting)
+        {
+            if (string.IsNullOrEmpty(setting))
+            {
+                return new SystemResponse<string>(true, string.Format(SystemMessages.NullProperty, nameof(setting)));
+            }
+
+            var filter = Builders<ConfigSetting>.Filter.Eq(i => i.Key, setting);
+
+            var deleteResult = await _configCollection.DeleteOneAsync(filter);
+            if (deleteResult.DeletedCount == 0)
+            {
+                return new SystemResponse<string>(true, string.Format(SystemMessages.UnableToFindConfigForKey, setting));
+            }
+
+            return new SystemResponse<string>($"Configuration '{setting}' deleted successfully", "Success!");
         }
     }
 }
