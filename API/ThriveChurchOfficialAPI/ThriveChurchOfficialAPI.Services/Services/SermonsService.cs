@@ -1769,7 +1769,8 @@ namespace ThriveChurchOfficialAPI.Services
                                 Title = messageData.Title,
                                 Summary = messageData.Summary,
                                 Date = messageData.Date.Value,
-                                Tags = messageData.Tags?.ToList()
+                                Tags = messageData.Tags?.ToList(),
+                                WaveformData = messageData.WaveformData?.ToList()
                                 // PlayCount is not updated during import to preserve actual usage data
                             };
 
