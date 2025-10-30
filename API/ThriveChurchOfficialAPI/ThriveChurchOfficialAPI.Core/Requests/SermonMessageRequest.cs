@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -16,6 +17,7 @@ namespace ThriveChurchOfficialAPI.Core
             Title = null;
             Summary = null;
             Tags = new List<MessageTag>();
+            WaveformData = new List<double>();
         }
 
         /// <summary>
@@ -82,6 +84,11 @@ namespace ThriveChurchOfficialAPI.Core
         public IEnumerable<MessageTag> Tags { get; set; }
 
         /// <summary>
+        /// A collection of normalized values corresponding to waveform peaks.
+        /// </summary>
+        public List<double> WaveformData { get; set; }
+
+        /// <summary>
         /// Validates the object
         /// </summary>
         /// <param name="request"></param>
@@ -107,6 +114,11 @@ namespace ThriveChurchOfficialAPI.Core
             if (request?.AudioDuration <= 0)
             {
                 return new ValidationResponse(true, SystemMessages.AudioDurationTooShort);
+            }
+
+            if (!string.IsNullOrEmpty(request.AudioUrl) && (request.WaveformData == null || !request.WaveformData.Any()))
+            {
+                return new ValidationResponse(true, "Waveform data is required when creating a message with audio.");
             }
 
             return new ValidationResponse("Success!");

@@ -249,6 +249,29 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="MessageId"></param>
+        /// <returns>Waveform Data</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("series/message/{MessageId}/waveforms")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<List<double>>> GetMessageWaveformData([BindRequired] string MessageId) 
+        {
+            var response = await _sermonsService.GetMessageWaveformData(MessageId);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
         /// Get Livestreaming information
         /// </summary>
         /// <returns>Live Streaming info</returns>

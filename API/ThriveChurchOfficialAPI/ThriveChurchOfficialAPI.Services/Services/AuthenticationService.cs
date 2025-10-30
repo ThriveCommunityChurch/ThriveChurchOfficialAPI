@@ -73,7 +73,7 @@ namespace ThriveChurchOfficialAPI.Services
                 // Check if user is active
                 if (!user.IsActive)
                 {
-                    // Log internal details but return generic message
+                    // Return generic error message to prevent user enumeration
                     _logger.LogError("Login attempt for inactive user: {UserId}", user.Id);
                     return new SystemResponse<LoginResponse>(true, AuthenticationMessages.LoginFailed);
                 }
@@ -81,7 +81,7 @@ namespace ThriveChurchOfficialAPI.Services
                 // Check if user is locked out
                 if (user.IsLockedOut)
                 {
-                    // Log internal details but return generic message
+                    // Return generic error message to prevent user enumeration
                     _logger.LogError("Login attempt for locked out user: {UserId}, lockout ends: {LockoutEnd} UTC", user.Id, user.LockoutEnd);
                     return new SystemResponse<LoginResponse>(true, AuthenticationMessages.LoginFailed);
                 }

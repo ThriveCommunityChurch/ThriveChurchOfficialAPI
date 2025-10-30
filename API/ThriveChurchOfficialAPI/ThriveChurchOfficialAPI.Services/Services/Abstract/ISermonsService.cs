@@ -150,5 +150,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request">Import request containing series and messages to update</param>
         /// <returns>SystemResponse containing import statistics and skipped items</returns>
         Task<SystemResponse<ImportSermonDataResponse>> ImportSermonData(ImportSermonDataRequest request);
+
+        /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns>Waveform Data</returns>
+        Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId);
     }
 }

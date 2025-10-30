@@ -238,7 +238,8 @@ namespace ThriveChurchOfficialAPI.Services
                     Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     SeriesId = createdSeries.Id,
-                    Tags = message.Tags?.ToList() ?? new List<MessageTag>()
+                    Tags = message.Tags?.ToList() ?? new List<MessageTag>(),
+                    WaveformData = message.WaveformData?.ToList() ?? new List<double>()
                 });
             }
 
@@ -316,7 +317,8 @@ namespace ThriveChurchOfficialAPI.Services
                     Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     SeriesId = seriesId,
-                    Tags = message.Tags?.ToList() ?? new List<MessageTag>()
+                    Tags = message.Tags?.ToList() ?? new List<MessageTag>(),
+                    WaveformData = message.WaveformData,
                 });
             }
 
@@ -1121,7 +1123,7 @@ namespace ThriveChurchOfficialAPI.Services
                                 Value = totDuration.HasValue ? totDuration.Value / countForWeek : null
                             });
                         }
-                        response.Data = dataCollection.OrderBy(i => i.Date); ;
+                        response.Data = dataCollection.OrderBy(i => i.Date);
                         break;
 
                     case StatsAggregateDisplayType.Monthly:
@@ -1157,7 +1159,7 @@ namespace ThriveChurchOfficialAPI.Services
                                 Value = totDuration.HasValue ? totDuration.Value / countForMonth : null
                             });
                         }
-                        response.Data = dataCollection.OrderBy(i => i.Date); ;
+                        response.Data = dataCollection.OrderBy(i => i.Date);
                         break;
 
                     case StatsAggregateDisplayType.Yearly:
@@ -1732,6 +1734,7 @@ namespace ThriveChurchOfficialAPI.Services
                                 Summary = messageData.Summary,
                                 Date = messageData.Date.Value,
                                 Tags = messageData.Tags?.ToList(),
+                                WaveformData = messageData.WaveformData?.ToList(),
                                 PlayCount = 0 // Initialize PlayCount for new messages
                                 // LastUpdated and CreateDate will be set by the repository
                             };
@@ -1823,6 +1826,22 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return new SystemResponse<ImportSermonDataResponse>(importResponse, "Success!");
+        }
+
+        /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns>Waveform Data</returns>
+        public async Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId)
+        {
+            var messagesResponse = await _messagesRepository.GetMessageWaveformData(messageId);
+            if (messagesResponse.HasErrors)
+            {
+                return new SystemResponse<List<double>>(true, messagesResponse.ErrorMessage);
+            }
+
+            return messagesResponse;
         }
     }
 

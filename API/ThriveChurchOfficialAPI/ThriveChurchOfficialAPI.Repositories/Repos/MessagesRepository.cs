@@ -175,7 +175,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                                                        .Set(x => x.Summary, message.Summary)
                                                        .Set(x => x.VideoUrl, message.VideoUrl)
                                                        .Set(x => x.PassageRef, message.PassageRef)
-                                                       .Set(x => x.Tags, message.Tags);
+                                                       .Set(x => x.Tags, message.Tags)
+                                                       .Set(x => x.WaveformData, message.WaveformData);
 
             var messageResponse = await _messagesCollection.FindOneAndUpdateAsync(filter, update,
                 new FindOneAndUpdateOptions<SermonMessage>
@@ -332,6 +333,28 @@ namespace ThriveChurchOfficialAPI.Repositories
             }
 
             return await query.ToListAsync();
+        }
+
+        /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns>Waveform Data</returns>
+        public async Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId)
+        {
+            if (!IsValidObjectId(messageId))
+            {
+                return new SystemResponse<List<double>>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "message", messageId));
+            }
+
+            var filter = Builders<SermonMessage>.Filter.Eq(i => i.Id, messageId);
+
+            var cursor = await _messagesCollection.FindAsync(filter, new FindOptions<SermonMessage, List<double>>
+            {
+                Projection = Builders<SermonMessage>.Projection.Exclude(m => m.Id).Include(m => m.WaveformData),
+            });
+
+            return new SystemResponse<List<double>>(cursor.First(), "Success!");
         }
     }
 }

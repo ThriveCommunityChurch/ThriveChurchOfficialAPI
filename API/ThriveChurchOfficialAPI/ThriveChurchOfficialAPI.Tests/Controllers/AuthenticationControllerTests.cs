@@ -25,6 +25,13 @@ namespace ThriveChurchOfficialAPI.Tests.Controllers
         {
             _mockAuthenticationService = new Mock<IAuthenticationService>();
             _controller = new AuthenticationController(_mockAuthenticationService.Object);
+
+            // Setup controller context with HttpContext to avoid NullReferenceException
+            var httpContext = new DefaultHttpContext();
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
         }
 
         #region Login Tests - Basic HTTP Mapping

@@ -123,6 +123,12 @@ namespace ThriveChurchOfficialAPI.Core
                             return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, "Messages.Date"));
                         }
 
+                        // Validate AudioDuration if provided
+                        if (message.AudioDuration.HasValue && message.AudioDuration <= 0)
+                        {
+                            return new ValidationResponse(true, SystemMessages.AudioDurationTooShort);
+                        }
+
                         // Validate tags don't contain Unknown
                         if (message.Tags != null && message.Tags.Any(t => t == MessageTag.Unknown))
                         {
