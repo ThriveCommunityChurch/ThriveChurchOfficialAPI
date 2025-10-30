@@ -349,12 +349,15 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             var filter = Builders<SermonMessage>.Filter.Eq(i => i.Id, messageId);
 
-            var cursor = await _messagesCollection.FindAsync(filter, new FindOptions<SermonMessage, List<double>>
-            {
-                Projection = Builders<SermonMessage>.Projection.Exclude(m => m.Id).Include(m => m.WaveformData),
-            });
+            var cursor = await _messagesCollection.FindAsync(filter);
 
-            return new SystemResponse<List<double>>(cursor.First(), "Success!");
+            var document = cursor.FirstOrDefault();
+            if (document == default)
+            {
+                return new SystemResponse<List<double>>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "message", messageId));
+            }
+
+            return new SystemResponse<List<double>>(document.WaveformData, "Success!");
         }
     }
 }
