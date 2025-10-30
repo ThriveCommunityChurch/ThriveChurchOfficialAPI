@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
+using ThriveChurchOfficialAPI.Core.Constants;
 using ThriveChurchOfficialAPI.Repositories;
 using ThriveChurchOfficialAPI.Services;
 
@@ -166,7 +167,7 @@ namespace ThriveChurchOfficialAPI.Tests.Integration
 
             // Assert
             Assert.IsTrue(loginResult.HasErrors);
-            Assert.AreEqual("User account is inactive", loginResult.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, loginResult.ErrorMessage);
             Assert.IsNull(loginResult.Result);
         }
 

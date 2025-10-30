@@ -77,6 +77,31 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
+        /// Get all config settings
+        /// </summary>
+        /// <returns>ConfigurationCollectionResponse object</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpGet("all")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<ActionResult<ConfigurationCollectionResponse>> GetAllConfigs()
+        {
+            var response = await _configService.GetAllConfigs();
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
         /// Set values for config settings
         /// </summary>
         /// <returns>SermonsSummary object</returns>
@@ -117,6 +142,31 @@ namespace ThriveChurchOfficialAPI.Controllers
         public async Task<ActionResult<string>> SetConfigValuesFromCSV([FromBody] string csv)
         {
             var response = await _configService.SetConfigValuesFromCSV(csv);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Delete a config setting by key
+        /// </summary>
+        /// <returns>Success message</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpDelete]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<ActionResult<string>> DeleteConfig([BindRequired] string setting)
+        {
+            var response = await _configService.DeleteConfig(setting);
 
             if (response.HasErrors)
             {

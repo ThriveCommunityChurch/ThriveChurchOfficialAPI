@@ -249,6 +249,29 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="MessageId"></param>
+        /// <returns>Waveform Data</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        [Produces("application/json")]
+        [HttpGet("series/message/{MessageId}/waveforms")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<List<double>>> GetMessageWaveformData([BindRequired] string MessageId) 
+        {
+            var response = await _sermonsService.GetMessageWaveformData(MessageId);
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
         /// Get Livestreaming information
         /// </summary>
         /// <returns>Live Streaming info</returns>
@@ -499,6 +522,57 @@ namespace ThriveChurchOfficialAPI.Controllers
         {
             var response = await _sermonsService.GetUniqueSpeakers();
 
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return Ok(response.Result);
+        }
+
+        /// <summary>
+        /// Export all sermon series and message data as JSON for backup purposes
+        /// </summary>
+        /// <returns>Export data containing all series and messages with metadata</returns>
+        /// <response code="200">OK - Export successful</response>
+        /// <response code="401">Unauthorized - JWT authentication required</response>
+        /// <response code="500">Internal Server Error - Export operation failed</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpPost("export")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<ExportSermonDataResponse>> ExportAllSermonData()
+        {
+            var response = await _sermonsService.ExportAllSermonData();
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return Ok(response.Result);
+        }
+
+        /// <summary>
+        /// Import sermon series and message data from JSON for restore purposes
+        /// </summary>
+        /// <param name="request">Import request containing series and messages to update</param>
+        /// <returns>Import statistics including updated and skipped items</returns>
+        /// <response code="200">OK - Import successful</response>
+        /// <response code="400">Bad Request - Validation failed</response>
+        /// <response code="401">Unauthorized - JWT authentication required</response>
+        /// <response code="500">Internal Server Error - Import operation failed</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpPost("import")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
+        public async Task<ActionResult<ImportSermonDataResponse>> ImportSermonData([FromBody] ImportSermonDataRequest request)
+        {
+            var response = await _sermonsService.ImportSermonData(request);
             if (response.HasErrors)
             {
                 return StatusCode(400, response.ErrorMessage);

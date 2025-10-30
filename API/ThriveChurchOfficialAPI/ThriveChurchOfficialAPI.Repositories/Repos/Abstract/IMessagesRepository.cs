@@ -80,5 +80,12 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <param name="sortDirection">Sort direction by date</param>
         /// <returns>Collection of matching messages</returns>
         Task<IEnumerable<SermonMessage>> SearchMessagesBySpeaker(string speaker, SortDirection sortDirection);
+
+        /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns>Waveform Data</returns>
+        Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId);
     }
 }

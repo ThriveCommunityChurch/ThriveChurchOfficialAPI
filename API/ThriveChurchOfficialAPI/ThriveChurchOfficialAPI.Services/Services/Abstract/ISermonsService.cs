@@ -137,5 +137,25 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <returns>Collection of unique speaker names</returns>
         Task<SystemResponse<IEnumerable<string>>> GetUniqueSpeakers();
+
+        /// <summary>
+        /// Exports all sermon series and message data as JSON for backup purposes
+        /// </summary>
+        /// <returns>SystemResponse containing export data with all series and messages</returns>
+        Task<SystemResponse<ExportSermonDataResponse>> ExportAllSermonData();
+
+        /// <summary>
+        /// Imports sermon series and message data from JSON for restore purposes
+        /// </summary>
+        /// <param name="request">Import request containing series and messages to update</param>
+        /// <returns>SystemResponse containing import statistics and skipped items</returns>
+        Task<SystemResponse<ImportSermonDataResponse>> ImportSermonData(ImportSermonDataRequest request);
+
+        /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns>Waveform Data</returns>
+        Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId);
     }
 }

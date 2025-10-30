@@ -6,6 +6,7 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using ThriveChurchOfficialAPI.Core;
+using ThriveChurchOfficialAPI.Core.Constants;
 using ThriveChurchOfficialAPI.Repositories;
 using ThriveChurchOfficialAPI.Services;
 
@@ -218,7 +219,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("User account is inactive", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -468,7 +469,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.IsTrue(result.ErrorMessage.Contains("locked out"));
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, result.ErrorMessage);
         }
 
         [TestMethod]

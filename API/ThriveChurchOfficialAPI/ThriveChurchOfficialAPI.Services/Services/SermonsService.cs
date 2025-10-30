@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
 using NCrontab;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -237,7 +238,8 @@ namespace ThriveChurchOfficialAPI.Services
                     Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     SeriesId = createdSeries.Id,
-                    Tags = message.Tags?.ToList() ?? new List<MessageTag>()
+                    Tags = message.Tags?.ToList() ?? new List<MessageTag>(),
+                    WaveformData = message.WaveformData?.ToList() ?? new List<double>()
                 });
             }
 
@@ -315,7 +317,8 @@ namespace ThriveChurchOfficialAPI.Services
                     Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
                     SeriesId = seriesId,
-                    Tags = message.Tags?.ToList() ?? new List<MessageTag>()
+                    Tags = message.Tags?.ToList() ?? new List<MessageTag>(),
+                    WaveformData = message.WaveformData,
                 });
             }
 
@@ -1120,7 +1123,7 @@ namespace ThriveChurchOfficialAPI.Services
                                 Value = totDuration.HasValue ? totDuration.Value / countForWeek : null
                             });
                         }
-                        response.Data = dataCollection.OrderBy(i => i.Date); ;
+                        response.Data = dataCollection.OrderBy(i => i.Date);
                         break;
 
                     case StatsAggregateDisplayType.Monthly:
@@ -1156,7 +1159,7 @@ namespace ThriveChurchOfficialAPI.Services
                                 Value = totDuration.HasValue ? totDuration.Value / countForMonth : null
                             });
                         }
-                        response.Data = dataCollection.OrderBy(i => i.Date); ;
+                        response.Data = dataCollection.OrderBy(i => i.Date);
                         break;
 
                     case StatsAggregateDisplayType.Yearly:
@@ -1535,13 +1538,310 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<SystemResponse<IEnumerable<string>>> GetUniqueSpeakers()
         {
             var speakers = await _messagesRepository.GetUniqueSpeakers();
-
             if (speakers == null || !speakers.Any())
             {
                 return new SystemResponse<IEnumerable<string>>(new List<string>(), "No speakers found");
             }
 
             return new SystemResponse<IEnumerable<string>>(speakers, "Success!");
+        }
+
+        /// <summary>
+        /// Exports all sermon series and message data as JSON for backup purposes
+        /// </summary>
+        /// <returns>SystemResponse containing export data with all series and messages</returns>
+        public async Task<SystemResponse<ExportSermonDataResponse>> ExportAllSermonData()
+        {
+            // Get all series from repository
+            var allSeries = await _sermonsRepository.GetAllSermons();
+            if (allSeries == null)
+            {
+                return new SystemResponse<ExportSermonDataResponse>(true, "Failed to retrieve sermon series data");
+            }
+
+            var seriesResponseList = new List<SermonSeriesResponse>();
+            int totalMessages = 0;
+
+            // Build SermonSeriesResponse objects with all properties and nested messages
+            foreach (var series in allSeries)
+            {
+                var messages = await _messagesRepository.GetMessagesBySeriesId(series.Id);
+
+                var seriesResponse = new SermonSeriesResponse
+                {
+                    Id = series.Id,
+                    Name = series.Name,
+                    Year = $"{series.StartDate.Year}",
+                    StartDate = series.StartDate,
+                    EndDate = series.EndDate,
+                    Slug = series.Slug,
+                    Thumbnail = series.Thumbnail,
+                    ArtUrl = series.ArtUrl,
+                    LastUpdated = series.LastUpdated,
+                    Summary = series.Summary,
+                    Messages = SermonMessage.ConvertToResponseList(messages),
+                    Tags = GetUniqueTagsFromMessages(messages)
+                };
+
+                seriesResponseList.Add(seriesResponse);
+
+                if (messages != null)
+                {
+                    totalMessages += messages.Count();
+                }
+            }
+
+            // Construct export response with metadata
+            var exportResponse = new ExportSermonDataResponse
+            {
+                ExportDate = DateTime.UtcNow,
+                TotalSeries = seriesResponseList.Count,
+                TotalMessages = totalMessages,
+                Series = seriesResponseList
+            };
+
+            // Log export operation with statistics
+            Log.Information($"Sermon data export completed successfully. Total Series: {exportResponse.TotalSeries}, Total Messages: {exportResponse.TotalMessages}");
+
+            return new SystemResponse<ExportSermonDataResponse>(exportResponse, "Success!");
+        }
+
+        /// <summary>
+        /// Imports sermon series and message data from JSON for restore purposes using UPSERT strategy
+        /// (inserts new records if they don't exist, updates existing records if they do)
+        /// </summary>
+        /// <param name="request">Import request containing series and messages to upsert</param>
+        /// <returns>SystemResponse containing import statistics and skipped items</returns>
+        public async Task<SystemResponse<ImportSermonDataResponse>> ImportSermonData(ImportSermonDataRequest request)
+        {
+            // Step 1: Validate request
+            var validRequest = ImportSermonDataRequest.ValidateRequest(request);
+            if (validRequest.HasErrors)
+            {
+                return new SystemResponse<ImportSermonDataResponse>(true, validRequest.ErrorMessage);
+            }
+
+            // Initialize tracking variables
+            int totalSeriesProcessed = 0;
+            int totalSeriesUpdated = 0;
+            int totalSeriesSkipped = 0;
+            int totalMessagesProcessed = 0;
+            int totalMessagesUpdated = 0;
+            int totalMessagesSkipped = 0;
+            var skippedItems = new List<SkippedImportItem>();
+            var updatedSeriesIds = new List<string>();
+
+            // Step 2: Process each series (UPSERT strategy)
+            foreach (var seriesData in request.Series)
+            {
+                totalSeriesProcessed++;
+
+                // Check if series exists
+                var existingSeriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesData.Id);
+
+                SystemResponse<SermonSeries> upsertResponse;
+
+                if (existingSeriesResponse.HasErrors || existingSeriesResponse.Result == null)
+                {
+                    // Series not found, INSERT it
+                    var newSeries = new SermonSeries
+                    {
+                        Id = seriesData.Id,
+                        Name = seriesData.Name,
+                        StartDate = seriesData.StartDate.Value,
+                        EndDate = seriesData.EndDate,
+                        Slug = seriesData.Slug,
+                        Thumbnail = seriesData.Thumbnail,
+                        ArtUrl = seriesData.ArtUrl,
+                        Summary = seriesData.Summary
+                        // LastUpdated and CreateDate will be set by the repository
+                    };
+
+                    upsertResponse = await _sermonsRepository.CreateNewSermonSeries(newSeries);
+
+                    if (upsertResponse.HasErrors)
+                    {
+                        Log.Error($"Failed to insert series {seriesData.Id}: {upsertResponse.ErrorMessage}");
+                        totalSeriesSkipped++;
+                        skippedItems.Add(new SkippedImportItem
+                        {
+                            Id = seriesData.Id,
+                            Type = "Series"
+                        });
+                        continue;
+                    }
+
+                    Log.Information($"Inserted new series {seriesData.Id} - {seriesData.Name}");
+                }
+                else
+                {
+                    // Series exists, UPDATE it
+                    var existingSeries = existingSeriesResponse.Result;
+                    existingSeries.Name = seriesData.Name;
+                    existingSeries.StartDate = seriesData.StartDate.Value;
+                    existingSeries.EndDate = seriesData.EndDate;
+                    existingSeries.Slug = seriesData.Slug;
+                    existingSeries.Thumbnail = seriesData.Thumbnail;
+                    existingSeries.ArtUrl = seriesData.ArtUrl;
+                    existingSeries.Summary = seriesData.Summary;
+                    // Note: LastUpdated will be set by the repository
+                    // Note: Tags are derived from messages, not stored on series
+
+                    upsertResponse = await _sermonsRepository.UpdateSermonSeries(existingSeries);
+
+                    if (upsertResponse.HasErrors)
+                    {
+                        Log.Error($"Failed to update series {seriesData.Id}: {upsertResponse.ErrorMessage}");
+                        totalSeriesSkipped++;
+                        skippedItems.Add(new SkippedImportItem
+                        {
+                            Id = seriesData.Id,
+                            Type = "Series"
+                        });
+                        continue;
+                    }
+
+                    Log.Information($"Updated existing series {seriesData.Id} - {seriesData.Name}");
+                }
+
+                totalSeriesUpdated++;
+                updatedSeriesIds.Add(seriesData.Id);
+
+                // Step 3: Process messages for this series (UPSERT strategy)
+                if (seriesData.Messages != null && seriesData.Messages.Any())
+                {
+                    foreach (var messageData in seriesData.Messages)
+                    {
+                        totalMessagesProcessed++;
+
+                        // Check if message exists
+                        var existingMessageResponse = await _messagesRepository.GetMessageById(messageData.MessageId);
+
+                        if (existingMessageResponse.HasErrors || existingMessageResponse.Result == null)
+                        {
+                            // Message not found, INSERT it
+                            var newMessage = new SermonMessage
+                            {
+                                Id = messageData.MessageId,
+                                SeriesId = seriesData.Id,
+                                AudioUrl = messageData.AudioUrl,
+                                AudioDuration = messageData.AudioDuration,
+                                AudioFileSize = messageData.AudioFileSize,
+                                VideoUrl = messageData.VideoUrl,
+                                PassageRef = messageData.PassageRef,
+                                Speaker = messageData.Speaker,
+                                Title = messageData.Title,
+                                Summary = messageData.Summary,
+                                Date = messageData.Date.Value,
+                                Tags = messageData.Tags?.ToList(),
+                                WaveformData = messageData.WaveformData?.ToList(),
+                                PlayCount = 0 // Initialize PlayCount for new messages
+                                // LastUpdated and CreateDate will be set by the repository
+                            };
+
+                            var insertResponse = await _messagesRepository.CreateNewMessages(new[] { newMessage });
+
+                            if (insertResponse.HasErrors)
+                            {
+                                Log.Error($"Failed to insert message {messageData.MessageId}: {insertResponse.ErrorMessage}");
+                                totalMessagesSkipped++;
+                                skippedItems.Add(new SkippedImportItem
+                                {
+                                    Id = messageData.MessageId,
+                                    Type = "Message"
+                                });
+                                continue;
+                            }
+
+                            Log.Information($"Inserted new message {messageData.MessageId} - {messageData.Title}");
+                        }
+                        else
+                        {
+                            // Message exists, UPDATE it
+                            var messageRequest = new SermonMessageRequest
+                            {
+                                AudioUrl = messageData.AudioUrl,
+                                AudioDuration = messageData.AudioDuration,
+                                AudioFileSize = messageData.AudioFileSize,
+                                VideoUrl = messageData.VideoUrl,
+                                PassageRef = messageData.PassageRef,
+                                Speaker = messageData.Speaker,
+                                Title = messageData.Title,
+                                Summary = messageData.Summary,
+                                Date = messageData.Date.Value,
+                                Tags = messageData.Tags?.ToList()
+                                // PlayCount is not updated during import to preserve actual usage data
+                            };
+
+                            var updatedMessage = await _messagesRepository.UpdateMessageById(messageData.MessageId, messageRequest);
+
+                            if (updatedMessage == null)
+                            {
+                                Log.Error($"Failed to update message {messageData.MessageId}");
+                                totalMessagesSkipped++;
+                                skippedItems.Add(new SkippedImportItem
+                                {
+                                    Id = messageData.MessageId,
+                                    Type = "Message"
+                                });
+                                continue;
+                            }
+
+                            Log.Information($"Updated existing message {messageData.MessageId} - {messageData.Title}");
+                        }
+
+                        totalMessagesUpdated++;
+                    }
+                }
+            }
+
+            // Step 4: Cache invalidation - clear cache for all updated series
+            foreach (var seriesId in updatedSeriesIds)
+            {
+                _cache.Remove(string.Format(CacheKeys.GetSermonSeries, seriesId));
+            }
+
+            // Step 5: Build response with statistics
+            var importResponse = new ImportSermonDataResponse
+            {
+                ImportDate = DateTime.UtcNow,
+                TotalSeriesProcessed = totalSeriesProcessed,
+                TotalSeriesUpdated = totalSeriesUpdated,
+                TotalSeriesSkipped = totalSeriesSkipped,
+                TotalMessagesProcessed = totalMessagesProcessed,
+                TotalMessagesUpdated = totalMessagesUpdated,
+                TotalMessagesSkipped = totalMessagesSkipped,
+                SkippedItems = skippedItems
+            };
+
+            // Log import operation with summary statistics
+            Log.Information(
+                $"Sermon data import completed. Series: {totalSeriesUpdated}/{totalSeriesProcessed} updated, {totalSeriesSkipped} skipped. " +
+                $"Messages: {totalMessagesUpdated}/{totalMessagesProcessed} updated, {totalMessagesSkipped} skipped.");
+
+            // Log warnings for each skipped item
+            foreach (var skipped in skippedItems)
+            {
+                Log.Warning($"Skipped {skipped.Type} {skipped.Id}");
+            }
+
+            return new SystemResponse<ImportSermonDataResponse>(importResponse, "Success!");
+        }
+
+        /// <summary>
+        /// Get the waveform data for a message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <returns>Waveform Data</returns>
+        public async Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId)
+        {
+            var messagesResponse = await _messagesRepository.GetMessageWaveformData(messageId);
+            if (messagesResponse.HasErrors)
+            {
+                return new SystemResponse<List<double>>(true, messagesResponse.ErrorMessage);
+            }
+
+            return messagesResponse;
         }
     }
 

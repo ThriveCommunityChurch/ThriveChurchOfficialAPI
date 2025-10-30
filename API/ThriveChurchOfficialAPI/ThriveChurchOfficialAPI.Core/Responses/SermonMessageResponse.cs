@@ -72,5 +72,10 @@ namespace ThriveChurchOfficialAPI.Core
         /// A collection of tags categorizing this message by topic/theme
         /// </summary>
         public IEnumerable<MessageTag> Tags { get; set; }
+
+        /// <summary>
+        /// A collection of normalized values corresponding to waveform peaks.
+        /// </summary>
+        public List<double> WaveformData { get; set; }
     }
 }

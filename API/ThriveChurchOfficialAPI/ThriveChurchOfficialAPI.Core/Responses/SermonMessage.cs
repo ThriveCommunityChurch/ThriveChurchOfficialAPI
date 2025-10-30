@@ -29,6 +29,7 @@ namespace ThriveChurchOfficialAPI.Core
             PlayCount = 0;
             LastUpdated = DateTime.UtcNow;
             Tags = new List<MessageTag>();
+            WaveformData = new List<double>();
         }
 
         /// <summary>
@@ -111,6 +112,11 @@ namespace ThriveChurchOfficialAPI.Core
         public List<MessageTag> Tags { get; set; }
 
         /// <summary>
+        /// A collection of normalized values corresponding to waveform peaks.
+        /// </summary>
+        public List<double> WaveformData { get; set; }
+
+        /// <summary>
         /// Convert a collection of DB objects into the API response class
         /// </summary>
         /// <param name="messages"></param>
@@ -133,13 +139,15 @@ namespace ThriveChurchOfficialAPI.Core
                     AudioUrl = message.AudioUrl,
                     Date = message.Date,
                     MessageId = message.Id,
+                    SeriesId = message.SeriesId,
                     PassageRef = message.PassageRef,
                     PlayCount = message.PlayCount,
                     Speaker = message.Speaker,
                     Title = message.Title,
                     Summary = message.Summary,
                     VideoUrl = message.VideoUrl,
-                    Tags = message.Tags
+                    Tags = message.Tags,
+                    WaveformData = message.WaveformData,
                 });
             }
 
