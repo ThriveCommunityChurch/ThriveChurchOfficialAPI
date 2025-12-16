@@ -1,4 +1,4 @@
-name: ASP.NET Core CI
+﻿name: ASP.NET Core CI
 
 on:
   pull_request:
@@ -14,17 +14,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install libssl1.1 for .NET 5
-      run: |
-        sudo apt-get update
-        # Add Ubuntu 20.04 repository to get libssl1.1
-        echo "deb http://security.ubuntu.com/ubuntu focal-security main" | sudo tee /etc/apt/sources.list.d/focal-security.list
-        sudo apt-get update
-        sudo apt-get install -y libssl1.1
-    - name: Setup .NET Core
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 5.0.408
+        dotnet-version: 8.0.x
     - name: Restore NuGet Packages
       run: dotnet restore "API/ThriveChurchOfficialAPI/ThriveChurchOfficialAPI.sln"
     - name: Build with dotnet
