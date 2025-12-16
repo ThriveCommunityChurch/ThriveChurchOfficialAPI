@@ -218,7 +218,7 @@ namespace ThriveChurchOfficialAPI
             Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File("C:/logs/logfile.log", rollingInterval: RollingInterval.Day)
+            .WriteTo.File("logs/logfile.log", rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
             #endregion

@@ -6,6 +6,10 @@
     <ApplicationIcon />
     <OutputType>WinExe</OutputType>
     <StartupObject>ThriveChurchOfficialAPI.Program</StartupObject>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>..</DockerfileContext>
+    <DockerfileTag>thrive-api-debug</DockerfileTag>
+    <DockerfileBuildArguments>--target debug</DockerfileBuildArguments>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -29,6 +33,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="MongoDB.Driver" Version="3.5.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />

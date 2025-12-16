@@ -32,3 +32,8 @@ launchSettings.json
 *.log
 *.http
 .vscode/
+
+# Environment files with secrets
+*.env
+*.env.local
+*.env.*.local

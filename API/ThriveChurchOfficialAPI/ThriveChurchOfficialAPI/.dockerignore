@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+**/node_modules/
+**/.git/
+**/Dockerfile*
+**/.dockerignore
+**/*.md
+# For Visual Studio debugging, we include appsettings.json
+# Production builds should use the root .dockerignore which excludes it
+

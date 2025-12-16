@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/*.suo
+**/node_modules/
+**/.git/
+**/Dockerfile*
+**/.dockerignore
+**/*.md
+**/ThriveChurchOfficialAPI.Tests/
+**/AdminUserCreator/
+# For production builds, exclude appsettings.json
+# For local debugging, we need it
+# Production deployments should use environment variables
+
