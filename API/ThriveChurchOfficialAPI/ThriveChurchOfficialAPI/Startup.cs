@@ -25,6 +25,8 @@
 using AspNetCoreRateLimit;
 using Hangfire;
 using Hangfire.Mongo;
+using Hangfire.Mongo.Migration.Strategies;
+using Hangfire.Mongo.Migration.Strategies.Backup;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -119,8 +121,7 @@ namespace ThriveChurchOfficialAPI
                 // if we ever get to 50 Model Validation errors, ignore subsequent ones
                 // more on this here https://docs.microsoft.com/en-us/aspnet/core/mvc/models/validation?view=aspnetcore-2.2#top-level-node-validation
                 options.MaxModelValidationErrors = 50;
-            })
-            .SetCompatibilityVersion(CompatibilityVersion.Latest);
+            });
 
             // Configure request size limits for file uploads
             services.Configure<IISServerOptions>(options =>
@@ -217,7 +218,7 @@ namespace ThriveChurchOfficialAPI
             Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File("C:/logs/logfile.log", rollingInterval: RollingInterval.Day)
+            .WriteTo.File("logs/logfile.log", rollingInterval: RollingInterval.Day)
             .CreateLogger();
 
             #endregion
@@ -283,15 +284,13 @@ namespace ThriveChurchOfficialAPI
 
             #region Hangfire Tasks
 
-            var hangfireMigrationOptions = new MongoMigrationOptions
-            {
-                Strategy = MongoMigrationStrategy.Migrate,
-                BackupStrategy = MongoBackupStrategy.Collections
-            };
-
             var hangfireStorageOptions = new MongoStorageOptions
             {
-                MigrationOptions = hangfireMigrationOptions
+                MigrationOptions = new MongoMigrationOptions
+                {
+                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
+                    BackupStrategy = new CollectionMongoBackupStrategy()
+                }
             };
 
             // Add framework services.

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  thrive-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: thrive-api:latest
+    container_name: thrive-api
+    ports:
+      - "8080:8080"
+    environment:
+      # ASP.NET Core Environment
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=8080
+      
+      # MongoDB Configuration
+      - MongoConnectionString=${MONGO_CONNECTION_STRING}
+      - HangfireConnectionString=${HANGFIRE_CONNECTION_STRING}
+      - TokenConnectionStringPath=Hashables
+      
+      # ESV API Configuration
+      - EsvApiKey=${ESV_API_KEY}
+      - OverrideEsvApiKey=false
+      
+      # Email Configuration
+      - EmailPW=${EMAIL_PASSWORD}
+      
+      # AWS S3 Configuration (use double underscore for nested config)
+      - S3__BucketName=${S3_BUCKET_NAME}
+      - S3__AccessKey=${S3_ACCESS_KEY}
+      - S3__SecretKey=${S3_SECRET_KEY}
+      - S3__Region=${S3_REGION}
+      - S3__BaseUrl=${S3_BASE_URL}
+      - S3__MaxFileSizeMB=50
+      
+      # MUX Configuration
+      - MUX__Secret=${MUX_SECRET}
+      
+      # JWT Configuration
+      - JWT__SecretKey=${JWT_SECRET_KEY}
+      - JWT__Issuer=ThriveChurchOfficialAPI
+      - JWT__Audience=ThriveChurchClients
+      - JWT__ExpirationMinutes=60
+      - JWT__RefreshTokenExpirationDays=7
+      
+      # Rate Limiting (optional - defaults are in code)
+      - IpRateLimiting__EnableEndpointRateLimiting=false
+      - IpRateLimiting__StackBlockedRequests=true
+      - IpRateLimiting__HttpStatusCode=429
+    
+    # Optional: Use .env file for local development
+    env_file:
+      - .env
+    
+    restart: unless-stopped
+    
+    # Optional: Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/sermons"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

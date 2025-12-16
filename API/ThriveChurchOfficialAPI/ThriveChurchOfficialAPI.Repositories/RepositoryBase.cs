@@ -120,7 +120,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         {
             var serializerRegistry = BsonSerializer.SerializerRegistry;
             var documentSerializer = serializerRegistry.GetSerializer<TDocument>();
-            return filter.Render(documentSerializer, serializerRegistry);
+            return filter.Render(new RenderArgs<TDocument>(documentSerializer, serializerRegistry));
         }
 
         /// <summary>
