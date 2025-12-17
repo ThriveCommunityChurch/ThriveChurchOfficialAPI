@@ -35,15 +35,17 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
         run: |
+          # Generate image tag in yyyy.mm.dd.build# format
+          DATE_TAG=$(date +'%Y.%m.%d')
+          IMAGE_TAG="${DATE_TAG}.${{ github.run_number }}"
+
           # Build the Docker image
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest ./API/ThriveChurchOfficialAPI
-          
-          # Push both tags
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./API/ThriveChurchOfficialAPI
+
+          # Push the image
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          
+
           # Output the image URI for App Runner
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
