@@ -51,6 +51,13 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
+            // Check the cache first -> if there's a value there grab it
+            var cacheKey = string.Format(CacheKeys.GetAllSermonsSummary, highResImg);
+            if (_cache.TryGetValue(cacheKey, out SystemResponse<AllSermonsSummaryResponse> cachedResponse))
+            {
+                return cachedResponse;
+            }
+
             var getAllSermonsTask = _sermonsRepository.GetAllSermons();
             var getAllMessagesTask = _messagesRepository.GetAllMessages();
 
@@ -85,7 +92,12 @@ namespace ThriveChurchOfficialAPI.Services
                 Summaries = responseList
             };
 
-            return new SystemResponse<AllSermonsSummaryResponse>(response, "Success!");
+            var systemResponse = new SystemResponse<AllSermonsSummaryResponse>(response, "Success!");
+
+            // Save data in persistent cache (7 days)
+            _cache.Set(cacheKey, systemResponse, PersistentCacheEntryOptions);
+
+            return systemResponse;
         }
 
         /// <summary>
@@ -268,6 +280,10 @@ namespace ThriveChurchOfficialAPI.Services
             // Save data in cache.
             _cache.Set(string.Format(CacheKeys.GetSermonSeries, response.Id), response, PersistentCacheEntryOptions);
 
+            // Invalidate the all sermons summary cache since a new series was added
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+
             return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
 
@@ -351,6 +367,10 @@ namespace ThriveChurchOfficialAPI.Services
 
             // Save data in cache.
             _cache.Set(string.Format(CacheKeys.GetSermonSeries, series.Id), response, PersistentCacheEntryOptions);
+
+            // Invalidate the all sermons summary cache since message count changed
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
 
             return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
@@ -504,6 +524,10 @@ namespace ThriveChurchOfficialAPI.Services
 
             // Save data in cache.
             _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), response, PersistentCacheEntryOptions);
+
+            // Invalidate the all sermons summary cache since series properties were updated
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
 
             return new SystemResponse<SermonSeries>(response, "Success!");
         }
@@ -1802,6 +1826,10 @@ namespace ThriveChurchOfficialAPI.Services
                 _cache.Remove(string.Format(CacheKeys.GetSermonSeries, seriesId));
             }
 
+            // Also invalidate the all sermons summary cache since series/messages may have changed
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+
             // Step 5: Build response with statistics
             var importResponse = new ImportSermonDataResponse
             {
@@ -1858,5 +1886,7 @@ namespace ThriveChurchOfficialAPI.Services
         public static string GetSermonSeries { get { return "SermonSeriesCache:{0}"; } }
 
         public static string GetConfig { get { return "SystemConfiguration:{0}"; } }
+
+        public static string GetAllSermonsSummary { get { return "AllSermonsSummaryCache:{0}"; } }
     }
 }
