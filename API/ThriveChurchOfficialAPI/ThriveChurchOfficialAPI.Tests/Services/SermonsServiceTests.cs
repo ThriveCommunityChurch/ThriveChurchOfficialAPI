@@ -972,6 +972,291 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
         #endregion
 
+        #region GetAllSermons Caching Tests
+
+        [TestMethod]
+        public async Task GetAllSermons_CacheMiss_FetchesFromRepositoryAndCachesResult()
+        {
+            // Arrange
+            var series1 = CreateTestSermonSeries("1", "Series 1", "series-1");
+            var series2 = CreateTestSermonSeries("2", "Series 2", "series-2");
+            var seriesList = new List<SermonSeries> { series1, series2 };
+
+            var message1 = CreateTestSermonMessage("msg1", "1", "Message 1");
+            var message2 = CreateTestSermonMessage("msg2", "2", "Message 2");
+            var messagesList = new List<SermonMessage> { message1, message2 };
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(messagesList);
+
+            // Setup cache miss
+            object cacheValue = null;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+
+            // Setup cache entry for Set
+            var cacheEntry = new Mock<ICacheEntry>();
+            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
+                .Returns(cacheEntry.Object);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: false);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.IsNotNull(result.Result);
+            Assert.AreEqual(2, result.Result.Summaries.Count());
+
+            // Verify repository was called (cache miss)
+            _mockSermonsRepository.Verify(r => r.GetAllSermons(It.IsAny<bool>()), Times.Once);
+            _mockMessagesRepository.Verify(r => r.GetAllMessages(), Times.Once);
+
+            // Verify cache Set was called
+            _mockCache.Verify(c => c.CreateEntry(It.Is<object>(key =>
+                key.ToString().Contains("AllSermonsSummaryCache"))), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task GetAllSermons_CacheHit_ReturnsCachedResultWithoutCallingRepository()
+        {
+            // Arrange
+            var cachedSummaries = new List<AllSermonSeriesSummary>
+            {
+                new AllSermonSeriesSummary { Id = "1", Title = "Cached Series 1", MessageCount = 5 },
+                new AllSermonSeriesSummary { Id = "2", Title = "Cached Series 2", MessageCount = 3 }
+            };
+            var cachedResponse = new SystemResponse<AllSermonsSummaryResponse>(
+                new AllSermonsSummaryResponse { Summaries = cachedSummaries },
+                "Success!");
+
+            // Setup cache hit
+            object cacheValue = cachedResponse;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(true);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: false);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(2, result.Result.Summaries.Count());
+            Assert.AreEqual("Cached Series 1", result.Result.Summaries.First().Title);
+
+            // Verify repository was NOT called (cache hit)
+            _mockSermonsRepository.Verify(r => r.GetAllSermons(It.IsAny<bool>()), Times.Never);
+            _mockMessagesRepository.Verify(r => r.GetAllMessages(), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task GetAllSermons_HighResImgTrue_UsesDifferentCacheKey()
+        {
+            // Arrange
+            var series = CreateTestSermonSeries("1", "Series 1", "series-1");
+            var seriesList = new List<SermonSeries> { series };
+            var messagesList = new List<SermonMessage>();
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(messagesList);
+
+            // Setup cache miss
+            object cacheValue = null;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+
+            // Setup cache entry for Set
+            var cacheEntry = new Mock<ICacheEntry>();
+            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
+                .Returns(cacheEntry.Object);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: true);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+
+            // Verify cache key contains "True" for highResImg
+            _mockCache.Verify(c => c.CreateEntry(It.Is<object>(key =>
+                key.ToString().Contains("True"))), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task GetAllSermons_HighResImgFalse_UsesThumbnailUrl()
+        {
+            // Arrange
+            var series = new SermonSeries
+            {
+                Id = "1",
+                Name = "Test Series",
+                Slug = "test-series",
+                StartDate = DateTime.UtcNow,
+                ArtUrl = "https://example.com/high-res-art.jpg",
+                Thumbnail = "https://example.com/thumbnail.jpg"
+            };
+            var seriesList = new List<SermonSeries> { series };
+            var messagesList = new List<SermonMessage>();
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(messagesList);
+
+            // Setup cache miss
+            object cacheValue = null;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+
+            // Setup cache entry
+            var cacheEntry = new Mock<ICacheEntry>();
+            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
+                .Returns(cacheEntry.Object);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: false);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            var summary = result.Result.Summaries.First();
+            Assert.AreEqual("https://example.com/thumbnail.jpg", summary.ArtUrl);
+        }
+
+        [TestMethod]
+        public async Task GetAllSermons_HighResImgTrue_UsesArtUrl()
+        {
+            // Arrange
+            var series = new SermonSeries
+            {
+                Id = "1",
+                Name = "Test Series",
+                Slug = "test-series",
+                StartDate = DateTime.UtcNow,
+                ArtUrl = "https://example.com/high-res-art.jpg",
+                Thumbnail = "https://example.com/thumbnail.jpg"
+            };
+            var seriesList = new List<SermonSeries> { series };
+            var messagesList = new List<SermonMessage>();
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(messagesList);
+
+            // Setup cache miss
+            object cacheValue = null;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+
+            // Setup cache entry
+            var cacheEntry = new Mock<ICacheEntry>();
+            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
+                .Returns(cacheEntry.Object);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: true);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            var summary = result.Result.Summaries.First();
+            Assert.AreEqual("https://example.com/high-res-art.jpg", summary.ArtUrl);
+        }
+
+        [TestMethod]
+        public async Task GetAllSermons_CalculatesMessageCountCorrectly()
+        {
+            // Arrange
+            var series1 = CreateTestSermonSeries("1", "Series 1", "series-1");
+            var series2 = CreateTestSermonSeries("2", "Series 2", "series-2");
+            var seriesList = new List<SermonSeries> { series1, series2 };
+
+            // 3 messages for series 1, 2 messages for series 2
+            var messages = new List<SermonMessage>
+            {
+                CreateTestSermonMessage("msg1", "1", "Message 1"),
+                CreateTestSermonMessage("msg2", "1", "Message 2"),
+                CreateTestSermonMessage("msg3", "1", "Message 3"),
+                CreateTestSermonMessage("msg4", "2", "Message 4"),
+                CreateTestSermonMessage("msg5", "2", "Message 5")
+            };
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(messages);
+
+            // Setup cache miss
+            object cacheValue = null;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+
+            // Setup cache entry
+            var cacheEntry = new Mock<ICacheEntry>();
+            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
+                .Returns(cacheEntry.Object);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: false);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            var summaries = result.Result.Summaries.ToList();
+            Assert.AreEqual(2, summaries.Count);
+
+            var series1Summary = summaries.First(s => s.Id == "1");
+            var series2Summary = summaries.First(s => s.Id == "2");
+            Assert.AreEqual(3, series1Summary.MessageCount);
+            Assert.AreEqual(2, series2Summary.MessageCount);
+        }
+
+        [TestMethod]
+        public async Task GetAllSermons_SeriesWithNoMessages_ReturnsZeroMessageCount()
+        {
+            // Arrange
+            var series = CreateTestSermonSeries("1", "Empty Series", "empty-series");
+            var seriesList = new List<SermonSeries> { series };
+            var emptyMessages = new List<SermonMessage>();
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(emptyMessages);
+
+            // Setup cache miss
+            object cacheValue = null;
+            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
+                .Returns(false);
+
+            // Setup cache entry
+            var cacheEntry = new Mock<ICacheEntry>();
+            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
+                .Returns(cacheEntry.Object);
+
+            // Act
+            var result = await _sermonsService.GetAllSermons(highResImg: false);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            var summary = result.Result.Summaries.First();
+            Assert.AreEqual(0, summary.MessageCount);
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private SermonSeries CreateTestSermonSeries(string id, string name, string slug)

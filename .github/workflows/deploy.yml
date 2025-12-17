@@ -50,17 +50,38 @@ jobs:
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Deploy to App Runner
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image }}
         run: |
           # Check if service exists
           SERVICE_ARN=$(aws apprunner list-services --query "ServiceSummaryList[?ServiceName=='${{ env.APP_RUNNER_SERVICE }}'].ServiceArn" --output text)
-          
+
           if [ -z "$SERVICE_ARN" ] || [ "$SERVICE_ARN" == "None" ]; then
             echo "App Runner service does not exist yet. Please create it manually in the AWS Console first."
-            echo "Once created, subsequent pushes will auto-deploy via ECR trigger."
-            exit 0
+            exit 1
           fi
-          
-          # Trigger a new deployment
-          aws apprunner start-deployment --service-arn $SERVICE_ARN
-          echo "Deployment triggered for App Runner service: ${{ env.APP_RUNNER_SERVICE }}"
+
+          echo "Updating App Runner service to use image: $IMAGE_URI"
+
+          # Get the current service configuration to preserve all settings
+          CURRENT_CONFIG=$(aws apprunner describe-service --service-arn $SERVICE_ARN)
+
+          # Extract and update the source configuration, preserving all existing settings
+          # This keeps environment variables, secrets, and other ImageConfiguration intact
+          UPDATED_SOURCE_CONFIG=$(echo $CURRENT_CONFIG | jq --arg NEW_IMAGE "$IMAGE_URI" '
+            .Service.SourceConfiguration |
+            .ImageRepository.ImageIdentifier = $NEW_IMAGE |
+            del(.CodeRepository) |
+            del(.AutoDeploymentsEnabled)
+          ')
+
+          # Update the service with the new image while preserving all other settings
+          # Only output the operation ID (safe) - suppress all other output that contains env vars
+          aws apprunner update-service \
+            --service-arn $SERVICE_ARN \
+            --source-configuration "$UPDATED_SOURCE_CONFIG" \
+            --query 'OperationId' \
+            --output text
+
+          echo "App Runner service updated for: ${{ env.APP_RUNNER_SERVICE }}"
 
