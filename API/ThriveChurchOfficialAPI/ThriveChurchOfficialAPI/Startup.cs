@@ -247,7 +247,9 @@ namespace ThriveChurchOfficialAPI
             })
             .AddJwtBearer(options =>
             {
-                options.RequireHttpsMetadata = true;
+                // Set to false for container deployments (AWS App Runner, Docker, etc.)
+                // The load balancer terminates HTTPS, so internal traffic is HTTP
+                options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
