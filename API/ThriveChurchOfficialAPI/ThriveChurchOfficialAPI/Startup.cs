@@ -247,8 +247,12 @@ namespace ThriveChurchOfficialAPI
             })
             .AddJwtBearer(options =>
             {
-                // Set to false for container deployments (AWS App Runner, Docker, etc.)
-                // The load balancer terminates HTTPS, so internal traffic is HTTP
+                // RequireHttpsMetadata: This setting controls whether HTTPS is required when
+                // fetching OpenID Connect metadata (like signing keys from /.well-known/openid-configuration).
+                // Since we use a locally-stored symmetric key (not fetched from an external identity provider),
+                // this setting doesn't affect our security. Setting to false allows the JWT middleware
+                // to work properly behind AWS App Runner's load balancer (which terminates TLS).
+                // All actual token validation (signature, issuer, audience, expiration) still applies.
                 options.RequireHttpsMetadata = false;
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -265,6 +269,15 @@ namespace ThriveChurchOfficialAPI
             });
 
             services.AddAuthorization();
+
+            #endregion
+
+            #region Health Checks
+
+            // Add ASP.NET Core Health Checks for AWS App Runner health probes
+            // The HealthController uses [AllowAnonymous] to bypass JWT authentication
+            // for internal health check traffic from the load balancer
+            services.AddHealthChecks();
 
             #endregion
 
@@ -367,6 +380,10 @@ namespace ThriveChurchOfficialAPI
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+
+                // Map the built-in health check endpoint at /health
+                // This is in addition to the HealthController which provides more detailed endpoints
+                endpoints.MapHealthChecks("/health");
             });
 
             Log.Information("Service started.");

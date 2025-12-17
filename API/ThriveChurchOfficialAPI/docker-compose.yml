@@ -55,9 +55,9 @@ services:
     
     restart: unless-stopped
     
-    # Optional: Health check
+    # Health check using dedicated lightweight endpoint
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/sermons"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
