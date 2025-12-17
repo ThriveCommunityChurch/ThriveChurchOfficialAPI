@@ -33,7 +33,7 @@ namespace ThriveChurchOfficialAPI
                 // set a reusible cache options object
                 return new MemoryCacheEntryOptions()
                 // Keep in cache for this time, reset time if accessed.
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(172800)); // 2 days
+                .SetAbsoluteExpiration(TimeSpan.FromSeconds(3600 * 24 * 7)); // 7 days
             }
         }
 
