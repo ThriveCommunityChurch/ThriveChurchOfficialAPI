@@ -18,6 +18,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         private Mock<IMessagesRepository> _mockMessagesRepository;
         private Mock<IMemoryCache> _mockCache;
         private Mock<IS3Repository> _mockS3Repository;
+        private Mock<IPodcastLambdaService> _mockPodcastLambdaService;
         private SermonsService _sermonsService;
 
         [TestInitialize]
@@ -27,12 +28,14 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository = new Mock<IMessagesRepository>();
             _mockCache = new Mock<IMemoryCache>();
             _mockS3Repository = new Mock<IS3Repository>();
+            _mockPodcastLambdaService = new Mock<IPodcastLambdaService>();
 
             _sermonsService = new SermonsService(
                 _mockSermonsRepository.Object,
                 _mockMessagesRepository.Object,
                 _mockCache.Object,
-                _mockS3Repository.Object
+                _mockS3Repository.Object,
+                _mockPodcastLambdaService.Object
             );
         }
 

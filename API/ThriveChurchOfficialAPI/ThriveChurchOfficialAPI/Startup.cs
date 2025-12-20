@@ -297,6 +297,9 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IAuthenticationService), typeof(AuthenticationService));
             services.AddTransient(typeof(IJwtService), typeof(JwtService));
 
+            // Lambda services
+            services.AddSingleton(typeof(IPodcastLambdaService), typeof(PodcastLambdaService));
+
             #region Hangfire Tasks
 
             var hangfireStorageOptions = new MongoStorageOptions

@@ -23,6 +23,7 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly IMessagesRepository _messagesRepository;
         private readonly IMemoryCache _cache;
         private readonly IS3Repository _s3Repository;
+        private readonly IPodcastLambdaService _podcastLambdaService;
         private Timer _timer;
 
         CultureInfo culture = new CultureInfo("en-US");
@@ -34,16 +35,19 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="messagesRepository"></param>
         /// <param name="cache"></param>
         /// <param name="s3Repository"></param>
+        /// <param name="podcastLambdaService"></param>
         public SermonsService(ISermonsRepository sermonsRepo,
             IMessagesRepository messagesRepository,
             IMemoryCache cache,
-            IS3Repository s3Repository)
+            IS3Repository s3Repository,
+            IPodcastLambdaService podcastLambdaService)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
             _messagesRepository = messagesRepository;
             _cache = cache;
             _s3Repository = s3Repository;
+            _podcastLambdaService = podcastLambdaService;
         }
 
         /// <summary>
@@ -372,6 +376,12 @@ namespace ThriveChurchOfficialAPI.Services
             _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
             _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
 
+            // Trigger podcast RSS feed update for each new message (fire-and-forget)
+            foreach (var newMessage in newMessages)
+            {
+                _ = _podcastLambdaService.UpsertEpisodeAsync(newMessage.Id);
+            }
+
             return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
 
@@ -399,6 +409,9 @@ namespace ThriveChurchOfficialAPI.Services
 
             // clear cache when update was successful
             _cache.Remove(string.Format(CacheKeys.GetSermonSeries, messageResult.SeriesId));
+
+            // Trigger podcast RSS feed update (fire-and-forget)
+            _ = _podcastLambdaService.UpsertEpisodeAsync(messageId);
 
             return new SystemResponse<SermonMessage>(messageResult, "Success!");
         }
