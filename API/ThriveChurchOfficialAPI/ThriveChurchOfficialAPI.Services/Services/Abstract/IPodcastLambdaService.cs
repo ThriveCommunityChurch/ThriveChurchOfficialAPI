@@ -17,8 +17,8 @@ namespace ThriveChurchOfficialAPI.Services
         /// Upserts a single episode in the podcast RSS feed
         /// </summary>
         /// <param name="messageId">The MongoDB ObjectId of the message to upsert</param>
+        /// <param name="skipTranscription">If true, skips audio transcription and reuses existing transcript (use when only metadata changed, not audio)</param>
         /// <returns>True if the Lambda was successfully invoked</returns>
-        Task<bool> UpsertEpisodeAsync(string messageId);
+        Task<bool> UpsertEpisodeAsync(string messageId, bool skipTranscription = false);
     }
 }
-

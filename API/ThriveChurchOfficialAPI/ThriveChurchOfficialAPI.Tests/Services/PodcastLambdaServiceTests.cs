@@ -127,7 +127,30 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 It.Is<InvokeRequest>(r =>
                     r.FunctionName == "transcription-processor-prod" &&
                     r.InvocationType == InvocationType.Event &&
-                    r.Payload.Contains(messageId)),
+                    r.Payload.Contains(messageId) &&
+                    r.Payload.Contains("\"skipTranscription\":false")),
+                default), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task UpsertEpisodeAsync_SkipTranscriptionTrue_PassesFlagToLambda()
+        {
+            // Arrange
+            _mockLambdaClient.Setup(c => c.InvokeAsync(It.IsAny<InvokeRequest>(), default))
+                .ReturnsAsync(new InvokeResponse { StatusCode = 202 });
+            var messageId = "507f1f77bcf86cd799439011";
+
+            // Act
+            var result = await _service.UpsertEpisodeAsync(messageId, skipTranscription: true);
+
+            // Assert
+            Assert.IsTrue(result);
+            _mockLambdaClient.Verify(c => c.InvokeAsync(
+                It.Is<InvokeRequest>(r =>
+                    r.FunctionName == "transcription-processor-prod" &&
+                    r.InvocationType == InvocationType.Event &&
+                    r.Payload.Contains(messageId) &&
+                    r.Payload.Contains("\"skipTranscription\":true")),
                 default), Times.Once);
         }
 
@@ -164,4 +187,3 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         #endregion
     }
 }
-

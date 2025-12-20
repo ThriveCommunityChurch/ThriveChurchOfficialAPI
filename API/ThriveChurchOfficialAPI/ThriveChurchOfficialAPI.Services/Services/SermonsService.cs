@@ -405,13 +405,18 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonMessage>(true, messageResponse.ErrorMessage);
             }
 
+            // Check if audio URL changed (determines if we need to re-transcribe)
+            var existingMessage = messageResponse.Result;
+            var audioUrlChanged = !string.Equals(existingMessage.AudioUrl, request.Message.AudioUrl, StringComparison.OrdinalIgnoreCase);
+
             var messageResult = await _messagesRepository.UpdateMessageById(messageId, request.Message);
 
             // clear cache when update was successful
             _cache.Remove(string.Format(CacheKeys.GetSermonSeries, messageResult.SeriesId));
 
             // Trigger podcast RSS feed update (fire-and-forget)
-            _ = _podcastLambdaService.UpsertEpisodeAsync(messageId);
+            // Skip transcription if audio URL hasn't changed (saves ~$0.24/episode)
+            _ = _podcastLambdaService.UpsertEpisodeAsync(messageId, skipTranscription: !audioUrlChanged);
 
             return new SystemResponse<SermonMessage>(messageResult, "Success!");
         }
