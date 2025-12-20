@@ -24,27 +24,24 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public PodcastLambdaService()
         {
+            // When running in AWS (App Runner), the SDK automatically uses the instance role
+            // No explicit credentials needed - IAM role handles authentication
+            var region = RegionEndpoint.GetBySystemName(Region);
+            _lambdaClient = new AmazonLambdaClient(region);
+
+            Log.Information("PodcastLambdaService initialized - Transcription: {TranscriptionFunc}, Podcast: {PodcastFunc}",
+                TranscriptionFunctionName, PodcastFunctionName);
         }
 
         /// <summary>
         /// Constructor for testing - allows injecting a mock Lambda client
         /// </summary>
-        /// <param name="lambdaClient">Optional Lambda client (for testing). If null, creates a real client.</param>
+        /// <param name="lambdaClient">Mock Lambda client for testing</param>
         public PodcastLambdaService(IAmazonLambda lambdaClient)
         {
-            if (lambdaClient != null)
-            {
-                _lambdaClient = lambdaClient;
-            }
-            else
-            {
-                // When running in AWS (App Runner), the SDK automatically uses the instance role
-                // No explicit credentials needed - IAM role handles authentication
-                var region = RegionEndpoint.GetBySystemName(Region);
-                _lambdaClient = new AmazonLambdaClient(region);
-            }
+            _lambdaClient = lambdaClient ?? throw new ArgumentNullException(nameof(lambdaClient));
 
-            Log.Information("PodcastLambdaService initialized - Transcription: {TranscriptionFunc}, Podcast: {PodcastFunc}",
+            Log.Information("PodcastLambdaService initialized with injected client - Transcription: {TranscriptionFunc}, Podcast: {PodcastFunc}",
                 TranscriptionFunctionName, PodcastFunctionName);
         }
 
@@ -55,7 +52,7 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <inheritdoc/>
-        public async Task<bool> UpsertEpisodeAsync(string messageId)
+        public async Task<bool> UpsertEpisodeAsync(string messageId, bool skipTranscription = false)
         {
             if (string.IsNullOrEmpty(messageId))
             {
@@ -65,7 +62,8 @@ namespace ThriveChurchOfficialAPI.Services
 
             // Invoke Transcription Lambda - it will fetch metadata from MongoDB,
             // transcribe the audio, then invoke Sermon and Podcast Lambdas
-            return await InvokeLambdaAsync(TranscriptionFunctionName, new { messageId });
+            // If skipTranscription is true, it will reuse existing transcript (saves ~$0.24/episode)
+            return await InvokeLambdaAsync(TranscriptionFunctionName, new { messageId, skipTranscription });
         }
 
         private async Task<bool> InvokeLambdaAsync(string functionName, object payload)
@@ -103,4 +101,3 @@ namespace ThriveChurchOfficialAPI.Services
         }
     }
 }
-
