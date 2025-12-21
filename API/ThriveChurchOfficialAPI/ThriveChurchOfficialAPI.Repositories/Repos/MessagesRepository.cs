@@ -176,7 +176,9 @@ namespace ThriveChurchOfficialAPI.Repositories
                                                        .Set(x => x.VideoUrl, message.VideoUrl)
                                                        .Set(x => x.PassageRef, message.PassageRef)
                                                        .Set(x => x.Tags, message.Tags)
-                                                       .Set(x => x.WaveformData, message.WaveformData);
+                                                       .Set(x => x.WaveformData, message.WaveformData)
+                                                       .Set(x => x.PodcastImageUrl, message.PodcastImageUrl)
+                                                       .Set(x => x.PodcastTitle, message.PodcastTitle);
 
             var messageResponse = await _messagesCollection.FindOneAndUpdateAsync(filter, update,
                 new FindOneAndUpdateOptions<SermonMessage>
