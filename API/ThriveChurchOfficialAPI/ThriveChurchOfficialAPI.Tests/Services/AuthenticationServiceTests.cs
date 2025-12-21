@@ -111,7 +111,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("Username and password are required", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -129,7 +129,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("Username and password are required", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -147,7 +147,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("Username and password are required", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -189,7 +189,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("Authentication failed", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -255,7 +255,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("Refresh token is required", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -269,7 +269,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("Refresh token is required", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
         [TestMethod]
@@ -523,7 +523,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            Assert.AreEqual("User ID is required", result.ErrorMessage);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
         #endregion
