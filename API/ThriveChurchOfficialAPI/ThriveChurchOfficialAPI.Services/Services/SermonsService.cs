@@ -255,7 +255,9 @@ namespace ThriveChurchOfficialAPI.Services
                     VideoUrl = message.VideoUrl,
                     SeriesId = createdSeries.Id,
                     Tags = message.Tags?.ToList() ?? new List<MessageTag>(),
-                    WaveformData = message.WaveformData?.ToList() ?? new List<double>()
+                    WaveformData = message.WaveformData?.ToList() ?? new List<double>(),
+                    PodcastImageUrl = message.PodcastImageUrl,
+                    PodcastTitle = message.PodcastTitle
                 });
             }
 
@@ -339,6 +341,8 @@ namespace ThriveChurchOfficialAPI.Services
                     SeriesId = seriesId,
                     Tags = message.Tags?.ToList() ?? new List<MessageTag>(),
                     WaveformData = message.WaveformData,
+                    PodcastImageUrl = message.PodcastImageUrl,
+                    PodcastTitle = message.PodcastTitle,
                 });
             }
 
@@ -1777,7 +1781,9 @@ namespace ThriveChurchOfficialAPI.Services
                                 Date = messageData.Date.Value,
                                 Tags = messageData.Tags?.ToList(),
                                 WaveformData = messageData.WaveformData?.ToList(),
-                                PlayCount = 0 // Initialize PlayCount for new messages
+                                PlayCount = 0, // Initialize PlayCount for new messages
+                                PodcastImageUrl = messageData.PodcastImageUrl,
+                                PodcastTitle = messageData.PodcastTitle
                                 // LastUpdated and CreateDate will be set by the repository
                             };
 
@@ -1812,7 +1818,9 @@ namespace ThriveChurchOfficialAPI.Services
                                 Summary = messageData.Summary,
                                 Date = messageData.Date.Value,
                                 Tags = messageData.Tags?.ToList(),
-                                WaveformData = messageData.WaveformData?.ToList()
+                                WaveformData = messageData.WaveformData?.ToList(),
+                                PodcastImageUrl = messageData.PodcastImageUrl,
+                                PodcastTitle = messageData.PodcastTitle
                                 // PlayCount is not updated during import to preserve actual usage data
                             };
 

@@ -18,6 +18,8 @@ namespace ThriveChurchOfficialAPI.Core
             Summary = null;
             Tags = new List<MessageTag>();
             WaveformData = new List<double>();
+            PodcastImageUrl = null;
+            PodcastTitle = null;
         }
 
         /// <summary>
@@ -87,6 +89,22 @@ namespace ThriveChurchOfficialAPI.Core
         /// A collection of normalized values corresponding to waveform peaks.
         /// </summary>
         public List<double> WaveformData { get; set; }
+
+        /// <summary>
+        /// The URL for the square podcast artwork image for this message.
+        /// Podcast artwork should be 1400x1400 to 3000x3000 pixels, square format.
+        /// </summary>
+        [Url(ErrorMessage = "'PodcastImageUrl' must be in valid url syntax.")]
+        [DataType(DataType.Url)]
+        public string PodcastImageUrl { get; set; }
+
+        /// <summary>
+        /// The formatted title for podcast RSS feeds (optional).
+        /// Format: "Series Name – Week # | Episode Title" (e.g., "Embodied – Week 4 | Fully Embodied Gospel")
+        /// If not set, the regular Title will be used in the podcast feed.
+        /// </summary>
+        [DataType(DataType.Text)]
+        public string PodcastTitle { get; set; }
 
         /// <summary>
         /// Validates the object

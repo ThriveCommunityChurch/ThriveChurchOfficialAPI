@@ -77,5 +77,17 @@ namespace ThriveChurchOfficialAPI.Core
         /// A collection of normalized values corresponding to waveform peaks.
         /// </summary>
         public List<double> WaveformData { get; set; }
+
+        /// <summary>
+        /// The URL for the square podcast artwork image for this message.
+        /// </summary>
+        public string PodcastImageUrl { get; set; }
+
+        /// <summary>
+        /// The formatted title for podcast RSS feeds (optional).
+        /// Format: "Series Name – Week # | Episode Title"
+        /// If not set, the regular Title will be used in the podcast feed.
+        /// </summary>
+        public string PodcastTitle { get; set; }
     }
 }
