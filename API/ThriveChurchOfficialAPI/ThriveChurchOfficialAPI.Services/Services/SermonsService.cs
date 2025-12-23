@@ -37,11 +37,13 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="cache"></param>
         /// <param name="s3Repository"></param>
         /// <param name="podcastLambdaService"></param>
+        /// <param name="podcastMessagesRepository"></param>
         public SermonsService(ISermonsRepository sermonsRepo,
             IMessagesRepository messagesRepository,
             IMemoryCache cache,
             IS3Repository s3Repository,
-            IPodcastLambdaService podcastLambdaService)
+            IPodcastLambdaService podcastLambdaService,
+            IPodcastMessagesRepository podcastMessagesRepository)
         {
             // init the repo with the connection string via DI
             _sermonsRepository = sermonsRepo;
@@ -49,6 +51,7 @@ namespace ThriveChurchOfficialAPI.Services
             _cache = cache;
             _s3Repository = s3Repository;
             _podcastLambdaService = podcastLambdaService;
+            _podcastMessagesRepository = podcastMessagesRepository;
         }
 
         /// <summary>
