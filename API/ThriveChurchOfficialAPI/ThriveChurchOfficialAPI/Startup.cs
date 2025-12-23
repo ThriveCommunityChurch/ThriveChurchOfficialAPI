@@ -290,6 +290,7 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IConfigRepository), typeof(ConfigRepository));
             services.AddTransient(typeof(IMessagesRepository), typeof(MessagesRepository));
             services.AddTransient(typeof(IS3Repository), typeof(S3Repository));
+            services.AddTransient(typeof(IPodcastMessagesRepository), typeof(PodcastMessagesRepository));
 
             // Authentication services
             services.AddTransient(typeof(IUserRepository), typeof(UserRepository));

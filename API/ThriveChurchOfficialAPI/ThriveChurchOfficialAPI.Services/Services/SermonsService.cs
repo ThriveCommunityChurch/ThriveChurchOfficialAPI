@@ -24,6 +24,7 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly IMemoryCache _cache;
         private readonly IS3Repository _s3Repository;
         private readonly IPodcastLambdaService _podcastLambdaService;
+        private readonly IPodcastMessagesRepository _podcastMessagesRepository;
         private Timer _timer;
 
         CultureInfo culture = new CultureInfo("en-US");
@@ -1923,6 +1924,24 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return new SystemResponse<string>("RSS feed rebuild initiated successfully. Cache has been cleared.", "Success!");
+        }
+
+        /// <summary>
+        /// Gets all podcast messages from DB
+        /// </summary>
+        /// <returns></returns>
+        public Task<List<PodcastMessage>> GetPodcastMessages()
+        {
+            return _podcastMessagesRepository.GetAllPodcastMessages();             
+        }
+
+        /// <summary>
+        /// Gets all podcast messages from DB
+        /// </summary>
+        /// <returns></returns>
+        public Task<PodcastMessage> UpdatePodcastMessage(string messageId, PodcastMessageRequest request)
+        {
+            return _podcastMessagesRepository.UpdatePodcastMessageById(messageId, request);
         }
     }
 
