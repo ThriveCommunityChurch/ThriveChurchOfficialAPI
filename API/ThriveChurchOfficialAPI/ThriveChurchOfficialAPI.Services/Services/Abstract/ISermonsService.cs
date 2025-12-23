@@ -163,5 +163,19 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <returns></returns>
         Task<SystemResponse<string>> RebuildSermonRSSFeed();
+
+        /// <summary>
+        /// Gets all podcast messages from DB
+        /// </summary>
+        /// <returns></returns>
+        Task<List<PodcastMessage>> GetPodcastMessages();
+
+        /// <summary>
+        /// Updates a podcast message
+        /// </summary>
+        /// <param name="messageId"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        Task<PodcastMessage> UpdatePodcastMessage(string messageId, PodcastMessageRequest request);
     }
 }

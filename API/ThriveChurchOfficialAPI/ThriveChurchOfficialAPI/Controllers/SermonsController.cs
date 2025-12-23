@@ -297,6 +297,44 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
+        /// Gets all podcast messages from DB
+        /// </summary>
+        /// <returns>response message</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpGet("feed/messages")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<ActionResult<List<PodcastMessage>>> GetPodcastMessages()
+        {
+            var response = await _sermonsService.GetPodcastMessages();
+            return response;
+        }
+
+        /// <summary>
+        /// Updates a podcast message
+        /// </summary>
+        /// <returns>response message</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpPost("feed/message/{MessageId}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<ActionResult<PodcastMessage>> UpdatePodcastMessage([BindRequired] string MessageId, [FromBody] PodcastMessageRequest request)
+        {
+            var response = await _sermonsService.UpdatePodcastMessage(MessageId, request);
+            return response;
+        }
+
+        /// <summary>
         /// Get Livestreaming information
         /// </summary>
         /// <returns>Live Streaming info</returns>
