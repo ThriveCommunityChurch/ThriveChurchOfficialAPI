@@ -1898,6 +1898,32 @@ namespace ThriveChurchOfficialAPI.Services
 
             return messagesResponse;
         }
+
+        /// <summary>
+        /// Rebuild the Sermon messages RSS feed
+        /// </summary>
+        /// <returns></returns>
+        public async Task<SystemResponse<string>> RebuildSermonRSSFeed()
+        {
+            // Invalidate known cache entries since series/messages may have changed
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
+            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+
+            var allSeriesResponse = await _sermonsRepository.GetAllSermons();
+            foreach (var series in allSeriesResponse)
+            {
+                _cache.Remove(string.Format(CacheKeys.GetSermonSeries, series.Id));
+            }
+
+            // Note: PagedSermonsCache:{page} entries will expire naturally (30 seconds)
+            var successful = await _podcastLambdaService.RebuildFeedAsync();
+            if (!successful)
+            {
+                return new SystemResponse<string>(true, "Unable to communicate with Lambda.");
+            }
+
+            return new SystemResponse<string>("RSS feed rebuild initiated successfully. Cache has been cleared.", "Success!");
+        }
     }
 
     /// <summary>

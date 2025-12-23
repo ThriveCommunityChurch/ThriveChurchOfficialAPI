@@ -157,5 +157,11 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="messageId"></param>
         /// <returns>Waveform Data</returns>
         Task<SystemResponse<List<double>>> GetMessageWaveformData(string messageId);
+
+        /// <summary>
+        /// Rebuild the Sermon messages RSS feed
+        /// </summary>
+        /// <returns></returns>
+        Task<SystemResponse<string>> RebuildSermonRSSFeed();
     }
 }

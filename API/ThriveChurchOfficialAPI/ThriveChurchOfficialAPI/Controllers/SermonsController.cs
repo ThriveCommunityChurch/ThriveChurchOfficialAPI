@@ -272,6 +272,31 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
+        /// Rebuild the Sermon messages RSS feed
+        /// </summary>
+        /// <returns>response message</returns>
+        /// <response code="200">OK</response>
+        /// <response code="400">Bad Request</response>
+        /// <response code="401">Unauthorized</response>
+        [Authorize]
+        [Produces("application/json")]
+        [HttpPost("feed/rebuild")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        public async Task<ActionResult<string>> RebuildSermonRSSFeed()
+        {
+            var response = await _sermonsService.RebuildSermonRSSFeed();
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
         /// Get Livestreaming information
         /// </summary>
         /// <returns>Live Streaming info</returns>
