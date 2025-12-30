@@ -298,6 +298,10 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IAuthenticationService), typeof(AuthenticationService));
             services.AddTransient(typeof(IJwtService), typeof(JwtService));
 
+            // Events services
+            services.AddTransient(typeof(IEventsRepository), typeof(EventsRepository));
+            services.AddTransient(typeof(IEventsService), typeof(EventsService));
+
             // Lambda services
             services.AddSingleton(typeof(IPodcastLambdaService), typeof(PodcastLambdaService));
 
