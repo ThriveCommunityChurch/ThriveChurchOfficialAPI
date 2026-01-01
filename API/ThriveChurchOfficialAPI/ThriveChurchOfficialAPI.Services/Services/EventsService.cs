@@ -317,9 +317,11 @@ namespace ThriveChurchOfficialAPI.Services
                 EndTime = e.EndTime,
                 IsRecurring = e.IsRecurring,
                 RecurrencePattern = e.Recurrence?.Pattern,
+                RecurrenceDayOfWeek = e.Recurrence?.DayOfWeek,
                 IsOnline = e.IsOnline,
                 LocationName = e.Location?.Name,
                 IsFeatured = e.IsFeatured,
+                IsActive = e.IsActive,
                 Tags = e.Tags ?? new List<string>()
             };
         }

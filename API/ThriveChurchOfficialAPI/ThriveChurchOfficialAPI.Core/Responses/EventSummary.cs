@@ -21,9 +21,11 @@ namespace ThriveChurchOfficialAPI.Core
             EndTime = null;
             IsRecurring = false;
             RecurrencePattern = null;
+            RecurrenceDayOfWeek = null;
             IsOnline = false;
             LocationName = null;
             IsFeatured = false;
+            IsActive = true;
             Tags = new List<string>();
         }
 
@@ -73,6 +75,12 @@ namespace ThriveChurchOfficialAPI.Core
         public RecurrencePattern? RecurrencePattern { get; set; }
 
         /// <summary>
+        /// The day of the week for recurring events (0=Sunday, 6=Saturday)
+        /// Used for display like "Weekly on Sundays"
+        /// </summary>
+        public int? RecurrenceDayOfWeek { get; set; }
+
+        /// <summary>
         /// Indicates if this is an online event
         /// </summary>
         public bool IsOnline { get; set; }
@@ -86,6 +94,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// Indicates if the event is featured
         /// </summary>
         public bool IsFeatured { get; set; }
+
+        /// <summary>
+        /// Indicates if the event is active (not cancelled)
+        /// </summary>
+        public bool IsActive { get; set; }
 
         /// <summary>
         /// Tags/categories for the event
