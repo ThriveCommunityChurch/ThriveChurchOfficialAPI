@@ -1,4 +1,4 @@
-﻿using MongoDB.Bson;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
@@ -32,6 +32,7 @@ namespace ThriveChurchOfficialAPI.Core
             WaveformData = new List<double>();
             PodcastImageUrl = null;
             PodcastTitle = null;
+            TranscriptUrl = null;
         }
 
         /// <summary>
@@ -133,6 +134,15 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         [DataType(DataType.Text)]
         public string PodcastTitle { get; set; }
+
+        /// <summary>
+        /// The URL to the full sermon transcript stored in Azure Blob Storage.
+        /// Transcripts are stored privately and accessed via authenticated requests.
+        /// Format: https://domain.com/transcripts/{messageId}.json
+        /// </summary>
+        [Url(ErrorMessage = "'TranscriptUrl' must be in valid url syntax.")]
+        [DataType(DataType.Url)]
+        public string TranscriptUrl { get; set; }
 
         /// <summary>
         /// Convert a collection of DB objects into the API response class

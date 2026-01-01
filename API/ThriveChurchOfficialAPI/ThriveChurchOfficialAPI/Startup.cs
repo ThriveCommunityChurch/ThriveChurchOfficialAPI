@@ -305,6 +305,11 @@ namespace ThriveChurchOfficialAPI
             // Lambda services
             services.AddSingleton(typeof(IPodcastLambdaService), typeof(PodcastLambdaService));
 
+            // Azure Blob Storage services (for transcripts)
+            var azureStorageConnectionString = Configuration["AzureStorageConnectionString"];
+            services.AddSingleton<ITranscriptService>(sp =>
+                new TranscriptService(azureStorageConnectionString, "transcripts"));
+
             #region Hangfire Tasks
 
             var hangfireStorageOptions = new MongoStorageOptions

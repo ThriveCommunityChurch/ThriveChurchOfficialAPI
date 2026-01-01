@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <UserSecretsId> </UserSecretsId>
     <ApplicationIcon />
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <StartupObject>ThriveChurchOfficialAPI.Program</StartupObject>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..</DockerfileContext>
