@@ -1962,5 +1962,12 @@ namespace ThriveChurchOfficialAPI.Services
         public static string GetConfig { get { return "SystemConfiguration:{0}"; } }
 
         public static string GetAllSermonsSummary { get { return "AllSermonsSummaryCache:{0}"; } }
+
+        // Event cache keys
+        public static string GetAllEvents { get { return "AllEventsCache:{0}"; } }
+
+        public static string GetEvent { get { return "EventCache:{0}"; } }
+
+        public static string GetFeaturedEvents { get { return "FeaturedEventsCache"; } }
     }
 }

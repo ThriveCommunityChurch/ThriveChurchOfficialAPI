@@ -19,16 +19,19 @@ namespace ThriveChurchOfficialAPI.Controllers
     public class SermonsController : ControllerBase
     {
         private readonly ISermonsService _sermonsService;
+        private readonly ITranscriptService _transcriptService;
 
         /// <summary>
         /// Sermons Controller C'tor
         /// </summary>
         /// <param name="sermonsService"></param>
-        public SermonsController(ISermonsService sermonsService)
+        /// <param name="transcriptService"></param>
+        public SermonsController(ISermonsService sermonsService, ITranscriptService transcriptService)
         {
-            // delay the init of the repo for when we go to the service, we will grab the connection 
+            // delay the init of the repo for when we go to the service, we will grab the connection
             // string from the IConfiguration object there instead of init-ing the repo here
             _sermonsService = sermonsService;
+            _transcriptService = transcriptService;
         }
 
         /// <summary>
@@ -265,6 +268,39 @@ namespace ThriveChurchOfficialAPI.Controllers
 
             if (response.HasErrors)
             {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Get the full transcript for a sermon message
+        /// </summary>
+        /// <remarks>
+        /// Returns the full transcript text along with metadata (title, speaker, word count).
+        /// Transcripts are stored in Azure Blob Storage and generated via AI transcription.
+        /// </remarks>
+        /// <param name="MessageId">The unique identifier of the message</param>
+        /// <returns>Transcript response containing full text and metadata</returns>
+        /// <response code="200">OK - Transcript found</response>
+        /// <response code="400">Bad Request - Invalid message ID</response>
+        /// <response code="404">Not Found - Transcript not available for this message</response>
+        [Produces("application/json")]
+        [HttpGet("series/message/{MessageId}/transcript")]
+        [ProducesResponseType(typeof(TranscriptResponse), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<TranscriptResponse>> GetMessageTranscript([BindRequired] string MessageId)
+        {
+            var response = await _transcriptService.GetTranscriptAsync(MessageId);
+
+            if (response.HasErrors)
+            {
+                if (response.ErrorMessage.Contains("not found"))
+                {
+                    return StatusCode(404, response.ErrorMessage);
+                }
                 return StatusCode(400, response.ErrorMessage);
             }
 
