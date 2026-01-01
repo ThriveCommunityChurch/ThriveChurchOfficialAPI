@@ -444,24 +444,6 @@ namespace ThriveChurchOfficialAPI.Controllers
         }
 
         /// <summary>
-        /// Schedule a livestream to occur regularly
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns>LiveSermon Object</returns>
-        /// <response code="401">Unauthorized</response>
-        [Authorize]
-        [HttpPost("live/schedule")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        public ActionResult<string> ScheduleLivestreams([FromBody] LiveSermonsSchedulingRequest request)
-        {
-            var response = _sermonsService.ScheduleLiveStream(request);
-
-            return response;
-        }
-
-        /// <summary>
         /// Get active livstream data
         /// </summary>
         /// <remarks>

@@ -59,7 +59,6 @@ jobs:
               -e ASPNETCORE_ENVIRONMENT=Production \
               -e PORT=8080 \
               -e MongoConnectionString="${{ secrets.MONGO_CONNECTION_STRING }}" \
-              -e HangfireConnectionString="${{ secrets.HANGFIRE_CONNECTION_STRING }}" \
               -e EsvApiKey="${{ secrets.ESV_API_KEY }}" \
               -e EmailPW="${{ secrets.EMAIL_PASSWORD }}" \
               -e S3__BucketName="${{ secrets.S3_BUCKET_NAME }}" \

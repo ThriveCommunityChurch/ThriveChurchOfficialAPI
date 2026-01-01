@@ -1,9 +1,6 @@
-using Hangfire;
-using Hangfire.Storage;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
-using NCrontab;
 using Serilog;
 using System;
 using System.Collections.Generic;
@@ -708,48 +705,6 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// Schedule a livestream to occur regularly
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public string ScheduleLiveStream(LiveSermonsSchedulingRequest request)
-        {
-            var hangfireCreationResponse = CreateLiveStreamStartHangfire(request);
-            var hangfireEndingResponse = CreateLiveStreamEndHangfire(request);
-
-            var hangfireResponse = $"Start Job ID: {hangfireCreationResponse}\nEnd Job ID: {hangfireEndingResponse}";
-            return hangfireResponse;
-        }
-
-        private string CreateLiveStreamStartHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var jobId = request.StartSchedule;
-
-            // Upserts the recurring job data
-            RecurringJob.AddOrUpdate(jobId, () =>
-                GoLiveHangfire(request),
-                request.StartSchedule,
-                TimeZoneInfo.Local
-            );
-
-            return jobId;
-        }
-
-        private string CreateLiveStreamEndHangfire(LiveSermonsSchedulingRequest request)
-        {
-            var jobId = request.EndSchedule;
-
-            // Upserts the recurring job data
-            RecurringJob.AddOrUpdate(jobId, () =>
-                EndLiveHangfire(request),
-                request.EndSchedule,
-                TimeZoneInfo.Local
-            );
-
-            return jobId;
-        }
-
-        /// <summary>
         /// returns a list of all Passage Objets
         /// </summary>
         public async Task<LiveStreamingResponse> GetLiveSermons()
@@ -777,35 +732,6 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             return response;
-        }
-
-        public Task GoLiveHangfire(LiveSermonsSchedulingRequest request)
-        {
-            CrontabSchedule schedule = CrontabSchedule.Parse(request.EndSchedule);
-            DateTime endTime = schedule.GetNextOccurrence(DateTime.Now);
-
-            var liveStreamUpdate = new LiveSermonsUpdateRequest
-            {
-                ExpirationTime = endTime
-            };
-
-            return GoLive(liveStreamUpdate);
-        }
-
-        public async Task EndLiveHangfire(LiveSermonsSchedulingRequest request)
-        {
-            CrontabSchedule schedule = CrontabSchedule.Parse(request.StartSchedule);
-            DateTime nextLocal = schedule.GetNextOccurrence(DateTime.Now);
-
-            List<RecurringJobDto> recurringJobs = JobStorage.Current.GetConnection().GetRecurringJobs();
-            var nextJobExecTime = recurringJobs.OrderBy(i => i.NextExecution.Value).First().NextExecution.Value;
-
-            // make sure that we're using UTC
-            DateTime nextLive = nextJobExecTime.ToUniversalTime();
-
-            var liveStreamCompletedResponse = await _sermonsRepository.UpdateLiveSermonsInactive(nextLive);
-
-            return;
         }
 
         /// <summary>

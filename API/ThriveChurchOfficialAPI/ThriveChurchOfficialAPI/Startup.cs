@@ -23,10 +23,6 @@
 */
 
 using AspNetCoreRateLimit;
-using Hangfire;
-using Hangfire.Mongo;
-using Hangfire.Mongo.Migration.Strategies;
-using Hangfire.Mongo.Migration.Strategies.Backup;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -310,26 +306,7 @@ namespace ThriveChurchOfficialAPI
             services.AddSingleton<ITranscriptService>(sp =>
                 new TranscriptService(azureStorageConnectionString, "transcripts"));
 
-            #region Hangfire Tasks
-
-            var hangfireStorageOptions = new MongoStorageOptions
-            {
-                MigrationOptions = new MongoMigrationOptions
-                {
-                    MigrationStrategy = new MigrateMongoMigrationStrategy(),
-                    BackupStrategy = new CollectionMongoBackupStrategy()
-                }
-            };
-
-            // Add framework services.
-            services.AddHangfire(config =>
-            {
-                config.UseMongoStorage(Configuration["HangfireConnectionString"], hangfireStorageOptions);
-            });
-
             Log.Information("Services configured.");
-
-            #endregion
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -367,10 +344,6 @@ namespace ThriveChurchOfficialAPI
             app.ConfigureCustomExceptionMiddleware();
 
             Log.Information("Exception middleware configured.");
-
-            #region Hangfire Tasks
-
-            #endregion
 
             app.UseIpRateLimiting();
 
