@@ -76,25 +76,24 @@ namespace ThriveChurchOfficialAPI.Services
                 var downloadResponse = await blobClient.DownloadContentAsync();
                 var content = downloadResponse.Value.Content.ToString();
 
-                // Parse the JSON content
-                var transcript = JsonConvert.DeserializeObject<TranscriptResponse>(content);
-                
-                if (transcript == null)
+                // Parse the JSON content from blob (uses camelCase)
+                var blob = JsonConvert.DeserializeObject<TranscriptBlob>(content);
+
+                if (blob == null)
                 {
-                    return new SystemResponse<TranscriptResponse>(true, 
+                    return new SystemResponse<TranscriptResponse>(true,
                         "Failed to parse transcript data.");
                 }
 
-                // Ensure the MessageId is set
-                transcript.MessageId = messageId;
-
-                // Calculate word count if not present
-                if (transcript.WordCount == 0 && !string.IsNullOrEmpty(transcript.FullText))
+                // Map blob DTO to API response (PascalCase)
+                var transcript = new TranscriptResponse
                 {
-                    transcript.WordCount = transcript.FullText.Split(
-                        new[] { ' ', '\t', '\n', '\r' }, 
-                        StringSplitOptions.RemoveEmptyEntries).Length;
-                }
+                    MessageId = messageId,
+                    Title = blob.Title,
+                    Speaker = blob.Speaker,
+                    FullText = blob.Transcript,
+                    WordCount = blob.WordCount
+                };
 
                 Log.Information("Successfully retrieved transcript for message: {MessageId}", messageId);
                 return new SystemResponse<TranscriptResponse>(transcript, "Success!");
