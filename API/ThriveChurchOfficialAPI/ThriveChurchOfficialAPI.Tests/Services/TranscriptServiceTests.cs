@@ -114,6 +114,166 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         }
 
         #endregion
+
+        #region GetSermonNotesAsync - Input Validation Tests
+
+        [TestMethod]
+        public async Task GetSermonNotesAsync_NullMessageId_ReturnsError()
+        {
+            // Arrange
+            var service = new TranscriptService(null, "transcripts");
+
+            // Act
+            var result = await service.GetSermonNotesAsync(null);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual("Message ID is required.", result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task GetSermonNotesAsync_EmptyMessageId_ReturnsError()
+        {
+            // Arrange
+            var service = new TranscriptService(null, "transcripts");
+
+            // Act
+            var result = await service.GetSermonNotesAsync(string.Empty);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual("Message ID is required.", result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task GetSermonNotesAsync_WhitespaceMessageId_ReturnsConfigurationError()
+        {
+            // Arrange
+            var service = new TranscriptService(null, "transcripts");
+
+            // Act
+            var result = await service.GetSermonNotesAsync("   ");
+
+            // Assert - whitespace passes IsNullOrEmpty check, so hits configuration error
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.ErrorMessage.Contains("not configured"));
+        }
+
+        #endregion
+
+        #region GetSermonNotesAsync - Unconfigured Service Tests
+
+        [TestMethod]
+        public async Task GetSermonNotesAsync_ServiceNotConfigured_ReturnsConfigurationError()
+        {
+            // Arrange - Create service with null connection string
+            var unconfiguredService = new TranscriptService(null, "transcripts");
+            var messageId = "507f1f77bcf86cd799439011";
+
+            // Act
+            var result = await unconfiguredService.GetSermonNotesAsync(messageId);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.ErrorMessage.Contains("not configured"));
+        }
+
+        [TestMethod]
+        public async Task GetSermonNotesAsync_EmptyConnectionString_ReturnsConfigurationError()
+        {
+            // Arrange
+            var service = new TranscriptService(string.Empty, "transcripts");
+            var messageId = "507f1f77bcf86cd799439011";
+
+            // Act
+            var result = await service.GetSermonNotesAsync(messageId);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.ErrorMessage.Contains("not configured"));
+        }
+
+        #endregion
+
+        #region GetStudyGuideAsync - Input Validation Tests
+
+        [TestMethod]
+        public async Task GetStudyGuideAsync_NullMessageId_ReturnsError()
+        {
+            // Arrange
+            var service = new TranscriptService(null, "transcripts");
+
+            // Act
+            var result = await service.GetStudyGuideAsync(null);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual("Message ID is required.", result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task GetStudyGuideAsync_EmptyMessageId_ReturnsError()
+        {
+            // Arrange
+            var service = new TranscriptService(null, "transcripts");
+
+            // Act
+            var result = await service.GetStudyGuideAsync(string.Empty);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual("Message ID is required.", result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task GetStudyGuideAsync_WhitespaceMessageId_ReturnsConfigurationError()
+        {
+            // Arrange
+            var service = new TranscriptService(null, "transcripts");
+
+            // Act
+            var result = await service.GetStudyGuideAsync("   ");
+
+            // Assert - whitespace passes IsNullOrEmpty check, so hits configuration error
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.ErrorMessage.Contains("not configured"));
+        }
+
+        #endregion
+
+        #region GetStudyGuideAsync - Unconfigured Service Tests
+
+        [TestMethod]
+        public async Task GetStudyGuideAsync_ServiceNotConfigured_ReturnsConfigurationError()
+        {
+            // Arrange - Create service with null connection string
+            var unconfiguredService = new TranscriptService(null, "transcripts");
+            var messageId = "507f1f77bcf86cd799439011";
+
+            // Act
+            var result = await unconfiguredService.GetStudyGuideAsync(messageId);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.ErrorMessage.Contains("not configured"));
+        }
+
+        [TestMethod]
+        public async Task GetStudyGuideAsync_EmptyConnectionString_ReturnsConfigurationError()
+        {
+            // Arrange
+            var service = new TranscriptService(string.Empty, "transcripts");
+            var messageId = "507f1f77bcf86cd799439011";
+
+            // Act
+            var result = await service.GetStudyGuideAsync(messageId);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.ErrorMessage.Contains("not configured"));
+        }
+
+        #endregion
     }
 }
 

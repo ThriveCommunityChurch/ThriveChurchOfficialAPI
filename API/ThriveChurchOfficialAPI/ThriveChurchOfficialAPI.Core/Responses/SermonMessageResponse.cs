@@ -89,5 +89,14 @@ namespace ThriveChurchOfficialAPI.Core
         /// If not set, the regular Title will be used in the podcast feed.
         /// </summary>
         public string PodcastTitle { get; set; }
+
+        /// <summary>
+        /// A list of transcript-related features available for this message.
+        /// Use these values to determine which API endpoints can be called:
+        /// - Transcript: GET /api/sermons/series/message/{id}/transcript
+        /// - Notes: GET /api/sermons/series/message/{id}/notes
+        /// - StudyGuide: GET /api/sermons/series/message/{id}/study-guide
+        /// </summary>
+        public List<TranscriptFeature> AvailableTranscriptFeatures { get; set; }
     }
 }

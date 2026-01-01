@@ -15,6 +15,8 @@ namespace ThriveChurchOfficialAPI.Core
             Speaker = null;
             FullText = null;
             WordCount = 0;
+            Notes = null;
+            StudyGuide = null;
         }
 
         /// <summary>
@@ -41,6 +43,16 @@ namespace ThriveChurchOfficialAPI.Core
         /// Word count of the transcript
         /// </summary>
         public int WordCount { get; set; }
+
+        /// <summary>
+        /// AI-generated sermon notes (optional - may be null if not yet generated)
+        /// </summary>
+        public SermonNotesResponse Notes { get; set; }
+
+        /// <summary>
+        /// AI-generated study guide (optional - may be null if not yet generated)
+        /// </summary>
+        public StudyGuideResponse StudyGuide { get; set; }
     }
 }
 
