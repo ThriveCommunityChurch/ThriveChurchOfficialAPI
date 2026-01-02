@@ -63,6 +63,11 @@ namespace ThriveChurchOfficialAPI.Core
         public List<string> TakeHomeChallenges { get; set; }
 
         /// <summary>
+        /// A short devotional reflection for personal or group use
+        /// </summary>
+        public string Devotional { get; set; }
+
+        /// <summary>
         /// Additional topics for further study
         /// </summary>
         public List<AdditionalStudyResponse> AdditionalStudy { get; set; }

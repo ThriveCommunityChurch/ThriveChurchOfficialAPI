@@ -288,6 +288,7 @@ namespace ThriveChurchOfficialAPI.Services
                 }).ToList(),
                 PrayerPrompts = blob.PrayerPrompts,
                 TakeHomeChallenges = blob.TakeHomeChallenges,
+                Devotional = blob.Devotional,
                 AdditionalStudy = blob.AdditionalStudy?.Select(a => new AdditionalStudyResponse
                 {
                     Topic = a.Topic,

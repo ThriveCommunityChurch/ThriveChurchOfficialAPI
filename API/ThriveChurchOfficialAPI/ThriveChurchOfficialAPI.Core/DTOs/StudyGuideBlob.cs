@@ -38,6 +38,9 @@ namespace ThriveChurchOfficialAPI.Core
         [JsonProperty("takeHomeChallenges")]
         public List<string> TakeHomeChallenges { get; set; }
 
+        [JsonProperty("devotional")]
+        public string Devotional { get; set; }
+
         [JsonProperty("additionalStudy")]
         public List<AdditionalStudyBlob> AdditionalStudy { get; set; }
 

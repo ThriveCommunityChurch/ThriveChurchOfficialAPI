@@ -295,6 +295,7 @@ namespace ThriveChurchOfficialAPI.Tests.Controllers
                 },
                 PrayerPrompts = new List<string> { "Thank God for His love" },
                 TakeHomeChallenges = new List<string> { "Show love to someone this week" },
+                Devotional = "Today, meditate on the depth of God's love for you. John 3:16 reminds us that God's love is sacrificial and unconditional.",
                 EstimatedStudyTime = "45 minutes",
                 GeneratedAt = "2024-01-01T12:00:00Z",
                 ModelUsed = "gpt-4"
