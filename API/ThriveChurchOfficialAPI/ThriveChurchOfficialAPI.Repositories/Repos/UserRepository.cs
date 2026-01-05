@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using System;
 using System.Threading.Tasks;
@@ -35,12 +35,12 @@ namespace ThriveChurchOfficialAPI.Repositories
             {
                 // Create unique index on username
                 var usernameIndexKeys = Builders<User>.IndexKeys.Ascending(u => u.Username);
-                var usernameIndexOptions = new CreateIndexOptions { Unique = true };
+                var usernameIndexOptions = new CreateIndexOptions { Unique = true, Name = IndexKeys.UsersByUsernameAsc_Unique };
                 var usernameIndexModel = new CreateIndexModel<User>(usernameIndexKeys, usernameIndexOptions);
 
                 // Create unique index on email
                 var emailIndexKeys = Builders<User>.IndexKeys.Ascending(u => u.Email);
-                var emailIndexOptions = new CreateIndexOptions { Unique = true };
+                var emailIndexOptions = new CreateIndexOptions { Unique = true, Name = IndexKeys.UsersByEmailAsc_Unique };
                 var emailIndexModel = new CreateIndexModel<User>(emailIndexKeys, emailIndexOptions);
 
                 _users.Indexes.CreateMany(new[] { usernameIndexModel, emailIndexModel });

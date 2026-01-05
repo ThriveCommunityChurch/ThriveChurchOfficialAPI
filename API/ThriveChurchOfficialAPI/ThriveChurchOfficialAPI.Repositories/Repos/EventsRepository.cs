@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -38,24 +38,24 @@ namespace ThriveChurchOfficialAPI.Repositories
                 // Index on StartTime for date-based queries
                 new CreateIndexModel<Event>(
                     Builders<Event>.IndexKeys.Ascending(e => e.StartTime),
-                    new CreateIndexOptions { Name = "idx_StartTime" }),
+                    new CreateIndexOptions { Name = IndexKeys.EventsByStartTimeAsc }),
 
                 // Index on IsActive for filtering active/inactive events
                 new CreateIndexModel<Event>(
                     Builders<Event>.IndexKeys.Ascending(e => e.IsActive),
-                    new CreateIndexOptions { Name = "idx_IsActive" }),
+                    new CreateIndexOptions { Name = IndexKeys.EventsByIsActiveAsc }),
 
                 // Index on IsFeatured for featured events queries
                 new CreateIndexModel<Event>(
                     Builders<Event>.IndexKeys.Ascending(e => e.IsFeatured),
-                    new CreateIndexOptions { Name = "idx_IsFeatured" }),
+                    new CreateIndexOptions { Name = IndexKeys.EventsByIsFeaturedAsc }),
 
                 // Compound index for common query pattern: active events sorted by start time
                 new CreateIndexModel<Event>(
                     Builders<Event>.IndexKeys
                         .Ascending(e => e.IsActive)
                         .Ascending(e => e.StartTime),
-                    new CreateIndexOptions { Name = "idx_IsActive_StartTime" })
+                    new CreateIndexOptions { Name = IndexKeys.EventsByIsActiveStartTimeAsc })
             };
 
             await _eventsCollection.Indexes.CreateManyAsync(indexModels);

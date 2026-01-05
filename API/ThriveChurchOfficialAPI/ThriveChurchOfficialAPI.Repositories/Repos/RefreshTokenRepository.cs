@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Serilog;
 using System;
@@ -37,16 +37,17 @@ namespace ThriveChurchOfficialAPI.Repositories
             {
                 // Create unique index on token value
                 var tokenIndexKeys = Builders<RefreshToken>.IndexKeys.Ascending(rt => rt.Token);
-                var tokenIndexOptions = new CreateIndexOptions { Unique = true };
+                var tokenIndexOptions = new CreateIndexOptions { Unique = true, Name = IndexKeys.RefreshTokensByTokenAsc_Unique };
                 var tokenIndexModel = new CreateIndexModel<RefreshToken>(tokenIndexKeys, tokenIndexOptions);
 
                 // Create index on user ID for efficient user token lookups
                 var userIdIndexKeys = Builders<RefreshToken>.IndexKeys.Ascending(rt => rt.UserId);
-                var userIdIndexModel = new CreateIndexModel<RefreshToken>(userIdIndexKeys);
+                var userIdIndexOptions = new CreateIndexOptions { Name = IndexKeys.RefreshTokensByUserIdAsc };
+                var userIdIndexModel = new CreateIndexModel<RefreshToken>(userIdIndexKeys, userIdIndexOptions);
 
                 // Create TTL index on expiration date for automatic cleanup
                 var expiresAtIndexKeys = Builders<RefreshToken>.IndexKeys.Ascending(rt => rt.ExpiresAt);
-                var expiresAtIndexOptions = new CreateIndexOptions { ExpireAfter = TimeSpan.Zero };
+                var expiresAtIndexOptions = new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = IndexKeys.RefreshTokensByExpiresAtTTL };
                 var expiresAtIndexModel = new CreateIndexModel<RefreshToken>(expiresAtIndexKeys, expiresAtIndexOptions);
 
                 // Create compound index for active tokens (not used, not revoked, not expired)
@@ -54,7 +55,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                     .Ascending(rt => rt.IsUsed)
                     .Ascending(rt => rt.IsRevoked)
                     .Ascending(rt => rt.ExpiresAt);
-                var activeTokenIndexModel = new CreateIndexModel<RefreshToken>(activeTokenIndexKeys);
+                var activeTokenIndexOptions = new CreateIndexOptions { Name = IndexKeys.RefreshTokensByActiveAsc };
+                var activeTokenIndexModel = new CreateIndexModel<RefreshToken>(activeTokenIndexKeys, activeTokenIndexOptions);
 
                 _refreshTokens.Indexes.CreateMany(new[] { 
                     tokenIndexModel, 
