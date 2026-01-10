@@ -17,7 +17,6 @@ services:
       
       # MongoDB Configuration
       - MongoConnectionString=${MONGO_CONNECTION_STRING}
-      - HangfireConnectionString=${HANGFIRE_CONNECTION_STRING}
       - TokenConnectionStringPath=Hashables
       
       # ESV API Configuration

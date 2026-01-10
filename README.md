@@ -127,7 +127,6 @@ Configure these in the AWS App Runner console:
 | Variable | Description |
 |----------|-------------|
 | `MongoConnectionString` | MongoDB Atlas connection string |
-| `HangfireConnectionString` | MongoDB connection for Hangfire jobs |
 | `JWT__SecretKey` | JWT secret key (min 256 bits) |
 | `JWT__Issuer` | JWT issuer (e.g., `ThriveChurchOfficialAPI`) |
 | `JWT__Audience` | JWT audience (e.g., `ThriveChurchClients`) |

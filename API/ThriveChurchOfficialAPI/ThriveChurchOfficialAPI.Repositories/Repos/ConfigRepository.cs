@@ -165,7 +165,7 @@ namespace ThriveChurchOfficialAPI.Repositories
 
             foreach (var existingIndex in indexes)
             {
-                if (existingIndex.GetElement("name").Value.ToString() == "Configs_Keys_1")
+                if (existingIndex.GetElement("name").Value.ToString() == IndexKeys.ConfigsByKeyAsc_Unique)
                 {
                     return;
                 }
@@ -174,7 +174,7 @@ namespace ThriveChurchOfficialAPI.Repositories
             var index = new CreateIndexModel<ConfigSetting>(new IndexKeysDefinitionBuilder<ConfigSetting>().Ascending(j => j.Key),
                 new CreateIndexOptions
                 {
-                    Name = "Configs_Keys_1",
+                    Name = IndexKeys.ConfigsByKeyAsc_Unique,
                     Background = false,
                     Unique = true
                 }

@@ -89,13 +89,6 @@ namespace ThriveChurchOfficialAPI.Services
         Task<SystemResponse<SermonMessage>> UpdateMessageInSermonSeries(string SeriesId, UpdateMessagesInSermonSeriesRequest request);
 
         /// <summary>
-        /// Schedule a livestream to occur regularly
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        string ScheduleLiveStream(LiveSermonsSchedulingRequest request);
-
-        /// <summary>
         /// Gets sermon statistics
         /// </summary>
         /// <returns></returns>

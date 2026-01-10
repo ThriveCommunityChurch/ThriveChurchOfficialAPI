@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 
 namespace ThriveChurchOfficialAPI.Core
 {
@@ -26,6 +26,11 @@ namespace ThriveChurchOfficialAPI.Core
 
         [JsonProperty("uploadedAt")]
         public string UploadedAt { get; set; }
+
+        [JsonProperty("notes")]
+        public SermonNotesBlob Notes { get; set; }
+
+        [JsonProperty("studyGuide")]
+        public StudyGuideBlob StudyGuide { get; set; }
     }
 }
-

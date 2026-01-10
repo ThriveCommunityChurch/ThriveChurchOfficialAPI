@@ -279,10 +279,11 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// </summary>
         /// <remarks>
         /// Returns the full transcript text along with metadata (title, speaker, word count).
+        /// Also includes sermon notes and study guide if available.
         /// Transcripts are stored in Azure Blob Storage and generated via AI transcription.
         /// </remarks>
         /// <param name="MessageId">The unique identifier of the message</param>
-        /// <returns>Transcript response containing full text and metadata</returns>
+        /// <returns>Transcript response containing full text, metadata, and optional notes/study guide</returns>
         /// <response code="200">OK - Transcript found</response>
         /// <response code="400">Bad Request - Invalid message ID</response>
         /// <response code="404">Not Found - Transcript not available for this message</response>
@@ -298,6 +299,73 @@ namespace ThriveChurchOfficialAPI.Controllers
             if (response.HasErrors)
             {
                 if (response.ErrorMessage.Contains("not found"))
+                {
+                    return StatusCode(404, response.ErrorMessage);
+                }
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Get AI-generated sermon notes for a message
+        /// </summary>
+        /// <remarks>
+        /// Returns structured sermon notes including key points, scripture references, quotes, and application points.
+        /// Notes are AI-generated from the sermon transcript.
+        /// </remarks>
+        /// <param name="MessageId">The unique identifier of the message</param>
+        /// <returns>Sermon notes response with structured content</returns>
+        /// <response code="200">OK - Sermon notes found</response>
+        /// <response code="400">Bad Request - Invalid message ID or service not configured</response>
+        /// <response code="404">Not Found - Sermon notes not yet generated for this message</response>
+        [Produces("application/json")]
+        [HttpGet("series/message/{MessageId}/notes")]
+        [ProducesResponseType(typeof(SermonNotesResponse), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<SermonNotesResponse>> GetSermonNotes([BindRequired] string MessageId)
+        {
+            var response = await _transcriptService.GetSermonNotesAsync(MessageId);
+
+            if (response.HasErrors)
+            {
+                if (response.ErrorMessage.Contains("not found") || response.ErrorMessage.Contains("not yet generated"))
+                {
+                    return StatusCode(404, response.ErrorMessage);
+                }
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
+
+        /// <summary>
+        /// Get AI-generated study guide for a message
+        /// </summary>
+        /// <remarks>
+        /// Returns a structured study guide suitable for small group discussion.
+        /// Includes discussion questions, scripture references, illustrations, prayer prompts, and take-home challenges.
+        /// Study guides are AI-generated from the sermon transcript.
+        /// </remarks>
+        /// <param name="MessageId">The unique identifier of the message</param>
+        /// <returns>Study guide response with discussion material</returns>
+        /// <response code="200">OK - Study guide found</response>
+        /// <response code="400">Bad Request - Invalid message ID or service not configured</response>
+        /// <response code="404">Not Found - Study guide not yet generated for this message</response>
+        [Produces("application/json")]
+        [HttpGet("series/message/{MessageId}/study-guide")]
+        [ProducesResponseType(typeof(StudyGuideResponse), 200)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<StudyGuideResponse>> GetStudyGuide([BindRequired] string MessageId)
+        {
+            var response = await _transcriptService.GetStudyGuideAsync(MessageId);
+
+            if (response.HasErrors)
+            {
+                if (response.ErrorMessage.Contains("not found") || response.ErrorMessage.Contains("not yet generated"))
                 {
                     return StatusCode(404, response.ErrorMessage);
                 }
@@ -441,24 +509,6 @@ namespace ThriveChurchOfficialAPI.Controllers
             }
 
             return response.Result;
-        }
-
-        /// <summary>
-        /// Schedule a livestream to occur regularly
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns>LiveSermon Object</returns>
-        /// <response code="401">Unauthorized</response>
-        [Authorize]
-        [HttpPost("live/schedule")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        public ActionResult<string> ScheduleLivestreams([FromBody] LiveSermonsSchedulingRequest request)
-        {
-            var response = _sermonsService.ScheduleLiveStream(request);
-
-            return response;
         }
 
         /// <summary>

@@ -32,7 +32,8 @@ namespace ThriveChurchOfficialAPI.Core
             WaveformData = new List<double>();
             PodcastImageUrl = null;
             PodcastTitle = null;
-            TranscriptUrl = null;
+            BlobUrl = null;
+            AvailableTranscriptFeatures = new List<TranscriptFeature>();
         }
 
         /// <summary>
@@ -136,13 +137,20 @@ namespace ThriveChurchOfficialAPI.Core
         public string PodcastTitle { get; set; }
 
         /// <summary>
-        /// The URL to the full sermon transcript stored in Azure Blob Storage.
-        /// Transcripts are stored privately and accessed via authenticated requests.
+        /// The URL to the sermon blob stored in Azure Blob Storage.
+        /// This blob contains the transcript, notes, and study guide (when available).
         /// Format: https://domain.com/transcripts/{messageId}.json
         /// </summary>
-        [Url(ErrorMessage = "'TranscriptUrl' must be in valid url syntax.")]
+        [Url(ErrorMessage = "'BlobUrl' must be in valid url syntax.")]
         [DataType(DataType.Url)]
-        public string TranscriptUrl { get; set; }
+        public string BlobUrl { get; set; }
+
+        /// <summary>
+        /// List of transcript-related features available for this message.
+        /// Updated by the Lambda/processing pipeline when content is generated.
+        /// Values: Transcript, Notes, StudyGuide
+        /// </summary>
+        public List<TranscriptFeature> AvailableTranscriptFeatures { get; set; }
 
         /// <summary>
         /// Convert a collection of DB objects into the API response class
@@ -178,6 +186,7 @@ namespace ThriveChurchOfficialAPI.Core
                     WaveformData = message.WaveformData,
                     PodcastImageUrl = message.PodcastImageUrl,
                     PodcastTitle = message.PodcastTitle,
+                    AvailableTranscriptFeatures = message.AvailableTranscriptFeatures ?? new List<TranscriptFeature>(),
                 });
             }
 
