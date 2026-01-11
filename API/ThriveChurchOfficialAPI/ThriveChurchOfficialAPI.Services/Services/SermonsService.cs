@@ -291,6 +291,12 @@ namespace ThriveChurchOfficialAPI.Services
             _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
             _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
 
+            // Trigger podcast RSS feed update for each new message (fire-and-forget)
+            foreach (var newMessage in newMessagesResponse.Result)
+            {
+                _ = _podcastLambdaService.UpsertEpisodeAsync(newMessage.Id);
+            }
+
             return new SystemResponse<SermonSeriesResponse>(response, "Success!");
         }
 
