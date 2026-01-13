@@ -11,6 +11,10 @@ env:
   ECR_REPOSITORY: thrive-fl/thrivechurchofficialapi
   APP_RUNNER_SERVICE: thrive-api
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     name: Build and Deploy
@@ -23,8 +27,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::349570132161:role/GitHub_OIDC
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
