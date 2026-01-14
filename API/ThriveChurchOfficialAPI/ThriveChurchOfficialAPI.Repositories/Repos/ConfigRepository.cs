@@ -74,7 +74,8 @@ namespace ThriveChurchOfficialAPI.Repositories
                     new List<string>
                     {
                         "Address_Main",
-                        "Location_Name"
+                        "Location_Name",
+                        "Team_Members"
                     }
                 },
                 {

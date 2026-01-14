@@ -16,8 +16,8 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ICacheService _cache;
 
         // Cache TTLs for events
-        private static readonly TimeSpan EventListCacheTTL = TimeSpan.FromMinutes(5);
-        private static readonly TimeSpan EventItemCacheTTL = TimeSpan.FromHours(1);
+        private static readonly TimeSpan EventListCacheTTL = TimeSpan.FromMinutes(60);
+        private static readonly TimeSpan EventItemCacheTTL = TimeSpan.FromHours(6);
 
         /// <summary>
         /// Events Service constructor
@@ -37,10 +37,10 @@ namespace ThriveChurchOfficialAPI.Services
         {
             var cacheKey = CacheKeys.Format(CacheKeys.EventsAll, includeInactive);
             // Read in one operation to avoid race conditions
-            var cachedResponse = _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
+            var cachedResponse = _cache.ReadFromCache<AllEventsResponse>(cacheKey);
             if (cachedResponse != null)
             {
-                return cachedResponse;
+                return new SystemResponse<AllEventsResponse>(cachedResponse, "Success!");
             }
 
             var events = await _eventsRepository.GetAllEvents(includeInactive);
@@ -52,10 +52,9 @@ namespace ThriveChurchOfficialAPI.Services
                 TotalCount = summaries.Count
             };
 
-            var systemResponse = new SystemResponse<AllEventsResponse>(response, "Success!");
-            _cache.InsertIntoCache(cacheKey, systemResponse, EventListCacheTTL);
+            _cache.InsertIntoCache(cacheKey, response, EventListCacheTTL);
 
-            return systemResponse;
+            return new SystemResponse<AllEventsResponse>(response, "Success!");
         }
 
         /// <summary>
@@ -115,10 +114,10 @@ namespace ThriveChurchOfficialAPI.Services
 
             var cacheKey = CacheKeys.Format(CacheKeys.EventItem, eventId);
             // Read in one operation to avoid race conditions
-            var cachedResponse = _cache.ReadFromCache<SystemResponse<EventResponse>>(cacheKey);
-            if (cachedResponse != null)
+            var cachedEvent = _cache.ReadFromCache<Event>(cacheKey);
+            if (cachedEvent != null)
             {
-                return cachedResponse;
+                return new SystemResponse<EventResponse>(new EventResponse { Event = cachedEvent }, "Success!");
             }
 
             var eventEntity = await _eventsRepository.GetEventById(eventId);
@@ -127,11 +126,9 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<EventResponse>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "event", eventId));
             }
 
-            var response = new EventResponse { Event = eventEntity };
-            var systemResponse = new SystemResponse<EventResponse>(response, "Success!");
-            _cache.InsertIntoCache(cacheKey, systemResponse, EventItemCacheTTL);
+            _cache.InsertIntoCache(cacheKey, eventEntity, EventItemCacheTTL);
 
-            return systemResponse;
+            return new SystemResponse<EventResponse>(new EventResponse { Event = eventEntity }, "Success!");
         }
 
         /// <summary>
@@ -141,10 +138,10 @@ namespace ThriveChurchOfficialAPI.Services
         {
             var cacheKey = CacheKeys.EventsFeatured;
             // Read in one operation to avoid race conditions
-            var cachedResponse = _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
+            var cachedResponse = _cache.ReadFromCache<AllEventsResponse>(cacheKey);
             if (cachedResponse != null)
             {
-                return cachedResponse;
+                return new SystemResponse<AllEventsResponse>(cachedResponse, "Success!");
             }
 
             var events = await _eventsRepository.GetFeaturedEvents();
@@ -156,10 +153,9 @@ namespace ThriveChurchOfficialAPI.Services
                 TotalCount = summaries.Count
             };
 
-            var systemResponse = new SystemResponse<AllEventsResponse>(response, "Success!");
-            _cache.InsertIntoCache(cacheKey, systemResponse, EventListCacheTTL);
+            _cache.InsertIntoCache(cacheKey, response, EventListCacheTTL);
 
-            return systemResponse;
+            return new SystemResponse<AllEventsResponse>(response, "Success!");
         }
 
         /// <summary>

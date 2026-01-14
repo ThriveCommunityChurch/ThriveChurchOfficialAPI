@@ -61,10 +61,10 @@ namespace ThriveChurchOfficialAPI.Services
         {
             // Check the cache first -> read in one operation to avoid race conditions
             var cacheKey = CacheKeys.Format(CacheKeys.SermonsSummary, highResImg);
-            var cachedResponse = _cache.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(cacheKey);
+            var cachedResponse = _cache.ReadFromCache<AllSermonsSummaryResponse>(cacheKey);
             if (cachedResponse != null)
             {
-                return cachedResponse;
+                return new SystemResponse<AllSermonsSummaryResponse>(cachedResponse, "Success!");
             }
 
             var getAllSermonsTask = _sermonsRepository.GetAllSermons();
@@ -101,12 +101,10 @@ namespace ThriveChurchOfficialAPI.Services
                 Summaries = responseList
             };
 
-            var systemResponse = new SystemResponse<AllSermonsSummaryResponse>(response, "Success!");
-
             // Save data in persistent cache
-            _cache.InsertIntoCache(cacheKey, systemResponse, PersistentCacheTTL);
+            _cache.InsertIntoCache(cacheKey, response, PersistentCacheTTL);
 
-            return systemResponse;
+            return new SystemResponse<AllSermonsSummaryResponse>(response, "Success!");
         }
 
         /// <summary>
@@ -127,10 +125,10 @@ namespace ThriveChurchOfficialAPI.Services
             var cacheKey = CacheKeys.Format(CacheKeys.SermonsPage, pageNumber);
 
             // check the cache first -> read in one operation to avoid race conditions
-            var cachedResponse = _cache.ReadFromCache<SystemResponse<SermonsSummaryPagedResponse>>(cacheKey);
+            var cachedResponse = _cache.ReadFromCache<SermonsSummaryPagedResponse>(cacheKey);
             if (cachedResponse != null)
             {
-                return cachedResponse;
+                return new SystemResponse<SermonsSummaryPagedResponse>(cachedResponse, "Success!");
             }
 
             // Key not in cache, so get data.
@@ -142,7 +140,7 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // Save data in cache.
-            _cache.InsertIntoCache(cacheKey, pagedSermonsResponse, StandardCacheTTL);
+            _cache.InsertIntoCache(cacheKey, pagedSermonsResponse.Result, StandardCacheTTL);
 
             return pagedSermonsResponse;
         }
