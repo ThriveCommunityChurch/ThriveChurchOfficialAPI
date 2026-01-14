@@ -960,9 +960,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetAllMessages())
                 .ReturnsAsync(messagesList);
 
-            // Setup cache miss
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns((SystemResponse<AllSermonsSummaryResponse>)null);
+            // Setup cache miss - Moq returns default(T) which is null for reference types
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: false);
@@ -979,7 +977,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Verify cache InsertIntoCache was called with the correct key pattern
             _mockCache.Verify(c => c.InsertIntoCache(It.Is<string>(key =>
-                key.Contains("thrive:sermons:summary")), It.IsAny<SystemResponse<AllSermonsSummaryResponse>>(), It.IsAny<TimeSpan>()), Times.Once);
+                key.Contains("thrive:sermons:summary")), It.IsAny<AllSermonsSummaryResponse>(), It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [TestMethod]
@@ -991,13 +989,11 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 new AllSermonSeriesSummary { Id = "1", Title = "Cached Series 1", MessageCount = 5 },
                 new AllSermonSeriesSummary { Id = "2", Title = "Cached Series 2", MessageCount = 3 }
             };
-            var cachedResponse = new SystemResponse<AllSermonsSummaryResponse>(
-                new AllSermonsSummaryResponse { Summaries = cachedSummaries },
-                "Success!");
+            var cachedData = new AllSermonsSummaryResponse { Summaries = cachedSummaries };
 
-            // Setup cache hit - ReadFromCache returns the cached value
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns(cachedResponse);
+            // Setup cache hit - ReadFromCache returns the cached data object
+            _mockCache.Setup(c => c.ReadFromCache<AllSermonsSummaryResponse>(It.IsAny<string>()))
+                .Returns(cachedData);
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: false);
@@ -1027,9 +1023,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetAllMessages())
                 .ReturnsAsync(messagesList);
 
-            // Setup cache miss
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns((SystemResponse<AllSermonsSummaryResponse>)null);
+            // Setup cache miss - Moq returns default(T) which is null for reference types
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: true);
@@ -1040,7 +1034,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Verify cache key contains "true" for highResImg (lowercase)
             _mockCache.Verify(c => c.InsertIntoCache(It.Is<string>(key =>
-                key.Contains("thrive:sermons:summary:true")), It.IsAny<SystemResponse<AllSermonsSummaryResponse>>(), It.IsAny<TimeSpan>()), Times.Once);
+                key.Contains("thrive:sermons:summary:true")), It.IsAny<AllSermonsSummaryResponse>(), It.IsAny<TimeSpan>()), Times.Once);
         }
 
         [TestMethod]
@@ -1065,9 +1059,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetAllMessages())
                 .ReturnsAsync(messagesList);
 
-            // Setup cache miss
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns((SystemResponse<AllSermonsSummaryResponse>)null);
+            // Setup cache miss - Moq returns default(T) which is null for reference types
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: false);
@@ -1101,9 +1093,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetAllMessages())
                 .ReturnsAsync(messagesList);
 
-            // Setup cache miss
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns((SystemResponse<AllSermonsSummaryResponse>)null);
+            // Setup cache miss - Moq returns default(T) which is null for reference types
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: true);
@@ -1139,9 +1129,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetAllMessages())
                 .ReturnsAsync(messages);
 
-            // Setup cache miss
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns((SystemResponse<AllSermonsSummaryResponse>)null);
+            // Setup cache miss - Moq returns default(T) which is null for reference types
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: false);
@@ -1172,9 +1160,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockMessagesRepository.Setup(r => r.GetAllMessages())
                 .ReturnsAsync(emptyMessages);
 
-            // Setup cache miss
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
-                .Returns((SystemResponse<AllSermonsSummaryResponse>)null);
+            // Setup cache miss - Moq returns default(T) which is null for reference types
 
             // Act
             var result = await _sermonsService.GetAllSermons(highResImg: false);

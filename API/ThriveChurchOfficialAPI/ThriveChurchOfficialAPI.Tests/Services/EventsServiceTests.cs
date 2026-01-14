@@ -620,13 +620,11 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetAllEvents_CacheHit_ReturnsCachedResult()
         {
             // Arrange
-            var cachedResponse = new SystemResponse<AllEventsResponse>(
-                new AllEventsResponse { Events = new List<EventSummary>(), TotalCount = 5 },
-                "Success!");
+            var cachedData = new AllEventsResponse { Events = new List<EventSummary>(), TotalCount = 5 };
 
-            // Setup cache hit - ReadFromCache returns the cached value
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllEventsResponse>>(It.IsAny<string>()))
-                .Returns(cachedResponse);
+            // Setup cache hit - ReadFromCache returns the cached data object
+            _mockCache.Setup(c => c.ReadFromCache<AllEventsResponse>(It.IsAny<string>()))
+                .Returns(cachedData);
 
             // Act
             var result = await _eventsService.GetAllEvents();
@@ -643,13 +641,10 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             // Arrange
             var eventId = "507f1f77bcf86cd799439011";
             var cachedEvent = CreateTestEvent(eventId, "Cached Event", DateTime.UtcNow);
-            var cachedResponse = new SystemResponse<EventResponse>(
-                new EventResponse { Event = cachedEvent },
-                "Success!");
 
-            // Setup cache hit - ReadFromCache returns the cached value
-            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<EventResponse>>(It.Is<string>(k => k.Contains(eventId))))
-                .Returns(cachedResponse);
+            // Setup cache hit - ReadFromCache returns the cached Event object
+            _mockCache.Setup(c => c.ReadFromCache<Event>(It.Is<string>(k => k.Contains(eventId))))
+                .Returns(cachedEvent);
 
             // Act
             var result = await _eventsService.GetEventById(eventId);

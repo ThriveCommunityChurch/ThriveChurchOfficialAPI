@@ -1,9 +1,12 @@
-name: Deploy to AWS App Runner
+name: Deploy Thrive API to AWS App Runner
 
 on:
   push:
     branches:
       - master
+    paths:
+      - 'API/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 env:
@@ -14,6 +17,7 @@ env:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 jobs:
   deploy:
@@ -34,14 +38,33 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Calculate daily build number
+        id: build-number
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get today's date in UTC (same timezone GitHub Actions uses)
+          TODAY=$(date -u +'%Y-%m-%d')
+
+          # Query GitHub API for all workflow runs of this workflow that started today
+          # This counts all runs (success, failure, cancelled, in_progress) for the day
+          DAILY_RUN_COUNT=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/actions/workflows/deploy.yml/runs?created=>=${TODAY}T00:00:00Z" \
+            --jq '.total_count')
+
+          # The current run is included in the count, so this is our build number for today
+          echo "Daily build number: $DAILY_RUN_COUNT"
+          echo "number=$DAILY_RUN_COUNT" >> $GITHUB_OUTPUT
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          # Generate image tag in yyyy.mm.dd.build# format
-          DATE_TAG=$(date +'%Y.%m.%d')
-          IMAGE_TAG="${DATE_TAG}.${{ github.run_number }}"
+          # Generate image tag in yyyy.mm.dd.build# format (build# resets daily)
+          DATE_TAG=$(date -u +'%Y.%m.%d')
+          IMAGE_TAG="${DATE_TAG}.${{ steps.build-number.outputs.number }}"
 
           # Build the Docker image
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./API/ThriveChurchOfficialAPI
@@ -53,6 +76,7 @@ jobs:
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Deploy to App Runner
+        id: deploy
         env:
           IMAGE_URI: ${{ steps.build-image.outputs.image }}
         run: |
@@ -80,11 +104,53 @@ jobs:
 
           # Update the service with the new image while preserving all other settings
           # Only output the operation ID (safe) - suppress all other output that contains env vars
-          aws apprunner update-service \
+          OPERATION_ID=$(aws apprunner update-service \
             --service-arn $SERVICE_ARN \
             --source-configuration "$UPDATED_SOURCE_CONFIG" \
             --query 'OperationId' \
-            --output text
+            --output text)
 
-          echo "App Runner service updated for: ${{ env.APP_RUNNER_SERVICE }}"
+          echo "App Runner service update initiated for: ${{ env.APP_RUNNER_SERVICE }}"
+          echo "Operation ID: $OPERATION_ID"
 
+          # Output the service ARN for the next step
+          echo "service-arn=$SERVICE_ARN" >> $GITHUB_OUTPUT
+
+      - name: Wait for App Runner service to be ready
+        run: |
+          SERVICE_ARN="${{ steps.deploy.outputs.service-arn }}"
+
+          echo "Waiting for App Runner service to be ready..."
+          TIMEOUT=300
+          POLL_INTERVAL=15
+          ELAPSED=0
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            SERVICE_STATUS=$(aws apprunner describe-service \
+              --service-arn $SERVICE_ARN \
+              --query 'Service.Status' \
+              --output text)
+
+            echo "Service status: $SERVICE_STATUS (elapsed: ${ELAPSED}s)"
+
+            if [ "$SERVICE_STATUS" == "RUNNING" ]; then
+              echo "App Runner service is now running!"
+              exit 0
+            elif [ "$SERVICE_STATUS" == "OPERATION_IN_PROGRESS" ] || [ "$SERVICE_STATUS" == "CREATE_FAILED" ] || [ "$SERVICE_STATUS" == "DELETE_FAILED" ]; then
+              # OPERATION_IN_PROGRESS is expected, continue polling
+              # CREATE_FAILED and DELETE_FAILED are terminal but shouldn't happen during update
+              if [ "$SERVICE_STATUS" != "OPERATION_IN_PROGRESS" ]; then
+                echo "App Runner service entered unexpected state: $SERVICE_STATUS"
+                exit 1
+              fi
+            else
+              # Any other unexpected status
+              echo "Unexpected service status: $SERVICE_STATUS"
+            fi
+
+            sleep $POLL_INTERVAL
+            ELAPSED=$((ELAPSED + POLL_INTERVAL))
+          done
+
+          echo "Timeout: App Runner service did not become ready within ${TIMEOUT} seconds"
+          exit 1
