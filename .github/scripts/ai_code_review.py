@@ -339,10 +339,19 @@ def format_fallback_summary(comments):
     lines = ["🤖 **AI Code Review**\n"]
 
     for comment in comments:
-        filename = comment.get("file", "unknown")
-        line = comment.get("line", "?")
+        filename = comment.get("file", "")
+        line = comment.get("line", 0)
         body = comment.get("body", "")
+
+        # Skip comments with missing required fields
+        if not filename or not line or not body:
+            continue
+
         lines.append(f"**{filename}** (line {line}):\n> {body}\n")
+
+    # If all comments were filtered out, return a success message
+    if len(lines) == 1:
+        return "✅ **AI Code Review**: No issues found. The changes look good!"
 
     return "\n".join(lines)
 
