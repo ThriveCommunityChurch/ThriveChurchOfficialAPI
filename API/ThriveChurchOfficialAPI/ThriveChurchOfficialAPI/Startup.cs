@@ -99,20 +99,37 @@ namespace ThriveChurchOfficialAPI
             #region Response Compression
 
             // Add response compression for mobile bandwidth optimization
+            // Brotli offers ~15-20% better compression than Gzip for text-based content
             services.AddResponseCompression(options =>
             {
                 options.EnableForHttps = true; // Enable compression for HTTPS
+
+                // Brotli first (preferred for modern browsers), then Gzip as fallback
+                options.Providers.Add<BrotliCompressionProvider>();
                 options.Providers.Add<GzipCompressionProvider>();
 
-                // Add MIME types to compress (JSON responses)
+                // Add MIME types to compress (JSON responses and other text-based content)
                 options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-                    new[] { "application/json", "text/json" });
+                    new[] {
+                        "application/json",
+                        "text/json",
+                        "application/xml",
+                        "text/xml",
+                        "application/javascript",
+                        "text/css"
+                    });
             });
 
-            // Configure Gzip compression level
+            // Configure Brotli compression level (Optimal balances speed and ratio)
+            services.Configure<BrotliCompressionProviderOptions>(options =>
+            {
+                options.Level = CompressionLevel.Optimal; // Best balance for API responses
+            });
+
+            // Configure Gzip compression level as fallback
             services.Configure<GzipCompressionProviderOptions>(options =>
             {
-                options.Level = CompressionLevel.Fastest; // Balance between speed and compression ratio
+                options.Level = CompressionLevel.Optimal; // Match Brotli for consistency
             });
 
             #endregion
@@ -382,9 +399,10 @@ namespace ThriveChurchOfficialAPI
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // Enable response compression (must be early in pipeline)
+            // Brotli/Gzip compression reduces JSON payload sizes by 60-80%
             app.UseResponseCompression();
 
-            Log.Information("Response compression configured.");
+            Log.Information("Response compression configured (Brotli + Gzip).");
 
             if (env.IsDevelopment())
             {
