@@ -24,8 +24,8 @@ namespace ThriveChurchOfficialAPI.Services
         private Timer _timer;
 
         // Cache TTLs
-        private static readonly TimeSpan StandardCacheTTL = TimeSpan.FromSeconds(60);
-        private static readonly TimeSpan PersistentCacheTTL = TimeSpan.FromHours(6); // Sermon data changes infrequently
+        private static readonly TimeSpan StandardCacheTTL = TimeSpan.FromHours(24);
+        private static readonly TimeSpan PersistentCacheTTL = TimeSpan.FromDays(7); // Sermon data changes infrequently
 
         CultureInfo culture = new CultureInfo("en-US");
 
