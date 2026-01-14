@@ -47,6 +47,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using StackExchange.Redis;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using ThriveChurchOfficialAPI.Repositories;
@@ -64,10 +65,17 @@ namespace ThriveChurchOfficialAPI
         /// </summary>
         public IConfigurationRoot Configuration { get; set; }
 
+        /// <summary>
+        /// Hosting environment
+        /// </summary>
+        private readonly IWebHostEnvironment _env;
+
         readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
         public Startup(IWebHostEnvironment env)
         {
+            _env = env;
+
             var builder = new ConfigurationBuilder()
             .SetBasePath(env.ContentRootPath)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
@@ -91,26 +99,104 @@ namespace ThriveChurchOfficialAPI
             #region Response Compression
 
             // Add response compression for mobile bandwidth optimization
+            // Brotli offers ~15-20% better compression than Gzip for text-based content
             services.AddResponseCompression(options =>
             {
                 options.EnableForHttps = true; // Enable compression for HTTPS
+
+                // Brotli first (preferred for modern browsers), then Gzip as fallback
+                options.Providers.Add<BrotliCompressionProvider>();
                 options.Providers.Add<GzipCompressionProvider>();
 
-                // Add MIME types to compress (JSON responses)
+                // Add MIME types to compress (JSON responses and other text-based content)
                 options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
-                    new[] { "application/json", "text/json" });
+                    new[] {
+                        "application/json",
+                        "text/json",
+                        "application/xml",
+                        "text/xml",
+                        "application/javascript",
+                        "text/css"
+                    });
             });
 
-            // Configure Gzip compression level
+            // Configure Brotli compression level (Optimal balances speed and ratio)
+            services.Configure<BrotliCompressionProviderOptions>(options =>
+            {
+                options.Level = CompressionLevel.Optimal; // Best balance for API responses
+            });
+
+            // Configure Gzip compression level as fallback
             services.Configure<GzipCompressionProviderOptions>(options =>
             {
-                options.Level = CompressionLevel.Fastest; // Balance between speed and compression ratio
+                options.Level = CompressionLevel.Optimal; // Match Brotli for consistency
             });
 
             #endregion
 
-            // enable in-memory caching
+            #region Caching Configuration
+
+            // Always add memory cache (used as fallback and for development)
             services.AddMemoryCache();
+
+            // Register cache service based on environment
+            if (_env.IsDevelopment())
+            {
+                // Development: Use in-memory cache
+                Log.Information("Development environment detected. Using in-memory cache.");
+                services.AddSingleton<ICacheService, MemoryCacheService>();
+            }
+            else
+            {
+                // Production: Use Redis cache
+                var redisConnectionString = Configuration["RedisConnectionString"];
+                if (!string.IsNullOrEmpty(redisConnectionString))
+                {
+                    Log.Information("Attempting to connect to Redis cache...");
+                    try
+                    {
+                        var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+                        redisOptions.AbortOnConnectFail = false;
+                        redisOptions.ConnectRetry = 3;
+                        redisOptions.ConnectTimeout = 10000;
+
+                        var redis = ConnectionMultiplexer.Connect(redisOptions);
+
+                        if (redis.IsConnected)
+                        {
+                            var db = redis.GetDatabase();
+                            var pingResult = db.Ping();
+                            Log.Information("Successfully connected to Redis. Ping latency: {Latency}ms", pingResult.TotalMilliseconds);
+
+                            services.AddSingleton<IConnectionMultiplexer>(redis);
+                            services.AddSingleton<ICacheService, RedisCacheService>();
+                        }
+                        else
+                        {
+                            Log.Warning("Redis connection created but not connected. Falling back to in-memory cache.");
+                            redis.Dispose();
+                            services.AddSingleton<ICacheService, MemoryCacheService>();
+                        }
+                    }
+                    catch (RedisConnectionException ex)
+                    {
+                        Log.Error(ex, "Redis connection failed: {Message}. Falling back to in-memory cache.", ex.Message);
+                        services.AddSingleton<ICacheService, MemoryCacheService>();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Unexpected error connecting to Redis: {Message}. Falling back to in-memory cache.", ex.Message);
+                        services.AddSingleton<ICacheService, MemoryCacheService>();
+                    }
+                }
+                else
+                {
+                    Log.Warning("No Redis connection string configured. Using in-memory cache.");
+                    services.AddSingleton<ICacheService, MemoryCacheService>();
+                }
+            }
+
+            #endregion
 
             services.AddMvc(options =>
             {
@@ -313,9 +399,10 @@ namespace ThriveChurchOfficialAPI
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // Enable response compression (must be early in pipeline)
+            // Brotli/Gzip compression reduces JSON payload sizes by 60-80%
             app.UseResponseCompression();
 
-            Log.Information("Response compression configured.");
+            Log.Information("Response compression configured (Brotli + Gzip).");
 
             if (env.IsDevelopment())
             {

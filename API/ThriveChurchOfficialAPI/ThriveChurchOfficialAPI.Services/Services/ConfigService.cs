@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.Caching;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
@@ -16,10 +15,13 @@ namespace ThriveChurchOfficialAPI.Services
     public class ConfigService : BaseService, IConfigService
     {
         private readonly IConfigRepository _configRepository;
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cache;
+
+        // Cache TTL for config values (24 hours - configs rarely change)
+        private static readonly TimeSpan ConfigCacheTTL = TimeSpan.FromHours(24);
 
         public ConfigService(IConfigRepository configRepo,
-            IMemoryCache cache)
+            ICacheService cache)
         {
             // init the repo with the connection string via DI
             _configRepository = configRepo;
@@ -42,32 +44,34 @@ namespace ThriveChurchOfficialAPI.Services
 
             #endregion
 
+            var cacheKey = CacheKeys.Format(CacheKeys.Config, setting);
+
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, setting), out ConfigurationResponse value))
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                // Key not in cache, so get data.
-                var settingResponse = await _configRepository.GetConfigValue(setting);
-                if (settingResponse.HasErrors)
-                {
-                    return new SystemResponse<ConfigurationResponse>(true, settingResponse.ErrorMessage);
-                }
-
-                var result = settingResponse.Result;
-
-                var response = new ConfigurationResponse
-                {
-                    Key = result.Key,
-                    Value = result.Value,
-                    Type = result.Type
-                };
-
-                value = response;
-
-                // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetConfig, setting), response, PersistentCacheEntryOptions);
+                return new SystemResponse<ConfigurationResponse>(_cache.ReadFromCache<ConfigurationResponse>(cacheKey), "Success!");
             }
 
-            return new SystemResponse<ConfigurationResponse>(value, "Success!");
+            // Key not in cache, so get data.
+            var settingResponse = await _configRepository.GetConfigValue(setting);
+            if (settingResponse.HasErrors)
+            {
+                return new SystemResponse<ConfigurationResponse>(true, settingResponse.ErrorMessage);
+            }
+
+            var result = settingResponse.Result;
+
+            var response = new ConfigurationResponse
+            {
+                Key = result.Key,
+                Value = result.Value,
+                Type = result.Type
+            };
+
+            // Save data in cache.
+            _cache.InsertIntoCache(cacheKey, response, ConfigCacheTTL);
+
+            return new SystemResponse<ConfigurationResponse>(response, "Success!");
         }
 
         /// <summary>
@@ -97,8 +101,9 @@ namespace ThriveChurchOfficialAPI.Services
 
             foreach (var settingKey in uniqueKeys)
             {
+                var cacheKey = CacheKeys.Format(CacheKeys.Config, settingKey);
                 // check the cache first -> if there's a value there grab it
-                if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, settingKey), out ConfigurationResponse value))
+                if (!_cache.CanReadFromCache(cacheKey))
                 {
                     keysNotFound.Add(settingKey);
                     continue;
@@ -134,7 +139,7 @@ namespace ThriveChurchOfficialAPI.Services
                 };
 
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
+                _cache.InsertIntoCache(CacheKeys.Format(CacheKeys.Config, setting.Key), config, ConfigCacheTTL);
             }
 
             return new SystemResponse<string>($"Successfully updated {keysToUpdate.Count} configuration(s).", "Success!");
@@ -242,7 +247,7 @@ namespace ThriveChurchOfficialAPI.Services
                 };
 
                 // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
+                _cache.InsertIntoCache(CacheKeys.Format(CacheKeys.Config, setting.Key), config, ConfigCacheTTL);
             }
 
             return new SystemResponse<string>("Success!", "Success!");
@@ -269,14 +274,16 @@ namespace ThriveChurchOfficialAPI.Services
 
             foreach (var settingKey in keys)
             {
+                var cacheKey = CacheKeys.Format(CacheKeys.Config, settingKey);
                 // check the cache first -> if there's a value there grab it
-                if (!_cache.TryGetValue(string.Format(CacheKeys.GetConfig, settingKey), out ConfigurationResponse value))
+                if (_cache.CanReadFromCache(cacheKey))
+                {
+                    finalList.Add(_cache.ReadFromCache<ConfigurationResponse>(cacheKey));
+                }
+                else
                 {
                     keysNotFount.Add(settingKey);
-                    continue;
                 }
-
-                finalList.Add(value);
             }
 
             if (keysNotFount.Any())
@@ -336,7 +343,7 @@ namespace ThriveChurchOfficialAPI.Services
                 finalList.Add(config);
 
                 // Cache each config as we retrieve them
-                _cache.Set(string.Format(CacheKeys.GetConfig, setting.Key), config, PersistentCacheEntryOptions);
+                _cache.InsertIntoCache(CacheKeys.Format(CacheKeys.Config, setting.Key), config, ConfigCacheTTL);
             }
 
             var response = new ConfigurationCollectionResponse
@@ -370,7 +377,7 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // Remove from cache
-            _cache.Remove(string.Format(CacheKeys.GetConfig, setting));
+            _cache.RemoveFromCache(CacheKeys.Format(CacheKeys.Config, setting));
 
             return new SystemResponse<string>(deleteResponse.Result, "Success!");
         }

@@ -43,7 +43,11 @@ services:
       - JWT__Audience=ThriveChurchClients
       - JWT__ExpirationMinutes=60
       - JWT__RefreshTokenExpirationDays=7
-    
+
+      # Redis Configuration (not used in Development, but included for consistency)
+      # In Development mode, in-memory cache is always used regardless of this value
+      - RedisConnectionString=${REDIS_CONNECTION_STRING:-}
+
     # Use .env file for local development
     env_file:
       - .env

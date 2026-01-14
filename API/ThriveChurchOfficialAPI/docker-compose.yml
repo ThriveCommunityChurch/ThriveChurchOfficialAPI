@@ -42,7 +42,10 @@ services:
       - JWT__Audience=ThriveChurchClients
       - JWT__ExpirationMinutes=60
       - JWT__RefreshTokenExpirationDays=7
-      
+
+      # Redis Configuration (for production caching)
+      - RedisConnectionString=${REDIS_CONNECTION_STRING}
+
       # Rate Limiting (optional - defaults are in code)
       - IpRateLimiting__EnableEndpointRateLimiting=false
       - IpRateLimiting__StackBlockedRequests=true

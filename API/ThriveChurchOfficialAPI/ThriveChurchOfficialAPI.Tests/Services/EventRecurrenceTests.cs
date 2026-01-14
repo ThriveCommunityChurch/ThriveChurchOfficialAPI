@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
@@ -22,14 +21,11 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public void Setup()
         {
             var mockEventsRepository = new Mock<IEventsRepository>();
-            var mockCache = new Mock<IMemoryCache>();
+            var mockCache = new Mock<ICacheService>();
 
             // Setup cache miss by default
-            object cacheValue = null;
-            mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue)).Returns(false);
-
-            var cacheEntry = new Mock<ICacheEntry>();
-            mockCache.Setup(c => c.CreateEntry(It.IsAny<object>())).Returns(cacheEntry.Object);
+            mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            mockCache.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()));
 
             _eventsService = new EventsService(mockEventsRepository.Object, mockCache.Object);
         }
