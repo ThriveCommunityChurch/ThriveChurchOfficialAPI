@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Caching.Memory;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
 
@@ -14,14 +13,18 @@ namespace ThriveChurchOfficialAPI.Services
     public class EventsService : BaseService, IEventsService
     {
         private readonly IEventsRepository _eventsRepository;
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cache;
+
+        // Cache TTLs for events
+        private static readonly TimeSpan EventListCacheTTL = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan EventItemCacheTTL = TimeSpan.FromHours(1);
 
         /// <summary>
         /// Events Service constructor
         /// </summary>
         /// <param name="eventsRepository">Events repository</param>
-        /// <param name="cache">Memory cache</param>
-        public EventsService(IEventsRepository eventsRepository, IMemoryCache cache)
+        /// <param name="cache">Cache service</param>
+        public EventsService(IEventsRepository eventsRepository, ICacheService cache)
         {
             _eventsRepository = eventsRepository;
             _cache = cache;
@@ -32,10 +35,10 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SystemResponse<AllEventsResponse>> GetAllEvents(bool includeInactive = false)
         {
-            var cacheKey = string.Format(CacheKeys.GetAllEvents, includeInactive);
-            if (_cache.TryGetValue(cacheKey, out SystemResponse<AllEventsResponse> cachedResponse))
+            var cacheKey = CacheKeys.Format(CacheKeys.EventsAll, includeInactive);
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                return cachedResponse;
+                return _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
             }
 
             var events = await _eventsRepository.GetAllEvents(includeInactive);
@@ -48,7 +51,7 @@ namespace ThriveChurchOfficialAPI.Services
             };
 
             var systemResponse = new SystemResponse<AllEventsResponse>(response, "Success!");
-            _cache.Set(cacheKey, systemResponse, CacheEntryOptions);
+            _cache.InsertIntoCache(cacheKey, systemResponse, EventListCacheTTL);
 
             return systemResponse;
         }
@@ -108,10 +111,10 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<EventResponse>(true, string.Format(SystemMessages.NullProperty, "eventId"));
             }
 
-            var cacheKey = string.Format(CacheKeys.GetEvent, eventId);
-            if (_cache.TryGetValue(cacheKey, out SystemResponse<EventResponse> cachedResponse))
+            var cacheKey = CacheKeys.Format(CacheKeys.EventItem, eventId);
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                return cachedResponse;
+                return _cache.ReadFromCache<SystemResponse<EventResponse>>(cacheKey);
             }
 
             var eventEntity = await _eventsRepository.GetEventById(eventId);
@@ -122,7 +125,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             var response = new EventResponse { Event = eventEntity };
             var systemResponse = new SystemResponse<EventResponse>(response, "Success!");
-            _cache.Set(cacheKey, systemResponse, PersistentCacheEntryOptions);
+            _cache.InsertIntoCache(cacheKey, systemResponse, EventItemCacheTTL);
 
             return systemResponse;
         }
@@ -132,10 +135,10 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SystemResponse<AllEventsResponse>> GetFeaturedEvents()
         {
-            var cacheKey = CacheKeys.GetFeaturedEvents;
-            if (_cache.TryGetValue(cacheKey, out SystemResponse<AllEventsResponse> cachedResponse))
+            var cacheKey = CacheKeys.EventsFeatured;
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                return cachedResponse;
+                return _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
             }
 
             var events = await _eventsRepository.GetFeaturedEvents();
@@ -148,7 +151,7 @@ namespace ThriveChurchOfficialAPI.Services
             };
 
             var systemResponse = new SystemResponse<AllEventsResponse>(response, "Success!");
-            _cache.Set(cacheKey, systemResponse, CacheEntryOptions);
+            _cache.InsertIntoCache(cacheKey, systemResponse, EventListCacheTTL);
 
             return systemResponse;
         }
@@ -234,9 +237,8 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<EventResponse>(true, string.Format(SystemMessages.UnableToUpdatePropertyForId, "event", eventId));
             }
 
-            // Invalidate caches
+            // Invalidate all event caches
             InvalidateEventCaches();
-            _cache.Remove(string.Format(CacheKeys.GetEvent, eventId));
 
             var response = new EventResponse { Event = updatedEvent };
             return new SystemResponse<EventResponse>(response, "Success!");
@@ -258,9 +260,8 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<string>(true, string.Format(SystemMessages.UnableToFindPropertyForId, "event", eventId));
             }
 
-            // Invalidate caches
+            // Invalidate all event caches
             InvalidateEventCaches();
-            _cache.Remove(string.Format(CacheKeys.GetEvent, eventId));
 
             return new SystemResponse<string>("Event deleted successfully.", "Success!");
         }
@@ -289,9 +290,8 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<EventResponse>(true, "Failed to deactivate the event.");
             }
 
-            // Invalidate caches
+            // Invalidate all event caches
             InvalidateEventCaches();
-            _cache.Remove(string.Format(CacheKeys.GetEvent, eventId));
 
             // Fetch the updated event to return
             var deactivatedEvent = await _eventsRepository.GetEventById(eventId);
@@ -376,13 +376,11 @@ namespace ThriveChurchOfficialAPI.Services
         }
 
         /// <summary>
-        /// Invalidates all event-related caches
+        /// Invalidates all event-related caches using pattern-based removal
         /// </summary>
         private void InvalidateEventCaches()
         {
-            _cache.Remove(string.Format(CacheKeys.GetAllEvents, true));
-            _cache.Remove(string.Format(CacheKeys.GetAllEvents, false));
-            _cache.Remove(CacheKeys.GetFeaturedEvents);
+            _cache.RemoveByPattern(CacheKeys.EventsPattern);
         }
 
         #endregion

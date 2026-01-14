@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
 using Serilog;
 using System;
@@ -18,11 +17,15 @@ namespace ThriveChurchOfficialAPI.Services
     {
         private readonly ISermonsRepository _sermonsRepository;
         private readonly IMessagesRepository _messagesRepository;
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cache;
         private readonly IS3Repository _s3Repository;
         private readonly IPodcastLambdaService _podcastLambdaService;
         private readonly IPodcastMessagesRepository _podcastMessagesRepository;
         private Timer _timer;
+
+        // Cache TTLs
+        private static readonly TimeSpan StandardCacheTTL = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan PersistentCacheTTL = TimeSpan.FromHours(6); // Sermon data changes infrequently
 
         CultureInfo culture = new CultureInfo("en-US");
 
@@ -37,7 +40,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="podcastMessagesRepository"></param>
         public SermonsService(ISermonsRepository sermonsRepo,
             IMessagesRepository messagesRepository,
-            IMemoryCache cache,
+            ICacheService cache,
             IS3Repository s3Repository,
             IPodcastLambdaService podcastLambdaService,
             IPodcastMessagesRepository podcastMessagesRepository)
@@ -57,10 +60,10 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
             // Check the cache first -> if there's a value there grab it
-            var cacheKey = string.Format(CacheKeys.GetAllSermonsSummary, highResImg);
-            if (_cache.TryGetValue(cacheKey, out SystemResponse<AllSermonsSummaryResponse> cachedResponse))
+            var cacheKey = CacheKeys.Format(CacheKeys.SermonsSummary, highResImg);
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                return cachedResponse;
+                return _cache.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(cacheKey);
             }
 
             var getAllSermonsTask = _sermonsRepository.GetAllSermons();
@@ -99,8 +102,8 @@ namespace ThriveChurchOfficialAPI.Services
 
             var systemResponse = new SystemResponse<AllSermonsSummaryResponse>(response, "Success!");
 
-            // Save data in persistent cache (7 days)
-            _cache.Set(cacheKey, systemResponse, PersistentCacheEntryOptions);
+            // Save data in persistent cache
+            _cache.InsertIntoCache(cacheKey, systemResponse, PersistentCacheTTL);
 
             return systemResponse;
         }
@@ -120,21 +123,24 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // since this is going to get called a ton of times we should cache this
+            var cacheKey = CacheKeys.Format(CacheKeys.SermonsPage, pageNumber);
 
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(string.Format(CacheKeys.GetPagedSermons, pageNumber), out SystemResponse<SermonsSummaryPagedResponse> pagedSermonsResponse))
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                // Key not in cache, so get data.
-                pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber, highResImg);
-
-                if (pagedSermonsResponse.HasErrors)
-                {
-                    return new SystemResponse<SermonsSummaryPagedResponse>(true, pagedSermonsResponse.ErrorMessage);
-                }
-
-                // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetPagedSermons, pageNumber), pagedSermonsResponse, CacheEntryOptions);
+                return _cache.ReadFromCache<SystemResponse<SermonsSummaryPagedResponse>>(cacheKey);
             }
+
+            // Key not in cache, so get data.
+            var pagedSermonsResponse = await _sermonsRepository.GetPagedSermons(pageNumber, highResImg);
+
+            if (pagedSermonsResponse.HasErrors)
+            {
+                return new SystemResponse<SermonsSummaryPagedResponse>(true, pagedSermonsResponse.ErrorMessage);
+            }
+
+            // Save data in cache.
+            _cache.InsertIntoCache(cacheKey, pagedSermonsResponse, StandardCacheTTL);
 
             return pagedSermonsResponse;
         }
@@ -285,11 +291,10 @@ namespace ThriveChurchOfficialAPI.Services
             };
 
             // Save data in cache.
-            _cache.Set(string.Format(CacheKeys.GetSermonSeries, response.Id), response, PersistentCacheEntryOptions);
+            _cache.InsertIntoCache(CacheKeys.Format(CacheKeys.SermonSeries, response.Id), response, PersistentCacheTTL);
 
             // Invalidate the all sermons summary cache since a new series was added
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+            _cache.RemoveByPattern(CacheKeys.SermonsPattern);
 
             // Trigger podcast RSS feed update for each new message (fire-and-forget)
             foreach (var newMessage in newMessagesResponse.Result)
@@ -381,11 +386,10 @@ namespace ThriveChurchOfficialAPI.Services
             };
 
             // Save data in cache.
-            _cache.Set(string.Format(CacheKeys.GetSermonSeries, series.Id), response, PersistentCacheEntryOptions);
+            _cache.InsertIntoCache(CacheKeys.Format(CacheKeys.SermonSeries, series.Id), response, PersistentCacheTTL);
 
             // Invalidate the all sermons summary cache since message count changed
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+            _cache.RemoveByPattern(CacheKeys.SermonsPattern);
 
             // Trigger podcast RSS feed update for each new message (fire-and-forget)
             foreach (var newMessage in newMessages)
@@ -423,7 +427,7 @@ namespace ThriveChurchOfficialAPI.Services
             var messageResult = await _messagesRepository.UpdateMessageById(messageId, request.Message);
 
             // clear cache when update was successful
-            _cache.Remove(string.Format(CacheKeys.GetSermonSeries, messageResult.SeriesId));
+            _cache.RemoveFromCache(CacheKeys.Format(CacheKeys.SermonSeries, messageResult.SeriesId));
 
             // Trigger podcast RSS feed update (fire-and-forget)
             // Skip transcription if audio URL hasn't changed (saves ~$0.24/episode)
@@ -444,44 +448,47 @@ namespace ThriveChurchOfficialAPI.Services
                 return new SystemResponse<SermonSeriesResponse>(true, string.Format(SystemMessages.NullProperty, "seriesId"));
             }
 
+            var cacheKey = CacheKeys.Format(CacheKeys.SermonSeries, seriesId);
+
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(string.Format(CacheKeys.GetSermonSeries, seriesId), out SermonSeriesResponse series))
+            if (_cache.CanReadFromCache(cacheKey))
             {
-                // Key not in cache, so get data.
-                var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
-                if (seriesResponse.HasErrors)
-                {
-                    return new SystemResponse<SermonSeriesResponse>(true, seriesResponse.ErrorMessage);
-                }
+                var cachedSeries = _cache.ReadFromCache<SermonSeriesResponse>(cacheKey);
+                return new SystemResponse<SermonSeriesResponse>(cachedSeries, "Success!");
+            }
 
-                var seriesResult = seriesResponse.Result;
-                var seriesResponseObj = new SermonSeriesResponse
-                {
-                    ArtUrl = seriesResult.ArtUrl,
-                    EndDate = seriesResult.EndDate,
-                    Id = seriesResult.Id,
-                    LastUpdated = seriesResult.LastUpdated,
-                    Name = seriesResult.Name,
-                    Slug = seriesResult.Slug,
-                    StartDate = seriesResult.StartDate,
-                    Thumbnail = seriesResult.Thumbnail,
-                    Year = $"{seriesResult.StartDate.Year}"
-                };
+            // Key not in cache, so get data.
+            var seriesResponse = await _sermonsRepository.GetSermonSeriesForId(seriesId);
+            if (seriesResponse.HasErrors)
+            {
+                return new SystemResponse<SermonSeriesResponse>(true, seriesResponse.ErrorMessage);
+            }
 
-                var messagesResponse = await _messagesRepository.GetMessagesBySeriesId(seriesId);
-                if (messagesResponse != null && messagesResponse.Any())
-                {
-                    seriesResponseObj.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
-                    seriesResponseObj.Tags = GetUniqueTagsFromMessages(messagesResponse);
-                    seriesResponseObj.Summary = seriesResult.Summary;
-                }
+            var seriesResult = seriesResponse.Result;
+            var seriesResponseObj = new SermonSeriesResponse
+            {
+                ArtUrl = seriesResult.ArtUrl,
+                EndDate = seriesResult.EndDate,
+                Id = seriesResult.Id,
+                LastUpdated = seriesResult.LastUpdated,
+                Name = seriesResult.Name,
+                Slug = seriesResult.Slug,
+                StartDate = seriesResult.StartDate,
+                Thumbnail = seriesResult.Thumbnail,
+                Year = $"{seriesResult.StartDate.Year}"
+            };
 
-                // Save data in cache.
-                _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), seriesResponseObj, PersistentCacheEntryOptions);
-                return new SystemResponse<SermonSeriesResponse>(seriesResponseObj, "Success!");
-            }         
+            var messagesResponse = await _messagesRepository.GetMessagesBySeriesId(seriesId);
+            if (messagesResponse != null && messagesResponse.Any())
+            {
+                seriesResponseObj.Messages = SermonMessage.ConvertToResponseList(messagesResponse);
+                seriesResponseObj.Tags = GetUniqueTagsFromMessages(messagesResponse);
+                seriesResponseObj.Summary = seriesResult.Summary;
+            }
 
-            return new SystemResponse<SermonSeriesResponse>(series, "Success!");
+            // Save data in cache.
+            _cache.InsertIntoCache(cacheKey, seriesResponseObj, PersistentCacheTTL);
+            return new SystemResponse<SermonSeriesResponse>(seriesResponseObj, "Success!");
         }
 
         private async Task<SystemResponse<SermonSeries>> GetSeriesById(string seriesId)
@@ -552,11 +559,10 @@ namespace ThriveChurchOfficialAPI.Services
             var response = updateResponse.Result;
 
             // Save data in cache.
-            _cache.Set(string.Format(CacheKeys.GetSermonSeries, seriesId), response, PersistentCacheEntryOptions);
+            _cache.InsertIntoCache(CacheKeys.Format(CacheKeys.SermonSeries, seriesId), response, PersistentCacheTTL);
 
             // Invalidate the all sermons summary cache since series properties were updated
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+            _cache.RemoveByPattern(CacheKeys.SermonsPattern);
 
             return new SystemResponse<SermonSeries>(response, "Success!");
         }
@@ -614,15 +620,22 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<LiveSermonsPollingResponse> PollForLiveEventData()
         {
+            // Note: Live sermons feature is deprecated but keeping for backwards compatibility
+            var cacheKey = "thrive:sermons:live";
 
             // check the cache first -> if there's a value there grab it
-            if (!_cache.TryGetValue(CacheKeys.GetSermons, out LiveSermons liveSermons))
+            LiveSermons liveSermons;
+            if (_cache.CanReadFromCache(cacheKey))
+            {
+                liveSermons = _cache.ReadFromCache<LiveSermons>(cacheKey);
+            }
+            else
             {
                 // Key not in cache, so get data.
                 liveSermons = await _sermonsRepository.GetLiveSermons();
 
                 // Save data in cache.
-                _cache.Set(CacheKeys.GetSermons, liveSermons, CacheEntryOptions);
+                _cache.InsertIntoCache(cacheKey, liveSermons, StandardCacheTTL);
             }
 
             // if we are not live then we should remove the timer and stop looking
@@ -1782,15 +1795,8 @@ namespace ThriveChurchOfficialAPI.Services
                 }
             }
 
-            // Step 4: Cache invalidation - clear cache for all updated series
-            foreach (var seriesId in updatedSeriesIds)
-            {
-                _cache.Remove(string.Format(CacheKeys.GetSermonSeries, seriesId));
-            }
-
-            // Also invalidate the all sermons summary cache since series/messages may have changed
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+            // Step 4: Cache invalidation - clear all sermon caches since data changed
+            _cache.RemoveByPattern(CacheKeys.SermonsPattern);
 
             // Step 5: Build response with statistics
             var importResponse = new ImportSermonDataResponse
@@ -1841,17 +1847,9 @@ namespace ThriveChurchOfficialAPI.Services
         /// <returns></returns>
         public async Task<SystemResponse<string>> RebuildSermonRSSFeed()
         {
-            // Invalidate known cache entries since series/messages may have changed
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, true));
-            _cache.Remove(string.Format(CacheKeys.GetAllSermonsSummary, false));
+            // Invalidate all sermon cache entries since series/messages may have changed
+            _cache.RemoveByPattern(CacheKeys.SermonsPattern);
 
-            var allSeriesResponse = await _sermonsRepository.GetAllSermons();
-            foreach (var series in allSeriesResponse)
-            {
-                _cache.Remove(string.Format(CacheKeys.GetSermonSeries, series.Id));
-            }
-
-            // Note: PagedSermonsCache:{page} entries will expire naturally (30 seconds)
             var successful = await _podcastLambdaService.RebuildFeedAsync();
             if (!successful)
             {
@@ -1878,28 +1876,5 @@ namespace ThriveChurchOfficialAPI.Services
         {
             return _podcastMessagesRepository.UpdatePodcastMessageById(messageId, request);
         }
-    }
-
-    /// <summary>
-    /// Globally used Caching keys for O(1) lookups
-    /// </summary>
-    public static class CacheKeys
-    {
-        public static string GetSermons { get { return "LiveSermonsCache"; } }
-
-        public static string GetPagedSermons { get { return "PagedSermonsCache:{0}"; } }
-
-        public static string GetSermonSeries { get { return "SermonSeriesCache:{0}"; } }
-
-        public static string GetConfig { get { return "SystemConfiguration:{0}"; } }
-
-        public static string GetAllSermonsSummary { get { return "AllSermonsSummaryCache:{0}"; } }
-
-        // Event cache keys
-        public static string GetAllEvents { get { return "AllEventsCache:{0}"; } }
-
-        public static string GetEvent { get { return "EventCache:{0}"; } }
-
-        public static string GetFeaturedEvents { get { return "FeaturedEventsCache"; } }
     }
 }

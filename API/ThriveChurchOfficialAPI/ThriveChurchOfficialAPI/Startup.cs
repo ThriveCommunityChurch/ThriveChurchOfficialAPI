@@ -47,6 +47,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
+using StackExchange.Redis;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Core.System.ExceptionHandler;
 using ThriveChurchOfficialAPI.Repositories;
@@ -64,10 +65,17 @@ namespace ThriveChurchOfficialAPI
         /// </summary>
         public IConfigurationRoot Configuration { get; set; }
 
+        /// <summary>
+        /// Hosting environment
+        /// </summary>
+        private readonly IWebHostEnvironment _env;
+
         readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
         public Startup(IWebHostEnvironment env)
         {
+            _env = env;
+
             var builder = new ConfigurationBuilder()
             .SetBasePath(env.ContentRootPath)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
@@ -109,8 +117,69 @@ namespace ThriveChurchOfficialAPI
 
             #endregion
 
-            // enable in-memory caching
+            #region Caching Configuration
+
+            // Always add memory cache (used as fallback and for development)
             services.AddMemoryCache();
+
+            // Register cache service based on environment
+            if (_env.IsDevelopment())
+            {
+                // Development: Use in-memory cache
+                Log.Information("Development environment detected. Using in-memory cache.");
+                services.AddSingleton<ICacheService, MemoryCacheService>();
+            }
+            else
+            {
+                // Production: Use Redis cache
+                var redisConnectionString = Configuration["RedisConnectionString"];
+                if (!string.IsNullOrEmpty(redisConnectionString))
+                {
+                    Log.Information("Attempting to connect to Redis cache...");
+                    try
+                    {
+                        var redisOptions = ConfigurationOptions.Parse(redisConnectionString);
+                        redisOptions.AbortOnConnectFail = false;
+                        redisOptions.ConnectRetry = 3;
+                        redisOptions.ConnectTimeout = 10000;
+
+                        var redis = ConnectionMultiplexer.Connect(redisOptions);
+
+                        if (redis.IsConnected)
+                        {
+                            var db = redis.GetDatabase();
+                            var pingResult = db.Ping();
+                            Log.Information("Successfully connected to Redis. Ping latency: {Latency}ms", pingResult.TotalMilliseconds);
+
+                            services.AddSingleton<IConnectionMultiplexer>(redis);
+                            services.AddSingleton<ICacheService, RedisCacheService>();
+                        }
+                        else
+                        {
+                            Log.Warning("Redis connection created but not connected. Falling back to in-memory cache.");
+                            redis.Dispose();
+                            services.AddSingleton<ICacheService, MemoryCacheService>();
+                        }
+                    }
+                    catch (RedisConnectionException ex)
+                    {
+                        Log.Error(ex, "Redis connection failed: {Message}. Falling back to in-memory cache.", ex.Message);
+                        services.AddSingleton<ICacheService, MemoryCacheService>();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Unexpected error connecting to Redis: {Message}. Falling back to in-memory cache.", ex.Message);
+                        services.AddSingleton<ICacheService, MemoryCacheService>();
+                    }
+                }
+                else
+                {
+                    Log.Warning("No Redis connection string configured. Using in-memory cache.");
+                    services.AddSingleton<ICacheService, MemoryCacheService>();
+                }
+            }
+
+            #endregion
 
             services.AddMvc(options =>
             {

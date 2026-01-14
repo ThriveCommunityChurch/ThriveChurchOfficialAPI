@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
@@ -15,22 +14,19 @@ namespace ThriveChurchOfficialAPI.Tests.Services
     public class EventsServiceTests
     {
         private Mock<IEventsRepository> _mockEventsRepository;
-        private Mock<IMemoryCache> _mockCache;
+        private Mock<ICacheService> _mockCache;
         private EventsService _eventsService;
 
         [TestInitialize]
         public void Setup()
         {
             _mockEventsRepository = new Mock<IEventsRepository>();
-            _mockCache = new Mock<IMemoryCache>();
+            _mockCache = new Mock<ICacheService>();
 
             // Setup cache miss by default
-            object cacheValue = null;
-            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue)).Returns(false);
-
-            // Setup cache entry for Set
-            var cacheEntry = new Mock<ICacheEntry>();
-            _mockCache.Setup(c => c.CreateEntry(It.IsAny<object>())).Returns(cacheEntry.Object);
+            _mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            _mockCache.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()))
+                .Returns((string key, object item, TimeSpan exp) => item);
 
             _eventsService = new EventsService(
                 _mockEventsRepository.Object,
@@ -628,8 +624,9 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 new AllEventsResponse { Events = new List<EventSummary>(), TotalCount = 5 },
                 "Success!");
 
-            object cacheValue = cachedResponse;
-            _mockCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue)).Returns(true);
+            _mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(true);
+            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllEventsResponse>>(It.IsAny<string>()))
+                .Returns(cachedResponse);
 
             // Act
             var result = await _eventsService.GetAllEvents();
@@ -650,9 +647,9 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 new EventResponse { Event = cachedEvent },
                 "Success!");
 
-            object cacheValue = cachedResponse;
-            _mockCache.Setup(c => c.TryGetValue(
-                It.Is<object>(k => k.ToString().Contains(eventId)), out cacheValue)).Returns(true);
+            _mockCache.Setup(c => c.CanReadFromCache(It.Is<string>(k => k.Contains(eventId)))).Returns(true);
+            _mockCache.Setup(c => c.ReadFromCache<SystemResponse<EventResponse>>(It.Is<string>(k => k.Contains(eventId))))
+                .Returns(cachedResponse);
 
             // Act
             var result = await _eventsService.GetEventById(eventId);
@@ -682,7 +679,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             await _eventsService.CreateEvent(request);
 
             // Assert
-            _mockCache.Verify(c => c.Remove(It.IsAny<object>()), Times.AtLeastOnce);
+            _mockCache.Verify(c => c.RemoveByPattern(It.IsAny<string>()), Times.AtLeastOnce);
         }
 
         #endregion

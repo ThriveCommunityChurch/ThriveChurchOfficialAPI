@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,16 +15,20 @@ namespace ThriveChurchOfficialAPI.Tests.Services
     public class ConfigServiceTests
     {
         private Mock<IConfigRepository> _mockConfigRepository;
-        private Mock<IMemoryCache> _mockMemoryCache;
+        private Mock<ICacheService> _mockCacheService;
         private ConfigService _configService;
 
         [TestInitialize]
         public void Setup()
         {
             _mockConfigRepository = new Mock<IConfigRepository>();
-            _mockMemoryCache = new Mock<IMemoryCache>();
+            _mockCacheService = new Mock<ICacheService>();
 
-            _configService = new ConfigService(_mockConfigRepository.Object, _mockMemoryCache.Object);
+            // Setup cache miss by default
+            _mockCacheService.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            _mockCacheService.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()));
+
+            _configService = new ConfigService(_mockConfigRepository.Object, _mockCacheService.Object);
         }
 
         #region GetAllConfigs Tests
@@ -57,13 +61,6 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             _mockConfigRepository.Setup(r => r.GetAllConfigs())
                 .ReturnsAsync(new SystemResponse<IEnumerable<ConfigSetting>>(configSettings, "Success!"));
-
-            object cacheValue;
-            _mockMemoryCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
-                .Returns(false);
-
-            _mockMemoryCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
-                .Returns(Mock.Of<ICacheEntry>());
 
             // Act
             var result = await _configService.GetAllConfigs();
@@ -127,20 +124,12 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockConfigRepository.Setup(r => r.GetAllConfigs())
                 .ReturnsAsync(new SystemResponse<IEnumerable<ConfigSetting>>(configSettings, "Success!"));
 
-            object cacheValue;
-            _mockMemoryCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
-                .Returns(false);
-
-            var mockCacheEntry = new Mock<ICacheEntry>();
-            _mockMemoryCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
-                .Returns(mockCacheEntry.Object);
-
             // Act
             var result = await _configService.GetAllConfigs();
 
             // Assert
             Assert.IsFalse(result.HasErrors);
-            _mockMemoryCache.Verify(c => c.CreateEntry(It.IsAny<object>()), Times.AtLeastOnce);
+            _mockCacheService.Verify(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()), Times.AtLeastOnce);
         }
 
         #endregion
@@ -157,15 +146,13 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockConfigRepository.Setup(r => r.DeleteConfig(configKey))
                 .ReturnsAsync(new SystemResponse<string>(successMessage, "Success!"));
 
-            _mockMemoryCache.Setup(c => c.Remove(It.IsAny<object>()));
-
             // Act
             var result = await _configService.DeleteConfig(configKey);
 
             // Assert
             Assert.IsFalse(result.HasErrors);
             Assert.AreEqual(successMessage, result.Result);
-            _mockMemoryCache.Verify(c => c.Remove(It.IsAny<object>()), Times.Once);
+            _mockCacheService.Verify(c => c.RemoveFromCache(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
@@ -195,14 +182,12 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockConfigRepository.Setup(r => r.DeleteConfig(configKey))
                 .ReturnsAsync(new SystemResponse<string>(successMessage, "Success!"));
 
-            _mockMemoryCache.Setup(c => c.Remove(It.IsAny<object>()));
-
             // Act
             var result = await _configService.DeleteConfig(configKey);
 
             // Assert
             Assert.IsFalse(result.HasErrors);
-            _mockMemoryCache.Verify(c => c.Remove(It.Is<object>(key => key.ToString().Contains(configKey))), Times.Once);
+            _mockCacheService.Verify(c => c.RemoveFromCache(It.Is<string>(key => key.Contains(configKey.ToLowerInvariant()))), Times.Once);
         }
 
         [TestMethod]
@@ -219,7 +204,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
             // Assert
             Assert.IsTrue(result.HasErrors);
-            _mockMemoryCache.Verify(c => c.Remove(It.IsAny<object>()), Times.Never);
+            _mockCacheService.Verify(c => c.RemoveFromCache(It.IsAny<string>()), Times.Never);
         }
 
         #endregion
@@ -252,15 +237,6 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockConfigRepository.Setup(r => r.DeleteConfig("Email_Main"))
                 .ReturnsAsync(new SystemResponse<string>("Configuration 'Email_Main' deleted successfully", "Success!"));
 
-            object cacheValue;
-            _mockMemoryCache.Setup(c => c.TryGetValue(It.IsAny<object>(), out cacheValue))
-                .Returns(false);
-
-            _mockMemoryCache.Setup(c => c.CreateEntry(It.IsAny<object>()))
-                .Returns(Mock.Of<ICacheEntry>());
-
-            _mockMemoryCache.Setup(c => c.Remove(It.IsAny<object>()));
-
             // Act - Get all configs
             var getAllResult = await _configService.GetAllConfigs();
 
@@ -274,7 +250,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             // Assert - Verify deletion was successful
             Assert.IsFalse(deleteResult.HasErrors);
             Assert.IsTrue(deleteResult.Result.Contains("Email_Main"));
-            _mockMemoryCache.Verify(c => c.Remove(It.IsAny<object>()), Times.Once);
+            _mockCacheService.Verify(c => c.RemoveFromCache(It.IsAny<string>()), Times.Once);
         }
 
         #endregion
