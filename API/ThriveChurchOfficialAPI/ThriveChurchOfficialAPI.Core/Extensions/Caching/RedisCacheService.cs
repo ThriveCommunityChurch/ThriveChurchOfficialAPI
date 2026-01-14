@@ -82,22 +82,6 @@ namespace ThriveChurchOfficialAPI.Core
         }
 
         /// <inheritdoc />
-        public bool CanReadFromCache(string cacheKey)
-        {
-            if (!IsConnected) return false;
-
-            try
-            {
-                return _database.KeyExists(cacheKey);
-            }
-            catch (RedisConnectionException ex)
-            {
-                Log.Warning("Redis connection error in CanReadFromCache for key {CacheKey}: {Message}", cacheKey, ex.Message);
-                return false;
-            }
-        }
-
-        /// <inheritdoc />
         public T ReadFromCache<T>(string cacheKey)
         {
             if (!IsConnected) return default;

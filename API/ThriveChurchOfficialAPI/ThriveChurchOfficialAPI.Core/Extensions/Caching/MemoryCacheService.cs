@@ -41,12 +41,6 @@ namespace ThriveChurchOfficialAPI.Core
         public bool IsDistributed => false;
 
         /// <inheritdoc />
-        public bool CanReadFromCache(string cacheKey)
-        {
-            return _cache.TryGetValue(cacheKey, out object _);
-        }
-
-        /// <inheritdoc />
         public T ReadFromCache<T>(string cacheKey)
         {
             _cache.TryGetValue(cacheKey, out T response);

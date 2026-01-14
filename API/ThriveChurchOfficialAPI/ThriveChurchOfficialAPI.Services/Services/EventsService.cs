@@ -36,9 +36,11 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<SystemResponse<AllEventsResponse>> GetAllEvents(bool includeInactive = false)
         {
             var cacheKey = CacheKeys.Format(CacheKeys.EventsAll, includeInactive);
-            if (_cache.CanReadFromCache(cacheKey))
+            // Read in one operation to avoid race conditions
+            var cachedResponse = _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
+            if (cachedResponse != null)
             {
-                return _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
+                return cachedResponse;
             }
 
             var events = await _eventsRepository.GetAllEvents(includeInactive);
@@ -112,9 +114,11 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             var cacheKey = CacheKeys.Format(CacheKeys.EventItem, eventId);
-            if (_cache.CanReadFromCache(cacheKey))
+            // Read in one operation to avoid race conditions
+            var cachedResponse = _cache.ReadFromCache<SystemResponse<EventResponse>>(cacheKey);
+            if (cachedResponse != null)
             {
-                return _cache.ReadFromCache<SystemResponse<EventResponse>>(cacheKey);
+                return cachedResponse;
             }
 
             var eventEntity = await _eventsRepository.GetEventById(eventId);
@@ -136,9 +140,11 @@ namespace ThriveChurchOfficialAPI.Services
         public async Task<SystemResponse<AllEventsResponse>> GetFeaturedEvents()
         {
             var cacheKey = CacheKeys.EventsFeatured;
-            if (_cache.CanReadFromCache(cacheKey))
+            // Read in one operation to avoid race conditions
+            var cachedResponse = _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
+            if (cachedResponse != null)
             {
-                return _cache.ReadFromCache<SystemResponse<AllEventsResponse>>(cacheKey);
+                return cachedResponse;
             }
 
             var events = await _eventsRepository.GetFeaturedEvents();

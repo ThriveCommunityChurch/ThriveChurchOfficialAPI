@@ -24,8 +24,8 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockConfigRepository = new Mock<IConfigRepository>();
             _mockCacheService = new Mock<ICacheService>();
 
-            // Setup cache miss by default
-            _mockCacheService.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            // Setup cache miss by default (ReadFromCache returns default which is null for reference types)
+            // No need to setup ReadFromCache - Moq returns default(T) by default
             _mockCacheService.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()));
 
             _configService = new ConfigService(_mockConfigRepository.Object, _mockCacheService.Object);

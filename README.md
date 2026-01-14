@@ -4,16 +4,46 @@ This API is primarily used by the Thrive Church Official App for serving users w
 ## Stack
 - .NET 8
 - MongoDB
+- Redis (production caching)
 - [ESV API](https://api.esv.org/)
+- Azure Blob Storage (transcripts)
+- AWS S3 (audio files)
 - Docker (for debugging and deployment)
 
 ## API Documentation & Swagger UI
 Visiting `~/swagger/index.html` in your browser will allow you to view the Swagger UI for the API and easily send API requests as well as view response objects.
 
 ## Caching
-*Note: In general, the Caching that this application uses will expire thirty (30) seconds after an initial request. However, the persistent cache is set to expire after 48 hours from the initial request.*
 
-If you wish to poll this API for whether or not the `LiveSermon` object is still active, the response will contain the Expiration Time (in **UTC**) for the `LiveSermon` object. Using this you will be able to gague how much longer the stream will be active. This will prevent having to poll the route in a loop to determine if right now the time has passed.
+The API uses a dual-layer caching strategy optimized for different environments:
+
+### Cache Providers
+
+| Environment | Provider | Description |
+|-------------|----------|-------------|
+| **Development** | In-Memory | Uses `IMemoryCache` for local development |
+| **Production** | Redis | Uses Redis for distributed caching across instances |
+
+### Cache Durations
+
+| Cache Type | Duration | Use Case |
+|------------|----------|----------|
+| **Standard Cache** | 30 seconds | Frequently changing data (live sermon status) |
+| **Persistent Cache** | 7 days | Stable data (sermon series, messages) |
+
+### Automatic Fallback
+In production, if Redis is unavailable or the connection fails, the API automatically falls back to in-memory caching. This ensures the API remains functional even during cache infrastructure issues.
+
+### Configuration
+- **Development**: No additional configuration needed (uses in-memory cache)
+- **Production**: Set `RedisConnectionString` environment variable (see Environment Variables section)
+
+### LiveSermon Polling
+If you wish to poll this API for whether or not the `LiveSermon` object is still active, the response will contain the Expiration Time (in **UTC**) for the `LiveSermon` object. Using this you will be able to gauge how much longer the stream will be active, preventing the need to poll the route in a loop.
+
+## Response Compression
+
+The API uses **Brotli** and **Gzip** compression to reduce payload sizes by 60-80% for JSON responses. Modern browsers receive Brotli-compressed responses (better compression), while older clients fall back to Gzip.
 
 ## Rate Limiting
 The _Thrive Church Official API_ takes advantage of Rate Limiting on all requests, and will count rejected requests towards subsequent limits.
@@ -124,19 +154,26 @@ The following secrets must be configured in GitHub repository settings:
 ### App Runner Environment Variables
 Configure these in the AWS App Runner console:
 
-| Variable | Description |
-|----------|-------------|
-| `MongoConnectionString` | MongoDB Atlas connection string |
-| `JWT__SecretKey` | JWT secret key (min 256 bits) |
-| `JWT__Issuer` | JWT issuer (e.g., `ThriveChurchOfficialAPI`) |
-| `JWT__Audience` | JWT audience (e.g., `ThriveChurchClients`) |
-| `S3__BucketName` | AWS S3 bucket name |
-| `S3__AccessKey` | AWS S3 access key |
-| `S3__SecretKey` | AWS S3 secret key |
-| `S3__Region` | AWS region (e.g., `us-east-2`) |
-| `S3__BaseUrl` | S3 bucket base URL |
-| `EsvApiKey` | ESV API key |
-| `EmailPW` | Email password |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `MongoConnectionString` | MongoDB Atlas connection string | ✅ |
+| `JWT__SecretKey` | JWT secret key (min 256 bits) | ✅ |
+| `JWT__Issuer` | JWT issuer (e.g., `ThriveChurchOfficialAPI`) | ✅ |
+| `JWT__Audience` | JWT audience (e.g., `ThriveChurchClients`) | ✅ |
+| `JWT__ExpirationMinutes` | JWT token expiration (default: 60) | |
+| `JWT__RefreshTokenExpirationDays` | Refresh token expiration (default: 7) | |
+| `EsvApiKey` | ESV API key for Bible passages | ✅ |
+| `OverrideEsvApiKey` | Set to `true` to skip ESV API key check | |
+| `EmailPW` | Email password for notifications | |
+| `S3__BucketName` | AWS S3 bucket name | ✅ |
+| `S3__AccessKey` | AWS S3 access key | ✅ |
+| `S3__SecretKey` | AWS S3 secret key | ✅ |
+| `S3__Region` | AWS region (e.g., `us-east-2`) | ✅ |
+| `S3__BaseUrl` | S3 bucket base URL | ✅ |
+| `S3__MaxFileSizeMB` | Max upload size in MB (default: 50) | |
+| `MUX__Secret` | MUX secret for video streaming | |
+| `RedisConnectionString` | Redis connection string for caching | |
+| `AzureStorageConnectionString` | Azure Blob Storage for transcripts | |
 
 ### First-Time Setup
 

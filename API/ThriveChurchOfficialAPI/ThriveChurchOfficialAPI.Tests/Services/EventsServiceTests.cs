@@ -23,8 +23,8 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockEventsRepository = new Mock<IEventsRepository>();
             _mockCache = new Mock<ICacheService>();
 
-            // Setup cache miss by default
-            _mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            // Setup cache miss by default (ReadFromCache returns default which is null for reference types)
+            // No need to setup ReadFromCache - Moq returns default(T) by default
             _mockCache.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()))
                 .Returns((string key, object item, TimeSpan exp) => item);
 
@@ -624,7 +624,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 new AllEventsResponse { Events = new List<EventSummary>(), TotalCount = 5 },
                 "Success!");
 
-            _mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(true);
+            // Setup cache hit - ReadFromCache returns the cached value
             _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllEventsResponse>>(It.IsAny<string>()))
                 .Returns(cachedResponse);
 
@@ -647,7 +647,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 new EventResponse { Event = cachedEvent },
                 "Success!");
 
-            _mockCache.Setup(c => c.CanReadFromCache(It.Is<string>(k => k.Contains(eventId)))).Returns(true);
+            // Setup cache hit - ReadFromCache returns the cached value
             _mockCache.Setup(c => c.ReadFromCache<SystemResponse<EventResponse>>(It.Is<string>(k => k.Contains(eventId))))
                 .Returns(cachedResponse);
 
