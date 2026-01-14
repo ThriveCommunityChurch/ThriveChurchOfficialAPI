@@ -24,8 +24,8 @@ namespace ThriveChurchOfficialAPI.Services
         private Timer _timer;
 
         // Cache TTLs
-        private static readonly TimeSpan StandardCacheTTL = TimeSpan.FromSeconds(60);
-        private static readonly TimeSpan PersistentCacheTTL = TimeSpan.FromHours(6); // Sermon data changes infrequently
+        private static readonly TimeSpan StandardCacheTTL = TimeSpan.FromHours(24);
+        private static readonly TimeSpan PersistentCacheTTL = TimeSpan.FromDays(7); // Sermon data changes infrequently
 
         CultureInfo culture = new CultureInfo("en-US");
 
@@ -59,11 +59,12 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         public async Task<SystemResponse<AllSermonsSummaryResponse>> GetAllSermons(bool highResImg = false)
         {
-            // Check the cache first -> if there's a value there grab it
+            // Check the cache first -> read in one operation to avoid race conditions
             var cacheKey = CacheKeys.Format(CacheKeys.SermonsSummary, highResImg);
-            if (_cache.CanReadFromCache(cacheKey))
+            var cachedResponse = _cache.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(cacheKey);
+            if (cachedResponse != null)
             {
-                return _cache.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(cacheKey);
+                return cachedResponse;
             }
 
             var getAllSermonsTask = _sermonsRepository.GetAllSermons();
@@ -125,10 +126,11 @@ namespace ThriveChurchOfficialAPI.Services
             // since this is going to get called a ton of times we should cache this
             var cacheKey = CacheKeys.Format(CacheKeys.SermonsPage, pageNumber);
 
-            // check the cache first -> if there's a value there grab it
-            if (_cache.CanReadFromCache(cacheKey))
+            // check the cache first -> read in one operation to avoid race conditions
+            var cachedResponse = _cache.ReadFromCache<SystemResponse<SermonsSummaryPagedResponse>>(cacheKey);
+            if (cachedResponse != null)
             {
-                return _cache.ReadFromCache<SystemResponse<SermonsSummaryPagedResponse>>(cacheKey);
+                return cachedResponse;
             }
 
             // Key not in cache, so get data.
@@ -450,10 +452,10 @@ namespace ThriveChurchOfficialAPI.Services
 
             var cacheKey = CacheKeys.Format(CacheKeys.SermonSeries, seriesId);
 
-            // check the cache first -> if there's a value there grab it
-            if (_cache.CanReadFromCache(cacheKey))
+            // check the cache first -> read in one operation to avoid race conditions
+            var cachedSeries = _cache.ReadFromCache<SermonSeriesResponse>(cacheKey);
+            if (cachedSeries != null)
             {
-                var cachedSeries = _cache.ReadFromCache<SermonSeriesResponse>(cacheKey);
                 return new SystemResponse<SermonSeriesResponse>(cachedSeries, "Success!");
             }
 
@@ -623,13 +625,9 @@ namespace ThriveChurchOfficialAPI.Services
             // Note: Live sermons feature is deprecated but keeping for backwards compatibility
             var cacheKey = "thrive:sermons:live";
 
-            // check the cache first -> if there's a value there grab it
-            LiveSermons liveSermons;
-            if (_cache.CanReadFromCache(cacheKey))
-            {
-                liveSermons = _cache.ReadFromCache<LiveSermons>(cacheKey);
-            }
-            else
+            // check the cache first -> read in one operation to avoid race conditions
+            var liveSermons = _cache.ReadFromCache<LiveSermons>(cacheKey);
+            if (liveSermons == null)
             {
                 // Key not in cache, so get data.
                 liveSermons = await _sermonsRepository.GetLiveSermons();
@@ -639,7 +637,7 @@ namespace ThriveChurchOfficialAPI.Services
             }
 
             // if we are not live then we should remove the timer and stop looking
-            if (!liveSermons.IsLive)
+            if (liveSermons == null || !liveSermons.IsLive)
             {
                 if (_timer != null)
                 {

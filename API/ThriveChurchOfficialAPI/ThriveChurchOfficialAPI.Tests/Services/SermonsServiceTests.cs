@@ -31,8 +31,8 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             _mockPodcastLambdaService = new Mock<IPodcastLambdaService>();
             _mockPodcastMessagesRepository = new Mock<IPodcastMessagesRepository>();
 
-            // Setup cache miss by default
-            _mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            // Setup cache miss by default (ReadFromCache returns default which is null for reference types)
+            // No need to setup ReadFromCache - Moq returns default(T) by default
             _mockCache.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()))
                 .Returns((string key, object item, TimeSpan exp) => item);
 
@@ -995,8 +995,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
                 new AllSermonsSummaryResponse { Summaries = cachedSummaries },
                 "Success!");
 
-            // Setup cache hit - must set CanReadFromCache to true
-            _mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(true);
+            // Setup cache hit - ReadFromCache returns the cached value
             _mockCache.Setup(c => c.ReadFromCache<SystemResponse<AllSermonsSummaryResponse>>(It.IsAny<string>()))
                 .Returns(cachedResponse);
 

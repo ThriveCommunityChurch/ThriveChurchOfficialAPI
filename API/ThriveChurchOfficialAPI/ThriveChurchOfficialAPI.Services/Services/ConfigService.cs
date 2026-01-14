@@ -18,7 +18,7 @@ namespace ThriveChurchOfficialAPI.Services
         private readonly ICacheService _cache;
 
         // Cache TTL for config values (24 hours - configs rarely change)
-        private static readonly TimeSpan ConfigCacheTTL = TimeSpan.FromHours(24);
+        private static readonly TimeSpan ConfigCacheTTL = TimeSpan.FromDays(7);
 
         public ConfigService(IConfigRepository configRepo,
             ICacheService cache)
@@ -46,10 +46,11 @@ namespace ThriveChurchOfficialAPI.Services
 
             var cacheKey = CacheKeys.Format(CacheKeys.Config, setting);
 
-            // check the cache first -> if there's a value there grab it
-            if (_cache.CanReadFromCache(cacheKey))
+            // check the cache first -> read in one operation to avoid race conditions
+            var cachedResponse = _cache.ReadFromCache<ConfigurationResponse>(cacheKey);
+            if (cachedResponse != null)
             {
-                return new SystemResponse<ConfigurationResponse>(_cache.ReadFromCache<ConfigurationResponse>(cacheKey), "Success!");
+                return new SystemResponse<ConfigurationResponse>(cachedResponse, "Success!");
             }
 
             // Key not in cache, so get data.
@@ -102,11 +103,11 @@ namespace ThriveChurchOfficialAPI.Services
             foreach (var settingKey in uniqueKeys)
             {
                 var cacheKey = CacheKeys.Format(CacheKeys.Config, settingKey);
-                // check the cache first -> if there's a value there grab it
-                if (!_cache.CanReadFromCache(cacheKey))
+                // check the cache first -> read in one operation to avoid race conditions
+                var cachedValue = _cache.ReadFromCache<ConfigurationResponse>(cacheKey);
+                if (cachedValue == null)
                 {
                     keysNotFound.Add(settingKey);
-                    continue;
                 }
             }
 
@@ -275,10 +276,11 @@ namespace ThriveChurchOfficialAPI.Services
             foreach (var settingKey in keys)
             {
                 var cacheKey = CacheKeys.Format(CacheKeys.Config, settingKey);
-                // check the cache first -> if there's a value there grab it
-                if (_cache.CanReadFromCache(cacheKey))
+                // check the cache first -> read in one operation to avoid race conditions
+                var cachedValue = _cache.ReadFromCache<ConfigurationResponse>(cacheKey);
+                if (cachedValue != null)
                 {
-                    finalList.Add(_cache.ReadFromCache<ConfigurationResponse>(cacheKey));
+                    finalList.Add(cachedValue);
                 }
                 else
                 {

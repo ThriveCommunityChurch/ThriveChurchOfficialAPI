@@ -23,8 +23,8 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             var mockEventsRepository = new Mock<IEventsRepository>();
             var mockCache = new Mock<ICacheService>();
 
-            // Setup cache miss by default
-            mockCache.Setup(c => c.CanReadFromCache(It.IsAny<string>())).Returns(false);
+            // Setup cache miss by default (ReadFromCache returns default which is null for reference types)
+            // No need to setup ReadFromCache - Moq returns default(T) by default
             mockCache.Setup(c => c.InsertIntoCache(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()));
 
             _eventsService = new EventsService(mockEventsRepository.Object, mockCache.Object);

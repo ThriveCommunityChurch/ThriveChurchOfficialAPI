@@ -9,13 +9,6 @@ namespace ThriveChurchOfficialAPI.Core
     public interface ICacheService
     {
         /// <summary>
-        /// Determines whether an object can be read from cache using key
-        /// </summary>
-        /// <param name="cacheKey">The cache key to check</param>
-        /// <returns>True if the key exists in cache</returns>
-        bool CanReadFromCache(string cacheKey);
-
-        /// <summary>
         /// Reads object from cache using key
         /// </summary>
         /// <typeparam name="T">The type to deserialize to</typeparam>
