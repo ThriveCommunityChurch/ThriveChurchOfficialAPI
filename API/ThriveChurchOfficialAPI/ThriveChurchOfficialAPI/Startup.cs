@@ -390,7 +390,10 @@ namespace ThriveChurchOfficialAPI
             // Azure Blob Storage services (for transcripts)
             var azureStorageConnectionString = Configuration["AzureStorageConnectionString"];
             services.AddSingleton<ITranscriptService>(sp =>
-                new TranscriptService(azureStorageConnectionString, "transcripts"));
+                new TranscriptService(
+                    azureStorageConnectionString,
+                    "transcripts",
+                    sp.GetRequiredService<ICacheService>()));
 
             Log.Information("Services configured.");
         }

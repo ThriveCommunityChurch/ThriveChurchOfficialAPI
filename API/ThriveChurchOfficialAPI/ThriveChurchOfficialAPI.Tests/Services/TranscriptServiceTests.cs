@@ -1,5 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 using System.Threading.Tasks;
+using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Services;
 
 namespace ThriveChurchOfficialAPI.Tests.Services
@@ -12,13 +14,21 @@ namespace ThriveChurchOfficialAPI.Tests.Services
     [TestClass]
     public class TranscriptServiceTests
     {
+        private Mock<ICacheService> _mockCache;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            _mockCache = new Mock<ICacheService>();
+        }
+
         #region Constructor Tests
 
         [TestMethod]
         public void Constructor_WithNullConnectionString_CreatesServiceWithWarning()
         {
             // Act - Using connection string constructor with null
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Assert - Service should be created but will return errors when used
             Assert.IsNotNull(service);
@@ -28,7 +38,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public void Constructor_WithEmptyConnectionString_CreatesServiceWithWarning()
         {
             // Act
-            var service = new TranscriptService(string.Empty, "transcripts");
+            var service = new TranscriptService(string.Empty, "transcripts", _mockCache.Object);
 
             // Assert
             Assert.IsNotNull(service);
@@ -42,7 +52,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetTranscriptAsync_NullMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetTranscriptAsync(null);
@@ -56,7 +66,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetTranscriptAsync_EmptyMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetTranscriptAsync(string.Empty);
@@ -70,7 +80,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetTranscriptAsync_WhitespaceMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetTranscriptAsync("   ");
@@ -87,7 +97,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetTranscriptAsync_ServiceNotConfigured_ReturnsConfigurationError()
         {
             // Arrange - Create service with null connection string
-            var unconfiguredService = new TranscriptService(null, "transcripts");
+            var unconfiguredService = new TranscriptService(null, "transcripts", _mockCache.Object);
             var messageId = "507f1f77bcf86cd799439011";
 
             // Act
@@ -102,7 +112,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetTranscriptAsync_EmptyConnectionString_ReturnsConfigurationError()
         {
             // Arrange
-            var service = new TranscriptService(string.Empty, "transcripts");
+            var service = new TranscriptService(string.Empty, "transcripts", _mockCache.Object);
             var messageId = "507f1f77bcf86cd799439011";
 
             // Act
@@ -121,7 +131,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetSermonNotesAsync_NullMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetSermonNotesAsync(null);
@@ -135,7 +145,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetSermonNotesAsync_EmptyMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetSermonNotesAsync(string.Empty);
@@ -149,7 +159,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetSermonNotesAsync_WhitespaceMessageId_ReturnsConfigurationError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetSermonNotesAsync("   ");
@@ -167,7 +177,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetSermonNotesAsync_ServiceNotConfigured_ReturnsConfigurationError()
         {
             // Arrange - Create service with null connection string
-            var unconfiguredService = new TranscriptService(null, "transcripts");
+            var unconfiguredService = new TranscriptService(null, "transcripts", _mockCache.Object);
             var messageId = "507f1f77bcf86cd799439011";
 
             // Act
@@ -182,7 +192,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetSermonNotesAsync_EmptyConnectionString_ReturnsConfigurationError()
         {
             // Arrange
-            var service = new TranscriptService(string.Empty, "transcripts");
+            var service = new TranscriptService(string.Empty, "transcripts", _mockCache.Object);
             var messageId = "507f1f77bcf86cd799439011";
 
             // Act
@@ -201,7 +211,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetStudyGuideAsync_NullMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetStudyGuideAsync(null);
@@ -215,7 +225,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetStudyGuideAsync_EmptyMessageId_ReturnsError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetStudyGuideAsync(string.Empty);
@@ -229,7 +239,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetStudyGuideAsync_WhitespaceMessageId_ReturnsConfigurationError()
         {
             // Arrange
-            var service = new TranscriptService(null, "transcripts");
+            var service = new TranscriptService(null, "transcripts", _mockCache.Object);
 
             // Act
             var result = await service.GetStudyGuideAsync("   ");
@@ -247,7 +257,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetStudyGuideAsync_ServiceNotConfigured_ReturnsConfigurationError()
         {
             // Arrange - Create service with null connection string
-            var unconfiguredService = new TranscriptService(null, "transcripts");
+            var unconfiguredService = new TranscriptService(null, "transcripts", _mockCache.Object);
             var messageId = "507f1f77bcf86cd799439011";
 
             // Act
@@ -262,7 +272,7 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         public async Task GetStudyGuideAsync_EmptyConnectionString_ReturnsConfigurationError()
         {
             // Arrange
-            var service = new TranscriptService(string.Empty, "transcripts");
+            var service = new TranscriptService(string.Empty, "transcripts", _mockCache.Object);
             var messageId = "507f1f77bcf86cd799439011";
 
             // Act

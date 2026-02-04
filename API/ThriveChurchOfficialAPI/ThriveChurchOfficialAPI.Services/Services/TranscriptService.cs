@@ -15,14 +15,23 @@ namespace ThriveChurchOfficialAPI.Services
     public class TranscriptService : ITranscriptService
     {
         private readonly BlobContainerClient _containerClient;
+        private readonly ICacheService _cache;
+
+        /// <summary>
+        /// Cache expiration for transcript data (365 days - transcripts are immutable once created)
+        /// </summary>
+        private static readonly TimeSpan CacheExpiration = TimeSpan.FromDays(365);
 
         /// <summary>
         /// Constructor for TranscriptService
         /// </summary>
         /// <param name="connectionString">Azure Storage connection string</param>
         /// <param name="containerName">Name of the blob container storing transcripts</param>
-        public TranscriptService(string connectionString, string containerName)
+        /// <param name="cache">Cache service instance</param>
+        public TranscriptService(string connectionString, string containerName, ICacheService cache)
         {
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+
             if (string.IsNullOrEmpty(connectionString))
             {
                 Log.Warning("TranscriptService initialized with empty connection string");
@@ -39,9 +48,11 @@ namespace ThriveChurchOfficialAPI.Services
         /// Constructor for testing - allows injecting a mock container client
         /// </summary>
         /// <param name="containerClient">Mock blob container client for testing</param>
-        public TranscriptService(BlobContainerClient containerClient)
+        /// <param name="cache">Cache service instance</param>
+        public TranscriptService(BlobContainerClient containerClient, ICacheService cache)
         {
             _containerClient = containerClient;
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             Log.Information("TranscriptService initialized with injected container client");
         }
 
@@ -212,10 +223,20 @@ namespace ThriveChurchOfficialAPI.Services
         #region Private Helper Methods
 
         /// <summary>
-        /// Downloads and parses the transcript blob
+        /// Downloads and parses the transcript blob with caching
         /// </summary>
         private async Task<TranscriptBlob> DownloadBlobAsync(string messageId)
         {
+            // Check cache first
+            var cacheKey = string.Format(CacheKeys.TranscriptBlob, messageId.ToLowerInvariant());
+            var cachedBlob = _cache.ReadFromCache<TranscriptBlob>(cacheKey);
+            if (cachedBlob != null)
+            {
+                Log.Debug("Cache hit for transcript blob: {MessageId}", messageId);
+                return cachedBlob;
+            }
+
+            // Cache miss - download from Azure Blob Storage
             var blobName = $"{messageId}.json";
             var blobClient = _containerClient.GetBlobClient(blobName);
 
@@ -227,7 +248,16 @@ namespace ThriveChurchOfficialAPI.Services
 
             var downloadResponse = await blobClient.DownloadContentAsync();
             var content = downloadResponse.Value.Content.ToString();
-            return JsonConvert.DeserializeObject<TranscriptBlob>(content);
+            var blob = JsonConvert.DeserializeObject<TranscriptBlob>(content);
+
+            // Cache the result
+            if (blob != null)
+            {
+                _cache.InsertIntoCache(cacheKey, blob, CacheExpiration);
+                Log.Debug("Cached transcript blob for message: {MessageId}", messageId);
+            }
+
+            return blob;
         }
 
         /// <summary>

@@ -69,6 +69,20 @@ namespace ThriveChurchOfficialAPI.Core
         public const string EventsPattern = "thrive:events:*";
 
         // ============================================
+        // Transcript Cache Keys
+        // ============================================
+
+        /// <summary>
+        /// Sermon transcript blob. Format: thrive:transcripts:blob:{messageId}
+        /// </summary>
+        public const string TranscriptBlob = "thrive:transcripts:blob:{0}";
+
+        /// <summary>
+        /// Pattern for invalidating all transcript caches
+        /// </summary>
+        public const string TranscriptsPattern = "thrive:transcripts:*";
+
+        // ============================================
         // Bible Passage Cache Keys
         // ============================================
 
