@@ -729,5 +729,32 @@ namespace ThriveChurchOfficialAPI.Controllers
 
             return Ok(response.Result);
         }
+
+        /// <summary>
+        /// Get minimal sermon data for sitemap generation
+        /// </summary>
+        /// <remarks>
+        /// Returns all sermon series and their messages with only IDs and dates.
+        /// Designed for efficient sitemap generation without requiring multiple API calls.
+        /// Response is cached for 2 hours.
+        /// </remarks>
+        /// <returns>Series and message IDs with dates</returns>
+        /// <response code="200">OK - Sitemap data retrieved</response>
+        /// <response code="400">Bad Request - Failed to retrieve data</response>
+        [Produces("application/json")]
+        [HttpGet("sitemap")]
+        [ProducesResponseType(typeof(SitemapDataResponse), 200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult<SitemapDataResponse>> GetSitemapData()
+        {
+            var response = await _sermonsService.GetSitemapData();
+
+            if (response.HasErrors)
+            {
+                return StatusCode(400, response.ErrorMessage);
+            }
+
+            return response.Result;
+        }
     }
 }

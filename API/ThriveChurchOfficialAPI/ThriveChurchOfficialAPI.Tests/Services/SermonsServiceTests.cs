@@ -1174,6 +1174,349 @@ namespace ThriveChurchOfficialAPI.Tests.Services
 
         #endregion
 
+        #region GetSitemapData Tests
+
+        [TestMethod]
+        public async Task GetSitemapData_CacheHit_ReturnsCachedData()
+        {
+            // Arrange
+            var cachedData = new SitemapDataResponse
+            {
+                Series = new List<SitemapSeriesData>
+                {
+                    new SitemapSeriesData
+                    {
+                        Id = "1",
+                        LastUpdated = DateTime.UtcNow,
+                        Messages = new List<SitemapMessageData>
+                        {
+                            new SitemapMessageData { Id = "msg1", Date = DateTime.UtcNow }
+                        }
+                    }
+                }
+            };
+
+            _mockCache.Setup(c => c.ReadFromCache<SitemapDataResponse>(CacheKeys.SitemapData))
+                .Returns(cachedData);
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(1, result.Result.Series.Count);
+            Assert.AreEqual("1", result.Result.Series[0].Id);
+
+            // Verify repository was NOT called (cache hit)
+            _mockSermonsRepository.Verify(r => r.GetAllSermons(It.IsAny<bool>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_CacheMiss_UsesExistingCachedServiceMethods()
+        {
+            // Arrange - Mock the flow: GetAllSermons (summary cache) -> GetSeriesForId (series cache)
+            var series1 = CreateTestSermonSeries("1", "Series 1", "series-1");
+            var series2 = CreateTestSermonSeries("2", "Series 2", "series-2");
+            var seriesList = new List<SermonSeries> { series1, series2 };
+
+            var message1 = CreateTestSermonMessage("msg1", "1", "Message 1");
+            var message2 = CreateTestSermonMessage("msg2", "1", "Message 2");
+            var message3 = CreateTestSermonMessage("msg3", "2", "Message 3");
+
+            // Mock GetAllSermons flow (for AllSermonsSummaryResponse)
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(new List<SermonMessage> { message1, message2, message3 });
+
+            // Mock GetSeriesForId flow (for each series)
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("1"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series1, "Success"));
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("2"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series2, "Success"));
+
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("1"))
+                .ReturnsAsync(new List<SermonMessage> { message1, message2 });
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("2"))
+                .ReturnsAsync(new List<SermonMessage> { message3 });
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(2, result.Result.Series.Count);
+
+            var series1Data = result.Result.Series.First(s => s.Id == "1");
+            var series2Data = result.Result.Series.First(s => s.Id == "2");
+            Assert.AreEqual(2, series1Data.Messages.Count);
+            Assert.AreEqual(1, series2Data.Messages.Count);
+
+            // Verify sitemap cache was updated
+            _mockCache.Verify(c => c.InsertIntoCache(
+                CacheKeys.SitemapData,
+                It.IsAny<SitemapDataResponse>(),
+                TimeSpan.FromHours(2)), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_NoSeries_ReturnsEmptyList()
+        {
+            // Arrange
+            var emptySeries = new List<SermonSeries>();
+            var emptyMessages = new List<SermonMessage>();
+
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(emptySeries);
+
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(emptyMessages);
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.IsNotNull(result.Result.Series);
+            Assert.AreEqual(0, result.Result.Series.Count);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_SeriesWithNoMessages_ReturnsEmptyMessagesList()
+        {
+            // Arrange
+            var series = CreateTestSermonSeries("1", "Empty Series", "empty-series");
+            var seriesList = new List<SermonSeries> { series };
+
+            // Mock GetAllSermons flow
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(seriesList);
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(new List<SermonMessage>());
+
+            // Mock GetSeriesForId flow (series with no messages)
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("1"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series, "Success"));
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("1"))
+                .ReturnsAsync(new List<SermonMessage>());
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(1, result.Result.Series.Count);
+            Assert.AreEqual(0, result.Result.Series[0].Messages.Count);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_GetAllSermonsCacheHit_UsesCachedData()
+        {
+            // Arrange - AllSermonsSummaryResponse is already in cache
+            var cachedSummary = new AllSermonsSummaryResponse
+            {
+                Summaries = new List<AllSermonSeriesSummary>
+                {
+                    new AllSermonSeriesSummary { Id = "1", Title = "Series 1", LastUpdated = DateTime.UtcNow }
+                }
+            };
+            var series = CreateTestSermonSeries("1", "Series 1", "series-1");
+            var message = CreateTestSermonMessage("msg1", "1", "Message 1");
+
+            // GetAllSermons will find its cache hit
+            var sermonsSummaryCacheKey = CacheKeys.Format(CacheKeys.SermonsSummary, false);
+            _mockCache.Setup(c => c.ReadFromCache<AllSermonsSummaryResponse>(sermonsSummaryCacheKey))
+                .Returns(cachedSummary);
+
+            // GetSeriesForId will still be called (different cache)
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("1"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series, "Success"));
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("1"))
+                .ReturnsAsync(new List<SermonMessage> { message });
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(1, result.Result.Series.Count);
+
+            // Verify repository GetAllSermons was NOT called (cache hit for summary)
+            _mockSermonsRepository.Verify(r => r.GetAllSermons(It.IsAny<bool>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_GetSeriesForIdFails_SkipsFailedSeries()
+        {
+            // Arrange - One series succeeds, one fails
+            var series1 = CreateTestSermonSeries("1", "Series 1", "series-1");
+            var series2 = CreateTestSermonSeries("2", "Series 2", "series-2");
+            var message1 = CreateTestSermonMessage("msg1", "1", "Message 1");
+
+            // Mock GetAllSermons flow
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(new List<SermonSeries> { series1, series2 });
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(new List<SermonMessage> { message1 });
+
+            // Mock GetSeriesForId - series1 succeeds, series2 fails
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("1"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series1, "Success"));
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("2"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(true, "Series not found"));
+
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("1"))
+                .ReturnsAsync(new List<SermonMessage> { message1 });
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert - Only series1 should be in the result (series2 was skipped due to error)
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(1, result.Result.Series.Count);
+            Assert.AreEqual("1", result.Result.Series[0].Id);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_ReturnsCorrectSeriesData()
+        {
+            // Arrange
+            var lastUpdated = new DateTime(2026, 1, 15, 10, 30, 0, DateTimeKind.Utc);
+            var series = new SermonSeries
+            {
+                Id = "test-series-id",
+                Name = "Test Series",
+                Slug = "test-series",
+                StartDate = DateTime.UtcNow,
+                LastUpdated = lastUpdated
+            };
+
+            // Mock GetAllSermons flow
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(new List<SermonSeries> { series });
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(new List<SermonMessage>());
+
+            // Mock GetSeriesForId flow
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("test-series-id"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series, "Success"));
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("test-series-id"))
+                .ReturnsAsync(new List<SermonMessage>());
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            var seriesData = result.Result.Series[0];
+            Assert.AreEqual("test-series-id", seriesData.Id);
+            Assert.AreEqual(lastUpdated, seriesData.LastUpdated);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_ReturnsCorrectMessageData()
+        {
+            // Arrange
+            var messageDate = new DateTime(2026, 1, 20, 9, 0, 0, DateTimeKind.Utc);
+            var series = CreateTestSermonSeries("1", "Test Series", "test-series");
+            var message = new SermonMessage
+            {
+                Id = "test-message-id",
+                SeriesId = "1",
+                Title = "Test Message",
+                Speaker = "Test Speaker",
+                Date = messageDate,
+                AudioDuration = 1800
+            };
+
+            // Mock GetAllSermons flow
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(new List<SermonSeries> { series });
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(new List<SermonMessage> { message });
+
+            // Mock GetSeriesForId flow
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("1"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series, "Success"));
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("1"))
+                .ReturnsAsync(new List<SermonMessage> { message });
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            var messageData = result.Result.Series[0].Messages[0];
+            Assert.AreEqual("test-message-id", messageData.Id);
+            Assert.AreEqual(messageDate, messageData.Date);
+        }
+
+        [TestMethod]
+        public async Task GetSitemapData_LeveragesExistingSeriesCaches()
+        {
+            // Arrange - This test verifies GetSeriesForId is called for each series (which uses caching)
+            var series1 = CreateTestSermonSeries("series-1", "Series 1", "series-1");
+            var series2 = CreateTestSermonSeries("series-2", "Series 2", "series-2");
+            var series3 = CreateTestSermonSeries("series-3", "Series 3", "series-3");
+
+            var messages = new List<SermonMessage>
+            {
+                CreateTestSermonMessage("msg1", "series-1", "Message 1"),
+                CreateTestSermonMessage("msg2", "series-1", "Message 2"),
+                CreateTestSermonMessage("msg3", "series-2", "Message 3"),
+                CreateTestSermonMessage("msg4", "series-2", "Message 4"),
+                CreateTestSermonMessage("msg5", "series-2", "Message 5")
+                // series-3 has no messages
+            };
+
+            // Mock GetAllSermons flow
+            _mockSermonsRepository.Setup(r => r.GetAllSermons(It.IsAny<bool>()))
+                .ReturnsAsync(new List<SermonSeries> { series1, series2, series3 });
+            _mockMessagesRepository.Setup(r => r.GetAllMessages())
+                .ReturnsAsync(messages);
+
+            // Mock GetSeriesForId flow for each series
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("series-1"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series1, "Success"));
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("series-2"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series2, "Success"));
+            _mockSermonsRepository.Setup(r => r.GetSermonSeriesForId("series-3"))
+                .ReturnsAsync(new SystemResponse<SermonSeries>(series3, "Success"));
+
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("series-1"))
+                .ReturnsAsync(messages.Where(m => m.SeriesId == "series-1").ToList());
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("series-2"))
+                .ReturnsAsync(messages.Where(m => m.SeriesId == "series-2").ToList());
+            _mockMessagesRepository.Setup(r => r.GetMessagesBySeriesId("series-3"))
+                .ReturnsAsync(new List<SermonMessage>());
+
+            // Act
+            var result = await _sermonsService.GetSitemapData();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(3, result.Result.Series.Count);
+
+            var series1Data = result.Result.Series.First(s => s.Id == "series-1");
+            var series2Data = result.Result.Series.First(s => s.Id == "series-2");
+            var series3Data = result.Result.Series.First(s => s.Id == "series-3");
+
+            Assert.AreEqual(2, series1Data.Messages.Count);
+            Assert.AreEqual(3, series2Data.Messages.Count);
+            Assert.AreEqual(0, series3Data.Messages.Count);
+        }
+
+        #endregion
+
         #region Helper Methods
 
         private SermonSeries CreateTestSermonSeries(string id, string name, string slug)
