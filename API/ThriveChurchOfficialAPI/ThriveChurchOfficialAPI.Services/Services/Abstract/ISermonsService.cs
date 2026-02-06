@@ -170,5 +170,11 @@ namespace ThriveChurchOfficialAPI.Services
         /// <param name="request"></param>
         /// <returns></returns>
         Task<PodcastMessage> UpdatePodcastMessage(string messageId, PodcastMessageRequest request);
+
+        /// <summary>
+        /// Gets minimal sermon data for sitemap generation
+        /// </summary>
+        /// <returns>Series IDs, message IDs, and dates for sitemap URLs</returns>
+        Task<SystemResponse<SitemapDataResponse>> GetSitemapData();
     }
 }

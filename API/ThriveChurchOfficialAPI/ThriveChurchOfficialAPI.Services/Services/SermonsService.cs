@@ -1872,5 +1872,61 @@ namespace ThriveChurchOfficialAPI.Services
         {
             return _podcastMessagesRepository.UpdatePodcastMessageById(messageId, request);
         }
+
+        /// <summary>
+        /// Gets minimal sermon data for sitemap generation
+        /// </summary>
+        /// <returns>Series IDs, message IDs, and dates for sitemap URLs</returns>
+        public async Task<SystemResponse<SitemapDataResponse>> GetSitemapData()
+        {
+            // Check cache first
+            var cacheKey = CacheKeys.SitemapData;
+            var cachedResponse = _cache.ReadFromCache<SitemapDataResponse>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return new SystemResponse<SitemapDataResponse>(cachedResponse, "Success!");
+            }
+
+            // Use existing cached service method to get all series summaries
+            var allSermonsResponse = await GetAllSermons(highResImg: false);
+            if (allSermonsResponse.HasErrors)
+            {
+                return new SystemResponse<SitemapDataResponse>(true, allSermonsResponse.ErrorMessage);
+            }
+
+            var allSeries = allSermonsResponse.Result.Summaries;
+            if (allSeries == null)
+            {
+                return new SystemResponse<SitemapDataResponse>(true, "Failed to retrieve sermon series data");
+            }
+
+            // For each series, get the full series data (with messages) from cache
+            // GetSeriesForId already uses caching at thrive:sermons:series:{seriesId}
+            var seriesDataTasks = allSeries.Select(s => GetSeriesForId(s.Id)).ToList();
+            await Task.WhenAll(seriesDataTasks);
+
+            // Build minimal response from cached data
+            var response = new SitemapDataResponse
+            {
+                Series = seriesDataTasks
+                    .Where(t => !t.Result.HasErrors && t.Result.Result != null)
+                    .Select(t => t.Result.Result)
+                    .Select(series => new SitemapSeriesData
+                    {
+                        Id = series.Id,
+                        LastUpdated = series.LastUpdated ?? DateTime.MinValue,
+                        Messages = series.Messages?.Select(msg => new SitemapMessageData
+                        {
+                            Id = msg.MessageId,
+                            Date = msg.Date
+                        }).ToList() ?? new List<SitemapMessageData>()
+                    }).ToList()
+            };
+
+            // Cache for 2 hours (matches sitemap ISR revalidation)
+            _cache.InsertIntoCache(cacheKey, response, TimeSpan.FromHours(2));
+
+            return new SystemResponse<SitemapDataResponse>(response, "Success!");
+        }
     }
 }

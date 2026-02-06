@@ -30,6 +30,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// </summary>
         public const string SermonsPattern = "thrive:sermons:*";
 
+        /// <summary>
+        /// Sitemap data containing all series and message IDs
+        /// </summary>
+        public const string SitemapData = "thrive:sermons:sitemap";
+
         // ============================================
         // Configuration Cache Keys
         // ============================================
