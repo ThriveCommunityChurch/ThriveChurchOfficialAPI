@@ -16,6 +16,11 @@ namespace ThriveChurchOfficialAPI.Core
         /// The date this message was given
         /// </summary>
         public DateTime? Date { get; set; }
+
+        /// <summary>
+        /// Whether this message has a video available
+        /// </summary>
+        public bool HasVideo { get; set; }
     }
 }
 

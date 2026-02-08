@@ -1918,7 +1918,8 @@ namespace ThriveChurchOfficialAPI.Services
                         Messages = series.Messages?.Select(msg => new SitemapMessageData
                         {
                             Id = msg.MessageId,
-                            Date = msg.Date
+                            Date = msg.Date,
+                            HasVideo = !string.IsNullOrEmpty(msg.VideoUrl)
                         }).ToList() ?? new List<SitemapMessageData>()
                     }).ToList()
             };
