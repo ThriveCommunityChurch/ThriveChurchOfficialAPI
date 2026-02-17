@@ -8,6 +8,7 @@
       "Properties": {
         "Handler": "ThriveChurchOfficialAPI::ThriveChurchOfficialAPI.LambdaEntryPoint::FunctionHandlerAsync",
         "Runtime": "dotnet8",
+        "Architectures": ["arm64"],
         "CodeUri": "",
         "MemorySize": 1024,
         "Timeout": 30,
