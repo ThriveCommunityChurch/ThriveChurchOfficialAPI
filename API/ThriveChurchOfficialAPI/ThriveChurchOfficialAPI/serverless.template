@@ -1,0 +1,173 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Thrive Church Official API - Lambda Deployment",
+  "Resources": {
+    "ThriveApiFunction": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "ThriveChurchOfficialAPI::ThriveChurchOfficialAPI.LambdaEntryPoint::FunctionHandlerAsync",
+        "Runtime": "dotnet8",
+        "CodeUri": "",
+        "MemorySize": 1024,
+        "Timeout": 30,
+        "Role": "arn:aws:iam::349570132161:role/ThriveApiAppRunnerRole",
+        "ReservedConcurrentExecutions": 10,
+        "Environment": {
+          "Variables": {
+            "ASPNETCORE_ENVIRONMENT": "Production",
+            "PORT": "8080",
+            "MongoConnectionString": "{{resolve:secretsmanager:thrive-api/database-hzetzL:SecretString:MongoConnectionString}}",
+            "TokenConnectionStringPath": "Hashables",
+            "EsvApiKey": "{{resolve:secretsmanager:thrive/3rd-party-eohiNX:SecretString:EsvApiKey}}",
+            "OverrideEsvApiKey": "false",
+            "EmailPW": "{{resolve:secretsmanager:thrive-api/auth-zrM22S:SecretString:EmailPassword}}",
+            "S3__BucketName": "thrive-audio",
+            "S3__AccessKey": "{{resolve:secretsmanager:thrive-api/s3-U1eiYO:SecretString:AccessKey}}",
+            "S3__SecretKey": "{{resolve:secretsmanager:thrive-api/s3-U1eiYO:SecretString:SecretKey}}",
+            "S3__Region": "us-east-2",
+            "S3__BaseUrl": "https://podcast.thrive-fl.org",
+            "S3__MaxFileSizeMB": "50",
+            "JWT__SecretKey": "{{resolve:secretsmanager:thrive-api/auth-zrM22S:SecretString:JwtSecretKey}}",
+            "JWT__Issuer": "ThriveChurchOfficialAPI",
+            "JWT__Audience": "ThriveChurchClients",
+            "JWT__ExpirationMinutes": "60",
+            "JWT__RefreshTokenExpirationDays": "7",
+            "RedisConnectionString": "{{resolve:secretsmanager:thrive-api/database-hzetzL:SecretString:RedisConnectionString}}",
+            "IpRateLimiting__EnableEndpointRateLimiting": "false",
+            "IpRateLimiting__StackBlockedRequests": "true",
+            "IpRateLimiting__HttpStatusCode": "429"
+          }
+        },
+        "Events": {
+          "ProxyResource": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/{proxy+}",
+              "Method": "ANY"
+            }
+          },
+          "RootResource": {
+            "Type": "HttpApi",
+            "Properties": {
+              "Path": "/",
+              "Method": "ANY"
+            }
+          }
+        }
+      }
+    },
+    "AlarmNotificationTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "TopicName": "ThriveAPI-Alarms",
+        "DisplayName": "Thrive API Health Alerts",
+        "Subscription": [
+          {
+            "Endpoint": "wyatt@thrive-fl.org",
+            "Protocol": "email"
+          }
+        ]
+      }
+    },
+    "LambdaErrorAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "ThriveAPI-Lambda-Errors",
+        "AlarmDescription": "Alert when Lambda function has errors",
+        "MetricName": "Errors",
+        "Namespace": "AWS/Lambda",
+        "Statistic": "Sum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "Threshold": 5,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "FunctionName",
+            "Value": {
+              "Ref": "ThriveApiFunction"
+            }
+          }
+        ],
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlarmNotificationTopic"
+          }
+        ]
+      }
+    },
+    "LambdaThrottleAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "ThriveAPI-Lambda-Throttles",
+        "AlarmDescription": "Alert when Lambda function is throttled",
+        "MetricName": "Throttles",
+        "Namespace": "AWS/Lambda",
+        "Statistic": "Sum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "Threshold": 1,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "FunctionName",
+            "Value": {
+              "Ref": "ThriveApiFunction"
+            }
+          }
+        ],
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlarmNotificationTopic"
+          }
+        ]
+      }
+    },
+    "ApiGateway5xxAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmName": "ThriveAPI-Gateway-5xx-Errors",
+        "AlarmDescription": "Alert when API Gateway returns 5xx errors",
+        "MetricName": "5XXError",
+        "Namespace": "AWS/ApiGateway",
+        "Statistic": "Sum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "Threshold": 5,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "Dimensions": [
+          {
+            "Name": "ApiId",
+            "Value": {
+              "Ref": "ServerlessHttpApi"
+            }
+          }
+        ],
+        "TreatMissingData": "notBreaching",
+        "AlarmActions": [
+          {
+            "Ref": "AlarmNotificationTopic"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Description": "API Gateway endpoint URL",
+      "Value": {
+        "Fn::Sub": "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+      }
+    },
+    "LambdaFunctionName": {
+      "Description": "Lambda function name",
+      "Value": {
+        "Ref": "ThriveApiFunction"
+      }
+    }
+  }
+}
+
