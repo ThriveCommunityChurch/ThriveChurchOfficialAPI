@@ -20,10 +20,5 @@
         /// this may cause issues with using the Passage Controller
         /// </summary>
         public string OverrideEsvApiKey { get; set; }
-
-        /// <summary>
-        /// Email PW used to send alert emails in the event an exception occurred
-        /// </summary>
-        public string EmailPW { get; set; }
     }
 }

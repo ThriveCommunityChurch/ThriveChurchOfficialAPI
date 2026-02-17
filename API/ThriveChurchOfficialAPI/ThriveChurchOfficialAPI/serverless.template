@@ -21,7 +21,6 @@
             "TokenConnectionStringPath": "Hashables",
             "EsvApiKey": "{{resolve:secretsmanager:thrive/3rd-party:SecretString:EsvApiKey}}",
             "OverrideEsvApiKey": "false",
-            "EmailPW": "{{resolve:secretsmanager:thrive-api/auth:SecretString:EmailPassword}}",
             "S3__BucketName": "thrive-audio",
             "S3__AccessKey": "{{resolve:secretsmanager:thrive-api/s3:SecretString:AccessKey}}",
             "S3__SecretKey": "{{resolve:secretsmanager:thrive-api/s3:SecretString:SecretKey}}",

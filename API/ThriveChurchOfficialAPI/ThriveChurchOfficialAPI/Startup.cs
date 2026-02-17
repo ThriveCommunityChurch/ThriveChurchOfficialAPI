@@ -309,7 +309,6 @@ namespace ThriveChurchOfficialAPI
             services.Configure<AppSettings>(options => Configuration.GetSection("EsvApiKey").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("MongoConnectionString").Bind(options));
             services.Configure<AppSettings>(options => Configuration.GetSection("OverrideEsvApiKey").Bind(options));
-            services.Configure<AppSettings>(options => Configuration.GetSection("EmailPW").Bind(options));
             services.Configure<AwsSettings>(options => Configuration.GetSection("S3").Bind(options));
             services.Configure<JwtSettings>(options => Configuration.GetSection("JWT").Bind(options));
 
