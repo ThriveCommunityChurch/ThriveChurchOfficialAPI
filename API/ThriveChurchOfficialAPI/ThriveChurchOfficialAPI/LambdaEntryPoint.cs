@@ -30,8 +30,9 @@ namespace ThriveChurchOfficialAPI
     /// <summary>
     /// Lambda entry point that wraps the ASP.NET Core application.
     /// This allows the same controllers, services, and repositories to run in AWS Lambda.
+    /// Uses HTTP API v2 format (APIGatewayHttpApiV2ProxyFunction) to match serverless.template's HttpApi event type.
     /// </summary>
-    public class LambdaEntryPoint : APIGatewayProxyFunction
+    public class LambdaEntryPoint : APIGatewayHttpApiV2ProxyFunction
     {
         /// <summary>
         /// Initialize the Lambda function with the ASP.NET Core Startup class.
