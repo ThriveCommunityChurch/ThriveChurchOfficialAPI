@@ -12,7 +12,6 @@
         "MemorySize": 1024,
         "Timeout": 30,
         "Role": "arn:aws:iam::349570132161:role/ThriveApiAppRunnerRole",
-        "ReservedConcurrentExecutions": 10,
         "Environment": {
           "Variables": {
             "ASPNETCORE_ENVIRONMENT": "Production",
