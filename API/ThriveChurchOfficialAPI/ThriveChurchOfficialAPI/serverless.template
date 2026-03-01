@@ -8,11 +8,11 @@
       "Properties": {
         "Handler": "ThriveChurchOfficialAPI::ThriveChurchOfficialAPI.LambdaEntryPoint::FunctionHandlerAsync",
         "Runtime": "dotnet8",
+        "Architectures": ["arm64"],
         "CodeUri": "",
         "MemorySize": 1024,
         "Timeout": 30,
         "Role": "arn:aws:iam::349570132161:role/ThriveApiAppRunnerRole",
-        "ReservedConcurrentExecutions": 10,
         "Environment": {
           "Variables": {
             "ASPNETCORE_ENVIRONMENT": "Production",
@@ -21,7 +21,6 @@
             "TokenConnectionStringPath": "Hashables",
             "EsvApiKey": "{{resolve:secretsmanager:thrive/3rd-party:SecretString:EsvApiKey}}",
             "OverrideEsvApiKey": "false",
-            "EmailPW": "{{resolve:secretsmanager:thrive-api/auth:SecretString:EmailPassword}}",
             "S3__BucketName": "thrive-audio",
             "S3__AccessKey": "{{resolve:secretsmanager:thrive-api/s3:SecretString:AccessKey}}",
             "S3__SecretKey": "{{resolve:secretsmanager:thrive-api/s3:SecretString:SecretKey}}",

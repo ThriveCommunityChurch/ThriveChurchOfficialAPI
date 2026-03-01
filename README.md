@@ -164,14 +164,12 @@ Configure these in the AWS App Runner console:
 | `JWT__RefreshTokenExpirationDays` | Refresh token expiration (default: 7) | |
 | `EsvApiKey` | ESV API key for Bible passages | ✅ |
 | `OverrideEsvApiKey` | Set to `true` to skip ESV API key check | |
-| `EmailPW` | Email password for notifications | |
 | `S3__BucketName` | AWS S3 bucket name | ✅ |
 | `S3__AccessKey` | AWS S3 access key | ✅ |
 | `S3__SecretKey` | AWS S3 secret key | ✅ |
 | `S3__Region` | AWS region (e.g., `us-east-2`) | ✅ |
 | `S3__BaseUrl` | S3 bucket base URL | ✅ |
 | `S3__MaxFileSizeMB` | Max upload size in MB (default: 50) | |
-| `MUX__Secret` | MUX secret for video streaming | |
 | `RedisConnectionString` | Redis connection string for caching | |
 | `AzureStorageConnectionString` | Azure Blob Storage for transcripts | |
 
