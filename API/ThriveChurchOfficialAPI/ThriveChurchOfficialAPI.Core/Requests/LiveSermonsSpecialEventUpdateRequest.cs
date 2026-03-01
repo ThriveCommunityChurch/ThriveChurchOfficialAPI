@@ -51,7 +51,7 @@ namespace ThriveChurchOfficialAPI.Core
                 return new ValidationResponse(true, string.Format(SystemMessages.NullProperty, nameof(SpecialEventTimes)));
             }
 
-            return new ValidationResponse(true, "Success!");
+            return new ValidationResponse("Success!");
         }
     }
 }

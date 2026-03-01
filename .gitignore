@@ -37,3 +37,6 @@ launchSettings.json
 *.env
 *.env.local
 *.env.*.local
+
+# Coverage Reports
+**/TestResults/
