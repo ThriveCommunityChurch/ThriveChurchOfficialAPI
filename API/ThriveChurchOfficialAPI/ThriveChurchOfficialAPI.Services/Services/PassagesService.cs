@@ -31,7 +31,7 @@ namespace ThriveChurchOfficialAPI.Services
 
             if (searchCriteria.Length < 3 || searchCriteria.Length > 200)
             {
-                return new SystemResponse<SermonPassageResponse>(true, string.Format(SystemMessages.PropertyNameCharactersLengthRange, 3, 200));
+                return new SystemResponse<SermonPassageResponse>(true, string.Format(SystemMessages.PropertyNameCharactersLengthRange, "searchCriteria", 3, 200));
             }
 
             var response = new SermonPassageResponse();
@@ -51,7 +51,7 @@ namespace ThriveChurchOfficialAPI.Services
             // since ESV returns everything as one massive string, I need to convert everything to objects
             // Then to strings if I wish
             var getPassagesResponse = await _passagesRepository.GetPassagesForSearch(searchCriteria);
-            if (getPassagesResponse == null)
+            if (getPassagesResponse == null || getPassagesResponse.passages == null)
             {
                 return new SystemResponse<SermonPassageResponse>(true, SystemMessages.ErrorWithESVApi);
             }

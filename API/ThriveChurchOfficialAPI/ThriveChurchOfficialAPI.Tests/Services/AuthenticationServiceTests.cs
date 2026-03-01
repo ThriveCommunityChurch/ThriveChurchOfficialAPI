@@ -526,6 +526,441 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
         }
 
+        [TestMethod]
+        public async Task LoginAsync_CreateRefreshTokenFails_ReturnsError()
+        {
+            // Arrange
+            var loginRequest = new LoginRequest
+            {
+                Username = "testuser",
+                Password = _testPassword
+            };
+
+            _mockUserRepository.Setup(r => r.GetUserByUsernameAsync(loginRequest.Username))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
+
+            _mockUserRepository.Setup(r => r.ResetFailedLoginAttemptsAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "Attempts reset"));
+
+            _mockRefreshTokenRepository.Setup(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(true, "Failed to create refresh token"));
+
+            _mockJwtService.Setup(j => j.GenerateToken(_testUser)).Returns("test.jwt.token");
+            _mockJwtService.Setup(j => j.GenerateRefreshToken()).Returns("refresh-token");
+            _mockJwtService.Setup(j => j.GetTokenExpiration()).Returns(DateTime.UtcNow.AddHours(1));
+
+            // Act
+            var result = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task LoginAsync_FiveFailedAttempts_LocksAccount()
+        {
+            // Arrange
+            var userAboutToBeLocked = new User
+            {
+                Id = "507f1f77bcf86cd799439011",
+                Username = "testuser",
+                PasswordHash = _testPasswordHash,
+                IsActive = true,
+                FailedLoginAttempts = 5
+            };
+
+            var loginRequest = new LoginRequest
+            {
+                Username = "testuser",
+                Password = "wrongpassword"
+            };
+
+            _mockUserRepository.Setup(r => r.GetUserByUsernameAsync(loginRequest.Username))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
+
+            _mockUserRepository.Setup(r => r.RecordFailedLoginAttemptAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(userAboutToBeLocked, "Attempt recorded"));
+
+            _mockUserRepository.Setup(r => r.LockoutUserAsync(_testUser.Id, It.IsAny<TimeSpan>()))
+                .ReturnsAsync(new SystemResponse<User>(userAboutToBeLocked, "User locked"));
+
+            // Act
+            var result = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            _mockUserRepository.Verify(r => r.LockoutUserAsync(_testUser.Id, It.IsAny<TimeSpan>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task LoginAsync_RecordFailedAttemptErrors_ContinuesWithoutException()
+        {
+            // Arrange
+            var loginRequest = new LoginRequest
+            {
+                Username = "testuser",
+                Password = "wrongpassword"
+            };
+
+            _mockUserRepository.Setup(r => r.GetUserByUsernameAsync(loginRequest.Username))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
+
+            _mockUserRepository.Setup(r => r.RecordFailedLoginAttemptAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(true, "Database error"));
+
+            // Act
+            var result = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task LoginAsync_NullHttpContext_HandlesGracefully()
+        {
+            // Arrange
+            var loginRequest = new LoginRequest
+            {
+                Username = "testuser",
+                Password = _testPassword
+            };
+
+            _mockUserRepository.Setup(r => r.GetUserByUsernameAsync(loginRequest.Username))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
+
+            _mockUserRepository.Setup(r => r.ResetFailedLoginAttemptsAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "Attempts reset"));
+
+            _mockRefreshTokenRepository.Setup(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(new RefreshToken(), "Token created"));
+
+            _mockJwtService.Setup(j => j.GenerateToken(_testUser)).Returns("test.jwt.token");
+            _mockJwtService.Setup(j => j.GenerateRefreshToken()).Returns("refresh-token");
+            _mockJwtService.Setup(j => j.GetTokenExpiration()).Returns(DateTime.UtcNow.AddHours(1));
+
+            // Act - pass null HttpContext
+            var result = await _authenticationService.LoginAsync(null, loginRequest);
+
+            // Assert
+            Assert.IsFalse(result.HasErrors);
+            Assert.IsNotNull(result.Result);
+        }
+
+        #endregion
+
+        #region RefreshTokenAsync Extended Tests
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_RepositoryError_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "some-token" };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(true, "Database error"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_ExpiredToken_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "expired-token" };
+            var expiredToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "expired-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
+                IsUsed = false,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(expiredToken, "Token found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_UsedToken_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "used-token" };
+            var usedToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "used-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = true,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(usedToken, "Token found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_RevokedToken_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "revoked-token" };
+            var revokedToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "revoked-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = false,
+                IsRevoked = true
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(revokedToken, "Token found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_UserNotFound_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "valid-token" };
+            var validToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "valid-token",
+                UserId = "nonexistent-user",
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = false,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(validToken, "Token found"));
+
+            _mockUserRepository.Setup(r => r.GetUserByIdAsync("nonexistent-user"))
+                .ReturnsAsync(new SystemResponse<User>(true, "User not found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_UserLookupReturnsNull_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "valid-token" };
+            var validToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "valid-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = false,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(validToken, "Token found"));
+
+            _mockUserRepository.Setup(r => r.GetUserByIdAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>((User)null, "User found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_InactiveUser_ReturnsError()
+        {
+            // Arrange
+            var inactiveUser = new User
+            {
+                Id = _testUser.Id,
+                Username = "testuser",
+                IsActive = false
+            };
+
+            var request = new RefreshTokenRequest { RefreshToken = "valid-token" };
+            var validToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "valid-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = false,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(validToken, "Token found"));
+
+            _mockUserRepository.Setup(r => r.GetUserByIdAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(inactiveUser, "User found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_LockedOutUser_ReturnsError()
+        {
+            // Arrange
+            var lockedUser = new User
+            {
+                Id = _testUser.Id,
+                Username = "testuser",
+                IsActive = true,
+                FailedLoginAttempts = 5,
+                LockoutEnd = DateTime.UtcNow.AddMinutes(30)
+            };
+
+            var request = new RefreshTokenRequest { RefreshToken = "valid-token" };
+            var validToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "valid-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = false,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(validToken, "Token found"));
+
+            _mockUserRepository.Setup(r => r.GetUserByIdAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(lockedUser, "User found"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_CreateNewRefreshTokenFails_ReturnsError()
+        {
+            // Arrange
+            var request = new RefreshTokenRequest { RefreshToken = "valid-token" };
+            var validToken = new RefreshToken
+            {
+                Id = "token-id",
+                Token = "valid-token",
+                UserId = _testUser.Id,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                IsUsed = false,
+                IsRevoked = false
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(request.RefreshToken))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(validToken, "Token found"));
+
+            _mockUserRepository.Setup(r => r.GetUserByIdAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
+
+            _mockRefreshTokenRepository.Setup(r => r.MarkTokenAsUsedAsync(validToken.Id, null))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(validToken, "Token marked"));
+
+            _mockRefreshTokenRepository.Setup(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(true, "Failed to create token"));
+
+            _mockJwtService.Setup(j => j.GenerateToken(_testUser)).Returns("new.jwt.token");
+            _mockJwtService.Setup(j => j.GenerateRefreshToken()).Returns("new-refresh-token");
+            _mockJwtService.Setup(j => j.GetTokenExpiration()).Returns(DateTime.UtcNow.AddHours(1));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, request);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        #endregion
+
+        #region UnlockUserAccountAsync Extended Tests
+
+        [TestMethod]
+        public async Task UnlockUserAccountAsync_RepositoryError_ReturnsError()
+        {
+            // Arrange
+            var userId = "507f1f77bcf86cd799439011";
+
+            _mockUserRepository.Setup(r => r.UnlockUserAsync(userId))
+                .ReturnsAsync(new SystemResponse<User>(true, "Database error"));
+
+            // Act
+            var result = await _authenticationService.UnlockUserAccountAsync(userId);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.UnlockFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task UnlockUserAccountAsync_WhitespaceUserId_ReturnsError()
+        {
+            // Act
+            var result = await _authenticationService.UnlockUserAccountAsync("   ");
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task UnlockUserAccountAsync_NullUserId_ReturnsError()
+        {
+            // Act
+            var result = await _authenticationService.UnlockUserAccountAsync(null);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.InvalidRequest, result.ErrorMessage);
+        }
+
         #endregion
 
         #region Password Validation Tests
@@ -558,7 +993,119 @@ namespace ThriveChurchOfficialAPI.Tests.Services
             Assert.IsTrue(result.ErrorMessage.Contains("10 characters"));
         }
 
+        [TestMethod]
+        public void ValidatePassword_InvalidBcryptFormat_ReturnsFalse()
+        {
+            // Arrange - user with invalid bcrypt hash format
+            var userWithBadHash = new User
+            {
+                Id = "507f1f77bcf86cd799439011",
+                Username = "testuser",
+                PasswordHash = "not-a-valid-bcrypt-hash",
+                IsActive = true
+            };
 
+            // Act
+            var result = _authenticationService.ValidatePassword(userWithBadHash, _testPassword);
+
+            // Assert
+            Assert.IsFalse(result);
+        }
+
+        #endregion
+
+        #region Exception Path Tests
+
+        [TestMethod]
+        public async Task LoginAsync_RepositoryThrowsException_ReturnsGenericError()
+        {
+            // Arrange - Setup repository to throw an exception
+            var loginRequest = new LoginRequest
+            {
+                Username = "testuser",
+                Password = _testPassword
+            };
+
+            _mockUserRepository.Setup(r => r.GetUserByUsernameAsync(It.IsAny<string>()))
+                .ThrowsAsync(new InvalidOperationException("Database connection failed"));
+
+            // Act
+            var result = await _authenticationService.LoginAsync(_mockHttpContext.Object, loginRequest);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.LoginFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task RefreshTokenAsync_RepositoryThrowsException_ReturnsGenericError()
+        {
+            // Arrange
+            var refreshRequest = new RefreshTokenRequest
+            {
+                RefreshToken = "some-token"
+            };
+
+            _mockRefreshTokenRepository.Setup(r => r.GetRefreshTokenAsync(It.IsAny<string>()))
+                .ThrowsAsync(new InvalidOperationException("Database error"));
+
+            // Act
+            var result = await _authenticationService.RefreshTokenAsync(_mockHttpContext.Object, refreshRequest);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.RefreshTokenFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task UnlockUserAccountAsync_RepositoryThrowsException_ReturnsGenericError()
+        {
+            // Arrange
+            var userId = "507f1f77bcf86cd799439011";
+
+            _mockUserRepository.Setup(r => r.UnlockUserAsync(userId))
+                .ThrowsAsync(new InvalidOperationException("Database error"));
+
+            // Act
+            var result = await _authenticationService.UnlockUserAccountAsync(userId);
+
+            // Assert
+            Assert.IsTrue(result.HasErrors);
+            Assert.AreEqual(AuthenticationMessages.UnlockFailed, result.ErrorMessage);
+        }
+
+        [TestMethod]
+        public async Task LoginAsync_GetClientIpAddressThrowsException_ContinuesWithNullIp()
+        {
+            // Arrange - Setup HttpContext to throw an exception when accessing Connection
+            var loginRequest = new LoginRequest
+            {
+                Username = "testuser",
+                Password = _testPassword
+            };
+
+            var mockHttpContextWithBadConnection = new Mock<HttpContext>();
+            mockHttpContextWithBadConnection.Setup(c => c.Connection)
+                .Throws(new InvalidOperationException("Cannot access connection"));
+
+            _mockUserRepository.Setup(r => r.GetUserByUsernameAsync(loginRequest.Username))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "User found"));
+            _mockUserRepository.Setup(r => r.ResetFailedLoginAttemptsAsync(_testUser.Id))
+                .ReturnsAsync(new SystemResponse<User>(_testUser, "Success"));
+
+            _mockJwtService.Setup(j => j.GenerateToken(_testUser)).Returns("test.jwt.token");
+            _mockJwtService.Setup(j => j.GenerateRefreshToken()).Returns("refresh-token");
+            _mockJwtService.Setup(j => j.GetTokenExpiration()).Returns(DateTime.UtcNow.AddHours(1));
+
+            _mockRefreshTokenRepository.Setup(r => r.CreateRefreshTokenAsync(It.IsAny<RefreshToken>()))
+                .ReturnsAsync(new SystemResponse<RefreshToken>(new RefreshToken { Token = "refresh-token" }, "Token created"));
+
+            // Act
+            var result = await _authenticationService.LoginAsync(mockHttpContextWithBadConnection.Object, loginRequest);
+
+            // Assert - Should succeed with null IP address (graceful handling)
+            Assert.IsFalse(result.HasErrors);
+        }
 
         #endregion
     }

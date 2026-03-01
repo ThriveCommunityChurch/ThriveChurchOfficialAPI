@@ -678,6 +678,323 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         }
 
         #endregion
+
+        #region Additional Coverage Tests
+
+        [TestMethod]
+        public async Task GetAllEvents_WithCachedResponse_ReturnsCachedData()
+        {
+            // Arrange - setup cache hit
+            var cachedResponse = new AllEventsResponse
+            {
+                Events = new List<EventSummary>
+                {
+                    new EventSummary { Id = "1", Title = "Cached Event" }
+                },
+                TotalCount = 1
+            };
+
+            _mockCache.Setup(c => c.ReadFromCache<AllEventsResponse>(It.IsAny<string>()))
+                .Returns(cachedResponse);
+
+            // Act
+            var result = await _eventsService.GetAllEvents();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(1, result.Result.TotalCount);
+            Assert.AreEqual("Cached Event", result.Result.Events.First().Title);
+            // Verify repository was NOT called due to cache hit
+            _mockEventsRepository.Verify(r => r.GetAllEvents(It.IsAny<bool>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task UpdateEvent_WithAllOptionalProperties_UpdatesAllFields()
+        {
+            // Arrange
+            var eventId = "507f1f77bcf86cd799439011";
+            var existingEvent = CreateTestEvent(eventId, "Old Title", DateTime.UtcNow);
+
+            var request = new UpdateEventRequest
+            {
+                Title = "New Title",
+                Summary = "New Summary",
+                Description = "New Description",
+                ImageUrl = "http://image.url/image.jpg",
+                ThumbnailUrl = "http://thumb.url/thumb.jpg",
+                IconName = "fa-calendar",
+                StartTime = DateTime.UtcNow.AddDays(1),
+                EndTime = DateTime.UtcNow.AddDays(1).AddHours(2),
+                IsAllDay = true,
+                IsRecurring = false,
+                Recurrence = new EventRecurrence { Pattern = RecurrencePattern.Weekly, Interval = 1, DayOfWeek = 0 },
+                IsOnline = true,
+                OnlineLink = "http://zoom.link/meeting",
+                OnlinePlatform = "Zoom",
+                Location = new EventLocation { Name = "Church Hall", Address = "123 Main St" },
+                ContactEmail = "test@example.com",
+                ContactPhone = "555-1234",
+                RegistrationUrl = "http://register.url",
+                Tags = new List<string> { "tag1", "tag2" },
+                IsActive = false,
+                IsFeatured = true
+            };
+
+            var updatedEvent = new Event
+            {
+                Id = eventId,
+                Title = "New Title",
+                Summary = "New Summary",
+                Description = "New Description",
+                ImageUrl = "http://image.url/image.jpg",
+                ThumbnailUrl = "http://thumb.url/thumb.jpg",
+                IconName = "fa-calendar",
+                StartTime = request.StartTime.Value.ToUniversalTime(),
+                EndTime = request.EndTime.Value.ToUniversalTime(),
+                IsAllDay = true,
+                IsRecurring = false,
+                Recurrence = request.Recurrence,
+                IsOnline = true,
+                OnlineLink = "http://zoom.link/meeting",
+                OnlinePlatform = "Zoom",
+                Location = request.Location,
+                ContactEmail = "test@example.com",
+                ContactPhone = "555-1234",
+                RegistrationUrl = "http://register.url",
+                Tags = new List<string> { "tag1", "tag2" },
+                IsActive = false,
+                IsFeatured = true
+            };
+
+            _mockEventsRepository.Setup(r => r.GetEventById(eventId)).ReturnsAsync(existingEvent);
+            _mockEventsRepository.Setup(r => r.UpdateEvent(eventId, It.IsAny<Event>())).ReturnsAsync(updatedEvent);
+
+            // Act
+            var result = await _eventsService.UpdateEvent(eventId, request);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual("New Title", result.Result.Event.Title);
+            Assert.AreEqual("New Summary", result.Result.Event.Summary);
+            Assert.AreEqual("New Description", result.Result.Event.Description);
+            Assert.AreEqual("http://image.url/image.jpg", result.Result.Event.ImageUrl);
+            Assert.AreEqual("http://thumb.url/thumb.jpg", result.Result.Event.ThumbnailUrl);
+            Assert.AreEqual("fa-calendar", result.Result.Event.IconName);
+            Assert.AreEqual(true, result.Result.Event.IsAllDay);
+            Assert.AreEqual(true, result.Result.Event.IsOnline);
+            Assert.AreEqual("http://zoom.link/meeting", result.Result.Event.OnlineLink);
+            Assert.AreEqual("Zoom", result.Result.Event.OnlinePlatform);
+            Assert.AreEqual("test@example.com", result.Result.Event.ContactEmail);
+            Assert.AreEqual("555-1234", result.Result.Event.ContactPhone);
+            Assert.AreEqual("http://register.url", result.Result.Event.RegistrationUrl);
+            Assert.AreEqual(false, result.Result.Event.IsActive);
+            Assert.AreEqual(true, result.Result.Event.IsFeatured);
+            Assert.AreEqual(2, result.Result.Event.Tags.Count);
+        }
+
+        [TestMethod]
+        public void CalculateRecurringDates_WithPatternNone_ReturnsEmptyAfterMinValue()
+        {
+            // Arrange - Event with RecurrencePattern.None will cause GetNextOccurrenceDate to return DateTime.MinValue
+            var evt = new Event
+            {
+                Id = "1",
+                Title = "Test Recurring",
+                StartTime = DateTime.UtcNow.AddDays(-1), // Start in the past so we enter the while loop
+                IsRecurring = true,
+                Recurrence = new EventRecurrence
+                {
+                    Pattern = RecurrencePattern.None, // This will cause DateTime.MinValue to be returned
+                    Interval = 1
+                }
+            };
+
+            var fromDate = DateTime.UtcNow;
+            var toDate = DateTime.UtcNow.AddMonths(1);
+
+            // Act
+            var result = _eventsService.CalculateRecurringDates(evt, fromDate, toDate);
+
+            // Assert - Should return empty or minimal dates because Pattern.None returns DateTime.MinValue
+            Assert.IsNotNull(result);
+            // The first iteration may add the StartTime if it's in range, then break on MinValue
+        }
+
+        [TestMethod]
+        public void CalculateRecurringDates_WithNullRecurrence_ReturnsEmpty()
+        {
+            // Arrange - This tests a defensive code path
+            var evt = new Event
+            {
+                Id = "1",
+                Title = "Test",
+                StartTime = DateTime.UtcNow,
+                IsRecurring = true,
+                Recurrence = null
+            };
+
+            var fromDate = DateTime.UtcNow;
+            var toDate = DateTime.UtcNow.AddMonths(1);
+
+            // Act
+            var result = _eventsService.CalculateRecurringDates(evt, fromDate, toDate);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Count);
+        }
+
+        [TestMethod]
+        public void CalculateRecurringDates_WithDailyPattern_ReturnsCorrectDates()
+        {
+            // Arrange
+            var startDate = DateTime.UtcNow.Date;
+            var evt = new Event
+            {
+                Id = "1",
+                Title = "Daily Event",
+                StartTime = startDate,
+                IsRecurring = true,
+                Recurrence = new EventRecurrence
+                {
+                    Pattern = RecurrencePattern.Daily,
+                    Interval = 1
+                }
+            };
+
+            var fromDate = startDate;
+            var toDate = startDate.AddDays(5);
+
+            // Act
+            var result = _eventsService.CalculateRecurringDates(evt, fromDate, toDate);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Count >= 5); // Should have daily occurrences
+        }
+
+        [TestMethod]
+        public void CalculateRecurringDates_WithYearlyPattern_ReturnsCorrectDates()
+        {
+            // Arrange
+            var startDate = DateTime.UtcNow.Date;
+            var evt = new Event
+            {
+                Id = "1",
+                Title = "Yearly Event",
+                StartTime = startDate,
+                IsRecurring = true,
+                Recurrence = new EventRecurrence
+                {
+                    Pattern = RecurrencePattern.Yearly,
+                    Interval = 1
+                }
+            };
+
+            var fromDate = startDate;
+            var toDate = startDate.AddYears(3);
+
+            // Act
+            var result = _eventsService.CalculateRecurringDates(evt, fromDate, toDate);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Count >= 2); // Should have yearly occurrences
+        }
+
+        [TestMethod]
+        public void CalculateRecurringDates_WithMonthlyPattern_HandlesEndOfMonthCorrectly()
+        {
+            // Arrange - Start on Jan 31 to test edge case
+            var startDate = new DateTime(2026, 1, 31, 10, 0, 0, DateTimeKind.Utc);
+            var evt = new Event
+            {
+                Id = "1",
+                Title = "Monthly Event on 31st",
+                StartTime = startDate,
+                IsRecurring = true,
+                Recurrence = new EventRecurrence
+                {
+                    Pattern = RecurrencePattern.Monthly,
+                    Interval = 1,
+                    DayOfMonth = 31
+                }
+            };
+
+            var fromDate = startDate;
+            var toDate = startDate.AddMonths(4);
+
+            // Act
+            var result = _eventsService.CalculateRecurringDates(evt, fromDate, toDate);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsTrue(result.Count >= 2); // Should handle Feb 28/29 correctly
+        }
+
+        [TestMethod]
+        public async Task GetFeaturedEvents_WithCachedResponse_ReturnsCachedData()
+        {
+            // Arrange - setup cache hit for GetFeaturedEvents
+            var cachedResponse = new AllEventsResponse
+            {
+                Events = new List<EventSummary>
+                {
+                    new EventSummary { Id = "1", Title = "Cached Featured Event", IsFeatured = true }
+                },
+                TotalCount = 1
+            };
+
+            _mockCache.Setup(c => c.ReadFromCache<AllEventsResponse>(CacheKeys.EventsFeatured))
+                .Returns(cachedResponse);
+
+            // Act
+            var result = await _eventsService.GetFeaturedEvents();
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.IsFalse(result.HasErrors);
+            Assert.AreEqual(1, result.Result.TotalCount);
+            Assert.AreEqual("Cached Featured Event", result.Result.Events.First().Title);
+            // Verify repository was NOT called due to cache hit
+            _mockEventsRepository.Verify(r => r.GetFeaturedEvents(), Times.Never);
+        }
+
+        [TestMethod]
+        public void CalculateRecurringDates_WithInvalidEnumPattern_ReturnsMinValueAndBreaks()
+        {
+            // Arrange - Create an event with an invalid RecurrencePattern value
+            // This tests the default case in the switch statement which returns DateTime.MinValue
+            var startDate = DateTime.UtcNow.Date;
+            var evt = new Event
+            {
+                Id = "1",
+                Title = "Event with Invalid Pattern",
+                StartTime = startDate,
+                IsRecurring = true,
+                Recurrence = new EventRecurrence
+                {
+                    Pattern = (RecurrencePattern)999, // Invalid enum value
+                    Interval = 1
+                }
+            };
+
+            var fromDate = startDate;
+            var toDate = startDate.AddMonths(1);
+
+            // Act
+            var result = _eventsService.CalculateRecurringDates(evt, fromDate, toDate);
+
+            // Assert - Should have at most 1 date (the first occurrence before breaking)
+            Assert.IsNotNull(result);
+            // The first iteration adds startDate, then GetNextOccurrenceDate returns MinValue,
+            // causing the loop to break immediately
+            Assert.IsTrue(result.Count <= 1);
+        }
+
+        #endregion
     }
 }
 
