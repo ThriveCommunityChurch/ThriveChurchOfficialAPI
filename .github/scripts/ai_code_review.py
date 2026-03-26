@@ -130,7 +130,7 @@ DO NOT flag:
 
 Only flag these specific issues:
 - **BANNED: AutoMapper** - Flag ANY use of AutoMapper. Suggest manual mapping instead.
-- Async/await deadlocks: `.Result`, `.Wait()`, `Task.Run(...).Result`
+- Async/await deadlocks: `.Result`, `.Wait()`, `Task.Run(...).Result` — EXCEPT in constructors or other sync-only contexts where async code must be called synchronously (e.g. one-time init like index creation). `.GetAwaiter().GetResult()` is acceptable there.
 - Null dereference that WILL throw (not might throw)
 - SQL/NoSQL injection with string interpolation in queries
 - Hardcoded secrets/passwords/API keys in source code
@@ -179,6 +179,9 @@ if (item == null) return NotFound();
 // IGNORE: Proper async
 var result = await GetDataAsync();
 
+// IGNORE: .GetAwaiter().GetResult() in a constructor for one-time init is acceptable
+CreateIndexesAsync().GetAwaiter().GetResult();
+
 // IGNORE: Using statement is safe
 using var stream = new FileStream(path, FileMode.Open);
 ```
@@ -196,7 +199,21 @@ using var stream = new FileStream(path, FileMode.Open);
     for file_info in files_with_diffs:
         prompt += f"\n### File: {file_info['filename']}\n```\n{file_info['patch']}\n```\n"
 
-    prompt += "\n\nRespond with ONLY a JSON object containing a comments array, no other text."
+    prompt += """
+
+Respond with ONLY a JSON object in this exact format, no other text:
+{
+  "comments": [
+    {
+      "file": "path/to/file.cs",
+      "line": 42,
+      "body": "Description of the bug"
+    }
+  ]
+}
+
+Each comment MUST have exactly these three fields: "file", "line", "body".
+If there are no issues, return: {"comments": []}"""
     return prompt
 
 def get_openai_client():
@@ -284,7 +301,7 @@ def post_review_comments(comments, files_data, raw_response):
     for comment in comments:
         filename = comment.get("file", "")
         line = comment.get("line", 0)
-        body = comment.get("body", "")
+        body = comment.get("body") or comment.get("comment", "")
 
         if not filename or not line or not body:
             continue
@@ -359,7 +376,7 @@ def format_fallback_summary(comments, raw_response=None):
     for comment in comments:
         filename = comment.get("file", "")
         line = comment.get("line", 0)
-        body = comment.get("body", "")
+        body = comment.get("body") or comment.get("comment", "")
 
         # Skip comments with missing required fields
         if not filename or not line or not body:
