@@ -373,11 +373,7 @@ def post_review_comments(comments, files_data, raw_response):
     """Post inline review comments to the PR using GitHub's review API."""
     if not comments:
         print("No issues found - code looks good!")
-        summary = "✅ **AI Code Review**: No issues found. The changes look good!\n\n"
-        summary += "<details>\n<summary>Raw AI Response</summary>\n\n```json\n"
-        summary += raw_response
-        summary += "\n```\n</details>"
-        post_summary_comment(summary)
+        post_summary_comment("No issues found. The changes look good!")
         return
 
     # Build sets of valid new-side line numbers for each file in the diff
@@ -478,11 +474,11 @@ def format_fallback_summary(comments, raw_response=None):
 
     # If all comments were filtered out, return a success message
     if len(lines) == 1:
-        result = "✅ **AI Code Review**: No issues found. The changes look good!"
-    else:
-        result = "\n".join(lines)
+        return "No issues found. The changes look good!"
 
-    # Always append the raw AI response in a collapsible section
+    result = "\n".join(lines)
+
+    # Append the raw AI response in a collapsible section when there are findings
     if raw_response:
         result += "\n\n<details>\n<summary>Raw AI Response</summary>\n\n```json\n"
         result += raw_response
