@@ -21,5 +21,11 @@ namespace ThriveChurchOfficialAPI.Repositories
         public const string EventsByIsActiveAsc = "Events_IsActive_1";
         public const string EventsByIsFeaturedAsc = "Events_IsFeatured_1";
         public const string EventsByIsActiveStartTimeAsc = "Events_IsActive_1_StartTime_1";
+
+        // Blogs Collection
+        public const string BlogsBySlugAsc_Unique = "Blogs_Slug_1";
+        public const string BlogsByIsPublishedAsc = "Blogs_IsPublished_1";
+        public const string BlogsByPublishedDateDesc = "Blogs_PublishedDate_-1";
+        public const string BlogsByIsPublishedAndPublishedDate = "Blogs_IsPublished_1_PublishedDate_-1";
     }
 }
