@@ -39,6 +39,7 @@ namespace ThriveChurchOfficialAPI.Core
         /// ObjectId reference to the source document
         /// </summary>
         [BsonIgnoreIfNull]
+        [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
         public string SourceId { get; set; }
 
         /// <summary>
