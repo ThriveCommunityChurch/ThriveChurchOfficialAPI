@@ -383,6 +383,10 @@ namespace ThriveChurchOfficialAPI
             services.AddTransient(typeof(IEventsRepository), typeof(EventsRepository));
             services.AddTransient(typeof(IEventsService), typeof(EventsService));
 
+            // Blog services
+            services.AddTransient(typeof(IBlogRepository), typeof(BlogRepository));
+            services.AddTransient(typeof(IBlogService), typeof(BlogService));
+
             // Lambda services
             services.AddSingleton(typeof(IPodcastLambdaService), typeof(PodcastLambdaService));
 

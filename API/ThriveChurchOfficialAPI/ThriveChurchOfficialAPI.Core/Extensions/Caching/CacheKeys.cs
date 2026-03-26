@@ -102,6 +102,35 @@ namespace ThriveChurchOfficialAPI.Core
         public const string PassagesPattern = "thrive:passages:*";
 
         // ============================================
+        // Blog Cache Keys
+        // ============================================
+
+        /// <summary>
+        /// Published blog posts page. Format: thrive:blogs:published:{pageNumber}:{pageSize}
+        /// </summary>
+        public const string BlogPublished = "thrive:blogs:published:{0}:{1}";
+
+        /// <summary>
+        /// Blog post by slug. Format: thrive:blogs:slug:{slug}
+        /// </summary>
+        public const string BlogBySlug = "thrive:blogs:slug:{0}";
+
+        /// <summary>
+        /// Individual blog post by ID. Format: thrive:blogs:item:{blogId}
+        /// </summary>
+        public const string BlogItem = "thrive:blogs:item:{0}";
+
+        /// <summary>
+        /// Blog search results. Format: thrive:blogs:search:{query}:{pageNumber}:{pageSize}
+        /// </summary>
+        public const string BlogSearch = "thrive:blogs:search:{0}:{1}:{2}";
+
+        /// <summary>
+        /// Pattern for invalidating all blog caches
+        /// </summary>
+        public const string BlogsPattern = "thrive:blogs:*";
+
+        // ============================================
         // Helper Methods
         // ============================================
 

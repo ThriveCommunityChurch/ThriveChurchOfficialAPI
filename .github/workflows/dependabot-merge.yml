@@ -4,19 +4,113 @@ on:
   pull_request:
 
 jobs:
-  auto-merge:
+  dependabot-triage:
     runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
 
-    # These permissions are required by the action
     permissions:
       pull-requests: write
       contents: write
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: fastify/github-action-merge-dependabot@v3
+      - name: Fetch Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          alert-lookup: true
+          compat-lookup: true
+
+      - name: Check if security update and get severity
+        id: check-severity
+        env:
+          GH_TOKEN: ${{ secrets.MYTOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          DEPENDENCY_NAME: ${{ steps.dependabot-metadata.outputs.dependency-names }}
+          COMPATIBILITY_SCORE: ${{ steps.dependabot-metadata.outputs.compatibility-score }}
+        run: |
+          echo "Checking PR #$PR_NUMBER for Dependabot alerts..."
+          echo "Dependency: $DEPENDENCY_NAME"
+          echo "Compatibility score: $COMPATIBILITY_SCORE"
+
+          # Check compatibility threshold (80% minimum)
+          COMPAT_THRESHOLD=80
+          if [ -n "$COMPATIBILITY_SCORE" ] && [ "$COMPATIBILITY_SCORE" != "" ] && [ "$COMPATIBILITY_SCORE" -lt "$COMPAT_THRESHOLD" ]; then
+            echo "⚠️  Compatibility score ($COMPATIBILITY_SCORE%) is below threshold ($COMPAT_THRESHOLD%)"
+            echo "This PR will not be auto-merged due to low compatibility"
+            IS_COMPATIBLE=false
+          else
+            echo "✅ Compatibility score ($COMPATIBILITY_SCORE%) meets threshold ($COMPAT_THRESHOLD%)"
+            IS_COMPATIBLE=true
+          fi
+
+          # Query Dependabot alerts API directly for open alerts
+          echo "Querying Dependabot alerts API for open alerts..."
+          ALERTS_JSON=$(gh api "/repos/$REPO/dependabot/alerts?state=open&per_page=100" 2>/dev/null || echo "[]")
+
+          # Find alerts matching this dependency by package name
+          MATCHING_ALERT=$(echo "$ALERTS_JSON" | jq -r --arg dep "$DEPENDENCY_NAME" '
+            .[] | select(.dependency.package.name == $dep) |
+            {number: .number, severity: .security_vulnerability.severity} |
+            @json' | head -1)
+
+          if [ -n "$MATCHING_ALERT" ] && [ "$MATCHING_ALERT" != "" ] && [ "$MATCHING_ALERT" != "null" ]; then
+            echo "✅ Found matching Dependabot alert: $MATCHING_ALERT"
+            SEVERITY=$(echo "$MATCHING_ALERT" | jq -r '.severity')
+            ALERT_NUMBER=$(echo "$MATCHING_ALERT" | jq -r '.number')
+            echo "Alert #$ALERT_NUMBER - Severity: $SEVERITY"
+            IS_SECURITY=true
+          else
+            echo "ℹ️ No matching Dependabot alerts found - this is a version update"
+            IS_SECURITY=false
+            SEVERITY="none"
+          fi
+
+          echo "is_security_update=$IS_SECURITY" >> $GITHUB_OUTPUT
+          echo "is_compatible=$IS_COMPATIBLE" >> $GITHUB_OUTPUT
+          echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+          echo "compatibility_score=$COMPATIBILITY_SCORE" >> $GITHUB_OUTPUT
+          echo "Final determination: is_security=$IS_SECURITY, severity=$SEVERITY, compatible=$IS_COMPATIBLE"
+
+      - name: Close version update PRs
+        if: steps.check-severity.outputs.is_security_update == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.MYTOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "Closing version update PR #$PR_NUMBER (not a security update)"
+          gh pr close "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --comment "Closing: this is a version update, not a security fix."
+
+      - name: Close incompatible low/moderate severity security PRs
+        if: steps.check-severity.outputs.is_security_update == 'true' && steps.check-severity.outputs.is_compatible == 'false' && (steps.check-severity.outputs.severity == 'low' || steps.check-severity.outputs.severity == 'medium')
+        env:
+          GH_TOKEN: ${{ secrets.MYTOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "Closing PR #$PR_NUMBER - ${{ steps.check-severity.outputs.severity }} severity with low compatibility (${{ steps.check-severity.outputs.compatibility_score }}%)"
+          gh pr close "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --comment "Closing: **${{ steps.check-severity.outputs.severity }}** severity security update with a compatibility score of **${{ steps.check-severity.outputs.compatibility_score }}%** (below our 80% threshold). Risk is tolerable for this project."
+
+      - name: Comment on incompatible high/critical severity security PRs
+        if: steps.check-severity.outputs.is_security_update == 'true' && steps.check-severity.outputs.is_compatible == 'false' && (steps.check-severity.outputs.severity == 'high' || steps.check-severity.outputs.severity == 'critical')
+        env:
+          GH_TOKEN: ${{ secrets.MYTOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "Skipping auto-merge for PR #$PR_NUMBER - Compatibility: ${{ steps.check-severity.outputs.compatibility_score }}%"
+          gh pr comment "$PR_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --body "⚠️ This is a **${{ steps.check-severity.outputs.severity }}** severity security update, but the compatibility score is **${{ steps.check-severity.outputs.compatibility_score }}%** (below our 80% threshold). Please review and merge manually if safe."
+
+      - name: Auto-merge compatible security PRs
+        if: steps.check-severity.outputs.is_security_update == 'true' && steps.check-severity.outputs.is_compatible == 'true'
+        uses: fastify/github-action-merge-dependabot@v3
         with:
           github-token: ${{ secrets.MYTOKEN }}  # classic PAT
-          target: minor                         # only merge minor updates
+          target: minor                         # allow minor version security updates
           approve-only: false                   # approve + merge
-          merge-method: squash                  # optional: squash, merge, or rebase
+          merge-method: squash                  # squash commits
