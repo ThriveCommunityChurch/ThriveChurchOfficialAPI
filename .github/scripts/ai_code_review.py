@@ -15,7 +15,7 @@ import sys
 import json
 import re
 import requests
-from openai import OpenAI
+from openai import OpenAI, AzureOpenAI
 
 # Configuration from environment
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
@@ -37,7 +37,7 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5-mini")
 AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
 AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")  # e.g., https://your-resource.openai.azure.com
 AZURE_OPENAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_DEPLOYMENT")  # Your deployment name
-AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-08-01-preview")
+AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21")
 
 # File extensions to review (focused on C#/.NET - skip config/workflow files)
 REVIEWABLE_EXTENSIONS = {".cs"}
@@ -291,13 +291,11 @@ If there are no issues, return: {"comments": []}"""
 def get_openai_client():
     """Get the appropriate OpenAI client based on configuration."""
     if USE_AZURE_OPENAI:
-        # Use the OpenAI client with the /openai/v1/ base URL for Azure reasoning models
-        # This supports reasoning_effort and other o-series parameters
-        base_url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/v1/"
-        print(f"Using Azure OpenAI (v1 endpoint): {base_url}")
-        return OpenAI(
+        print(f"Using Azure OpenAI: {AZURE_OPENAI_ENDPOINT} (api_version={AZURE_OPENAI_API_VERSION})")
+        return AzureOpenAI(
             api_key=AZURE_OPENAI_API_KEY,
-            base_url=base_url,
+            azure_endpoint=AZURE_OPENAI_ENDPOINT,
+            api_version=AZURE_OPENAI_API_VERSION,
         )
     else:
         print("Using OpenAI directly")
