@@ -15,7 +15,7 @@ import sys
 import json
 import re
 import requests
-from openai import OpenAI, AzureOpenAI
+from openai import OpenAI
 
 # Configuration from environment
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
@@ -289,13 +289,20 @@ If there are no issues, return: {"comments": []}"""
     return prompt
 
 def get_openai_client():
-    """Get the appropriate OpenAI client based on configuration."""
+    """Get the appropriate OpenAI client based on configuration.
+
+    For Azure OpenAI reasoning models (o-series / gpt-5-mini), we must use the
+    OpenAI client with base_url pointing to /openai/v1/ so that parameters like
+    reasoning_effort are passed through correctly. The AzureOpenAI client does
+    not support reasoning_effort.
+    See: https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/reasoning
+    """
     if USE_AZURE_OPENAI:
-        print(f"Using Azure OpenAI: {AZURE_OPENAI_ENDPOINT} (api_version={AZURE_OPENAI_API_VERSION})")
-        return AzureOpenAI(
+        base_url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/v1/"
+        print(f"Using Azure OpenAI (reasoning endpoint): {base_url}")
+        return OpenAI(
             api_key=AZURE_OPENAI_API_KEY,
-            azure_endpoint=AZURE_OPENAI_ENDPOINT,
-            api_version=AZURE_OPENAI_API_VERSION,
+            base_url=base_url,
         )
     else:
         print("Using OpenAI directly")
