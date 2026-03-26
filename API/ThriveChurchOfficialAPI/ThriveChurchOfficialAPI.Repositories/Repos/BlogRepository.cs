@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
@@ -106,7 +107,8 @@ namespace ThriveChurchOfficialAPI.Repositories
         /// <inheritdoc />
         public async Task<BlogPostPagedResponse> SearchBlogPosts(string query, int pageNumber, int pageSize)
         {
-            var regex = new BsonRegularExpression(query, "i");
+            var escapedQuery = Regex.Escape(query);
+            var regex = new BsonRegularExpression(escapedQuery, "i");
 
             var filter = Builders<BlogPost>.Filter.And(
                 Builders<BlogPost>.Filter.Eq(b => b.IsPublished, true),
