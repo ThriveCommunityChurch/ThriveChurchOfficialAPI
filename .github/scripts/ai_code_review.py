@@ -76,28 +76,31 @@ def should_review_file(filename):
     return ext.lower() in REVIEWABLE_EXTENSIONS
 
 
-def parse_diff_for_positions(patch):
-    """Parse a unified diff patch to map line numbers to diff positions."""
+def parse_diff_lines(patch):
+    """Parse a unified diff patch to get the set of valid new-side line numbers.
+
+    Returns a set of line numbers that appear on the RIGHT (new) side of the
+    diff.  These are the only lines GitHub will accept for inline comments when
+    using the ``line`` + ``side`` API parameters.
+    """
     if not patch:
-        return {}
-    line_map = {}
-    diff_position = 0
+        return set()
+    valid_lines = set()
     current_new_line = 0
     for line in patch.split("\n"):
-        diff_position += 1
         if line.startswith("@@"):
             match = re.search(r"\+(\d+)", line)
             if match:
                 current_new_line = int(match.group(1)) - 1
         elif line.startswith("-"):
-            pass  # Deleted line - no new line number
+            pass  # Deleted line — no new-side line number
         elif line.startswith("+"):
             current_new_line += 1
-            line_map[current_new_line] = diff_position
+            valid_lines.add(current_new_line)
         else:
             current_new_line += 1
-            line_map[current_new_line] = diff_position
-    return line_map
+            valid_lines.add(current_new_line)
+    return valid_lines
 
 
 def annotate_patch_with_line_numbers(patch):
@@ -321,13 +324,13 @@ def post_review_comments(comments, files_data, raw_response):
         post_summary_comment(summary)
         return
 
-    # Build position maps for all files
-    position_maps = {}
+    # Build sets of valid new-side line numbers for each file in the diff
+    valid_line_sets = {}
     for file in files_data:
         filename = file["filename"]
-        position_maps[filename] = parse_diff_for_positions(file.get("patch", ""))
+        valid_line_sets[filename] = parse_diff_lines(file.get("patch", ""))
 
-    # Prepare review comments
+    # Prepare review comments using line + side (not position)
     review_comments = []
     unmapped_comments = []
     for comment in comments:
@@ -338,18 +341,18 @@ def post_review_comments(comments, files_data, raw_response):
         if not filename or not line or not body:
             continue
 
-        # Find the diff position for this line
-        position_map = position_maps.get(filename, {})
-        position = position_map.get(line)
+        # Verify the line exists in the diff for this file
+        valid_lines = valid_line_sets.get(filename, set())
 
-        if position:
+        if line in valid_lines:
             review_comments.append({
                 "path": filename,
-                "position": position,
+                "line": line,
+                "side": "RIGHT",
                 "body": f"{body}"
             })
         else:
-            print(f"WARNING: Could not map line {line} in {filename} to diff position - comment will be included in summary instead")
+            print(f"WARNING: Line {line} in {filename} is not in the diff (valid: {sorted(valid_lines)[:20]}...) - comment will be included in summary instead")
             unmapped_comments.append(comment)
 
     if review_comments:

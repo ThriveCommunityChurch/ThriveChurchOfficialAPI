@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using ThriveChurchOfficialAPI.Core;
 using ThriveChurchOfficialAPI.Repositories;
 
@@ -98,6 +99,13 @@ namespace ThriveChurchOfficialAPI.Services
             {
                 return new SystemResponse<BlogPost>(true,
                     string.Format(SystemMessages.NullProperty, "BlogId"));
+            }
+
+            var validId = ObjectId.TryParse(blogId, out ObjectId _);
+            if (!validId)
+            {
+                return new SystemResponse<BlogPost>(true,
+                    string.Format(SystemMessages.InvalidPropertyType, "BlogId", "ObjectId"));
             }
 
             var cacheKey = CacheKeys.Format(CacheKeys.BlogItem, blogId);
