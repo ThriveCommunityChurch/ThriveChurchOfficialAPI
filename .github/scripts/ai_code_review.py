@@ -15,7 +15,7 @@ import sys
 import json
 import re
 import requests
-from openai import OpenAI, AzureOpenAI
+from openai import OpenAI
 
 # Configuration from environment
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
@@ -291,11 +291,13 @@ If there are no issues, return: {"comments": []}"""
 def get_openai_client():
     """Get the appropriate OpenAI client based on configuration."""
     if USE_AZURE_OPENAI:
-        print(f"Using Azure OpenAI: {AZURE_OPENAI_ENDPOINT}")
-        return AzureOpenAI(
+        # Use the OpenAI client with the /openai/v1/ base URL for Azure reasoning models
+        # This supports reasoning_effort and other o-series parameters
+        base_url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/v1/"
+        print(f"Using Azure OpenAI (v1 endpoint): {base_url}")
+        return OpenAI(
             api_key=AZURE_OPENAI_API_KEY,
-            api_version=AZURE_OPENAI_API_VERSION,
-            azure_endpoint=AZURE_OPENAI_ENDPOINT
+            base_url=base_url,
         )
     else:
         print("Using OpenAI directly")
