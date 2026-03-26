@@ -238,27 +238,38 @@ def call_openai_for_review(prompt):
 
     content = response.choices[0].message.content
 
+    # Log the raw LLM response so it's visible in the Action output
+    print("=" * 60)
+    print("RAW LLM RESPONSE:")
+    print("=" * 60)
+    print(content)
+    print("=" * 60)
+
     # Parse the JSON response
     try:
         result = json.loads(content)
         # Handle both {"comments": [...]} and [...] formats
         if isinstance(result, list):
-            return result
+            return content, result
         elif isinstance(result, dict) and "comments" in result:
-            return result["comments"]
+            return content, result["comments"]
         else:
-            return []
+            return content, []
     except json.JSONDecodeError:
         print(f"Failed to parse OpenAI response as JSON: {content}")
-        return []
+        return content, []
 
 
 
-def post_review_comments(comments, files_data):
+def post_review_comments(comments, files_data, raw_response):
     """Post inline review comments to the PR using GitHub's review API."""
     if not comments:
         print("No issues found - code looks good!")
-        post_summary_comment("✅ **AI Code Review**: No issues found. The changes look good!")
+        summary = "✅ **AI Code Review**: No issues found. The changes look good!\n\n"
+        summary += "<details>\n<summary>Raw AI Response</summary>\n\n```json\n"
+        summary += raw_response
+        summary += "\n```\n</details>"
+        post_summary_comment(summary)
         return
 
     # Build position maps for all files
@@ -269,6 +280,7 @@ def post_review_comments(comments, files_data):
 
     # Prepare review comments
     review_comments = []
+    unmapped_comments = []
     for comment in comments:
         filename = comment.get("file", "")
         line = comment.get("line", 0)
@@ -288,7 +300,8 @@ def post_review_comments(comments, files_data):
                 "body": f"🤖 **AI Review**:\n\n{body}"
             })
         else:
-            print(f"Could not map line {line} in {filename} to diff position")
+            print(f"WARNING: Could not map line {line} in {filename} to diff position - comment will be included in summary instead")
+            unmapped_comments.append(comment)
 
     if review_comments:
         # Post as a PR review with inline comments
@@ -314,9 +327,14 @@ def post_review_comments(comments, files_data):
         else:
             print(f"Failed to post review: {response.status_code}")
             print(response.text)
-            post_summary_comment(format_fallback_summary(comments))
+            post_summary_comment(format_fallback_summary(comments, raw_response))
     else:
-        post_summary_comment(format_fallback_summary(comments))
+        post_summary_comment(format_fallback_summary(comments, raw_response))
+
+    # If some comments were posted inline but others couldn't be mapped, append those as a follow-up
+    if review_comments and unmapped_comments:
+        fallback = format_fallback_summary(unmapped_comments, raw_response)
+        post_summary_comment(fallback)
 
 
 def post_summary_comment(body):
@@ -334,7 +352,7 @@ def post_summary_comment(body):
         print(f"Failed to post summary comment: {response.status_code}")
 
 
-def format_fallback_summary(comments):
+def format_fallback_summary(comments, raw_response=None):
     """Format comments as a summary when inline comments aren't possible."""
     lines = ["🤖 **AI Code Review**\n"]
 
@@ -351,9 +369,17 @@ def format_fallback_summary(comments):
 
     # If all comments were filtered out, return a success message
     if len(lines) == 1:
-        return "✅ **AI Code Review**: No issues found. The changes look good!"
+        result = "✅ **AI Code Review**: No issues found. The changes look good!"
+    else:
+        result = "\n".join(lines)
 
-    return "\n".join(lines)
+    # Always append the raw AI response in a collapsible section
+    if raw_response:
+        result += "\n\n<details>\n<summary>Raw AI Response</summary>\n\n```json\n"
+        result += raw_response
+        result += "\n```\n</details>"
+
+    return result
 
 
 
@@ -417,11 +443,11 @@ def main():
     prompt = build_review_prompt(files_to_review)
     print(f"Sending {len(files_to_review)} file(s) to OpenAI for review...")
 
-    comments = call_openai_for_review(prompt)
+    raw_response, comments = call_openai_for_review(prompt)
     print(f"Received {len(comments)} comment(s) from AI")
 
     # Post the review
-    post_review_comments(comments, files)
+    post_review_comments(comments, files, raw_response)
 
     print("AI Code Review complete!")
 
