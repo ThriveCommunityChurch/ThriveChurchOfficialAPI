@@ -14,7 +14,7 @@ permissions:
 
 env:
   # Maximum number of changed lines before skipping detailed review
-  MAX_DIFF_LINES: 750
+  MAX_DIFF_LINES: 1500
 
   # ============================================
   # OpenAI Configuration
