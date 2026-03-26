@@ -373,7 +373,23 @@ def post_review_comments(comments, files_data, raw_response):
     """Post inline review comments to the PR using GitHub's review API."""
     if not comments:
         print("No issues found - code looks good!")
-        post_summary_comment("No issues found. The changes look good!")
+        # Approve the PR via the reviews API
+        url = f"{GITHUB_API_BASE}/repos/{REPO_FULL_NAME}/pulls/{PR_NUMBER}/reviews"
+        headers = {
+            "Authorization": f"token {GITHUB_TOKEN}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        data = {
+            "commit_id": HEAD_SHA,
+            "body": "No issues found. The changes look good!",
+            "event": "APPROVE"
+        }
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            print("Approved PR - no issues found")
+        else:
+            print(f"Failed to approve PR: {response.status_code}")
+            print(response.text)
         return
 
     # Build sets of valid new-side line numbers for each file in the diff
