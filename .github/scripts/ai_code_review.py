@@ -314,7 +314,7 @@ def post_review_comments(comments, files_data, raw_response):
             review_comments.append({
                 "path": filename,
                 "position": position,
-                "body": f"🤖 **AI Review**:\n\n{body}"
+                "body": f"{body}"
             })
         else:
             print(f"WARNING: Could not map line {line} in {filename} to diff position - comment will be included in summary instead")
@@ -328,7 +328,8 @@ def post_review_comments(comments, files_data, raw_response):
             "Accept": "application/vnd.github.v3+json",
         }
 
-        review_body = f"🤖 **AI Code Review** found {len(review_comments)} item(s) to discuss."
+        item_word = "item" if len(review_comments) == 1 else "items"
+        review_body = f"Found {len(review_comments)} {item_word} to discuss."
 
         data = {
             "commit_id": HEAD_SHA,
@@ -371,7 +372,7 @@ def post_summary_comment(body):
 
 def format_fallback_summary(comments, raw_response=None):
     """Format comments as a summary when inline comments aren't possible."""
-    lines = ["🤖 **AI Code Review**\n"]
+    lines = ["**Code Review**\n"]
 
     for comment in comments:
         filename = comment.get("file", "")
