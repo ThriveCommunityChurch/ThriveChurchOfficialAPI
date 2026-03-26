@@ -157,7 +157,8 @@ DO NOT flag:
 
 Only flag these specific issues:
 - **BANNED: AutoMapper** - Flag ANY use of AutoMapper. Suggest manual mapping instead.
-- Async/await deadlocks: `.Result`, `.Wait()`, `Task.Run(...).Result` — EXCEPT in constructors or other sync-only contexts where async code must be called synchronously (e.g. one-time init like index creation). `.GetAwaiter().GetResult()` is acceptable there.
+- Async/await deadlocks: `.Result`, `.Wait()`, `Task.Run(...).Result` in async methods or request handlers
+- **EXCEPTION — DO NOT FLAG**: `.GetAwaiter().GetResult()` inside a **constructor** is SAFE and ACCEPTABLE. Constructors cannot be async, so this is the standard pattern for one-time initialization (e.g. creating MongoDB indexes). NEVER flag this pattern in a constructor.
 - Null dereference that WILL throw (not might throw)
 - SQL/NoSQL injection with string interpolation in queries
 - Hardcoded secrets/passwords/API keys in source code
