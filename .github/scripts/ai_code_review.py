@@ -50,6 +50,10 @@ IGNORE_PATTERNS = {
     ".designer.cs",
     ".g.cs",
     "Migrations/",
+    ".Tests/",
+    "Tests.cs",
+    "Test.cs",
+    ".github/scripts/",
 }
 
 GITHUB_API_BASE = "https://api.github.com"
@@ -143,6 +147,15 @@ def build_review_prompt(files_with_diffs):
     """Build the prompt for OpenAI with the diffs to review."""
     prompt = """You are an expert C#/.NET code reviewer. Review the following code changes for ACTUAL BUGS ONLY.
 
+## Philosophy: Pragmatic, Not Pedantic
+
+Your default stance is to APPROVE. Most PRs are fine. If the code works and is not a clear anti-pattern, say nothing. Working code that ships is better than theoretically perfect code that doesn't.
+
+- If a solution works but a slightly better alternative exists, that is NOT worth flagging.
+- If code is functional and not actively harmful, leave it alone.
+- Only speak up when something will genuinely break, lose data, or create a security hole.
+- When in doubt, stay silent. An empty comments array is a perfectly good review.
+
 ## IMPORTANT: Be Extremely Selective
 
 You MUST only flag code that has a HIGH probability of causing a runtime bug, security vulnerability, or data loss.
@@ -152,36 +165,49 @@ DO NOT flag:
 - Missing error handling that would just cause the program to crash (that's often acceptable)
 - Generic suggestions like "add logging" or "add validation"
 - Code that retrieves environment variables (this is standard practice)
-- Code that could theoretically be improved but works correctly
+- Code that works correctly but could theoretically be "improved"
 - Performance suggestions unless there's an actual O(n²) or worse issue in a hot path
 - Suggestions to add try/catch blocks around code that already has error handling
+- Test code — test secrets, test data, and test patterns are fine. Do not review test files for production concerns.
+- Code in non-C# files (Python, JavaScript, YAML, Markdown, etc.)
 
 ## What to Actually Flag (BUGS ONLY)
 
 Only flag these specific issues:
 - **BANNED: AutoMapper** - Flag ANY use of AutoMapper. Suggest manual mapping instead.
-- Async/await deadlocks: `.Result`, `.Wait()`, `Task.Run(...).Result` in async methods or request handlers
+- **`async void` methods** — Flag any `async void` method that is NOT an event handler. `async void` swallows exceptions and cannot be awaited. It should be `async Task` instead.
 - Null dereference that WILL throw (not might throw)
 - SQL/NoSQL injection with string interpolation in queries
-- Hardcoded secrets/passwords/API keys in source code
+- Regex injection — user input passed directly to `new Regex()` without escaping
+- Hardcoded secrets/passwords/API keys in PRODUCTION source code (not test code)
 - Resource leaks: FileStream/SqlConnection without using/dispose
-- .First() without .FirstOrDefault() when collection might be empty
 - Infinite loops or obvious logic errors
 - Thread safety issues with shared mutable state
+- Division by zero when the divisor comes from user input without validation
+
+## HARD RULES — NEVER VIOLATE
+
+1. **Do NOT flag `.Result`, `.Wait()`, `.GetAwaiter().GetResult()`, or `ReadToEndAsync().Result`.** These synchronous-over-async patterns are accepted in this codebase. The only async issue worth flagging is `async void` (see above).
+2. **Cache key formatting and validation is NOT a bug.** Do NOT flag cache key construction.
+3. **If ObjectId.TryParse is already being used, the input IS validated.** Do NOT suggest additional validation for the same value.
+4. **Do NOT review test files for security concerns.** Hardcoded keys, secrets, and dummy data in test projects are expected and correct.
+5. **Do NOT review non-C# files.** Python scripts, YAML configs, JavaScript files, and Markdown are out of scope.
 
 ## Examples of Code to FLAG
 
 ```csharp
-// FLAG: Deadlock risk
-var result = GetDataAsync().Result;
-
-// FLAG: Will throw on empty collection
-var item = items.First();
+// FLAG: async void (swallows exceptions, cannot be awaited)
+public async void ProcessData() { // should be async Task
+    await DoWorkAsync();
+}
 
 // FLAG: SQL injection
 var query = $"SELECT * FROM Users WHERE Id = {userId}";
 
-// FLAG: Hardcoded secret
+// FLAG: Regex injection
+var regex = new Regex(userInput); // user input not escaped
+
+// FLAG: Hardcoded secret in production code
 var apiKey = "sk-1234567890abcdef";
 
 // FLAG: Resource leak
@@ -190,19 +216,18 @@ var stream = new FileStream(path, FileMode.Open);
 
 // FLAG: AutoMapper (BANNED)
 var dto = _mapper.Map<UserDto>(user);
+
+// FLAG: Division by zero from user input
+var pages = totalCount / pageSize; // pageSize could be 0
 ```
-
-## HARD RULES — NEVER VIOLATE
-
-1. **`.GetAwaiter().GetResult()` in a constructor is ALWAYS SAFE.** Constructors cannot be async. This is the standard C# pattern for one-time initialization. Do NOT flag it. Do NOT mention it. SKIP IT ENTIRELY.
-2. **Cache key formatting and validation is NOT a bug.** Do NOT flag cache key construction.
-3. **If ObjectId.TryParse is already being used, the input IS validated.** Do NOT suggest additional validation for the same value.
 
 ## Examples of Code to IGNORE (do NOT flag)
 
 ```csharp
-// IGNORE: .GetAwaiter().GetResult() in a constructor — this is SAFE
+// IGNORE: .Result, .Wait(), .GetAwaiter().GetResult() — accepted in this codebase
 CreateIndexesAsync().GetAwaiter().GetResult();
+var body = reader.ReadToEndAsync().Result;
+var data = GetDataAsync().Result;
 
 // IGNORE: Standard env var retrieval
 var config = Environment.GetEnvironmentVariable("CONFIG")
@@ -216,14 +241,20 @@ var result = await GetDataAsync();
 
 // IGNORE: Using statement
 using var stream = new FileStream(path, FileMode.Open);
+
+// IGNORE: Test code with hardcoded values
+var testKey = "test-secret-key-12345"; // in a test file — fine
+
+// IGNORE: Code that works even if an alternative exists
+var items = list.Where(x => x.IsActive).ToList(); // works fine, don't suggest alternatives
 ```
 
 ## Response Rules
 
-1. If the code looks reasonable, return: {"comments": []}
+1. Your DEFAULT response should be: {"comments": []} — most PRs are fine
 2. Only flag ACTUAL BUGS with HIGH confidence
-3. Do not make generic suggestions
-4. Do not flag Python/JavaScript/YAML for C#-specific issues
+3. Do not make generic suggestions or "nice to have" improvements
+4. Do not flag test files or non-C# files
 5. **CRITICAL: Each comment's "file" field MUST be the EXACT file path from the "### FILE:" header where the code appears. Do NOT attribute a finding in one file to a different file.**
 
 ## Code to Review
@@ -290,7 +321,8 @@ def call_openai_for_review(prompt):
                 "content": prompt
             }
         ],
-        temperature=0.3,  # Lower temperature for more consistent reviews
+        max_completion_tokens=16000,
+        reasoning_effort="medium",
         response_format={"type": "json_object"}
     )
 
