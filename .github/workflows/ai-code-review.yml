@@ -24,7 +24,7 @@ env:
 
   # Standard OpenAI settings (used when USE_AZURE_OPENAI=false)
   # Requires secret: OPENAI_API_KEY
-  OPENAI_MODEL: gpt-4o-mini
+  OPENAI_MODEL: gpt-5-nano
 
   # Azure OpenAI settings (used when USE_AZURE_OPENAI=true)
   # Requires secrets: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT

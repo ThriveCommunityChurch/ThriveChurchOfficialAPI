@@ -31,7 +31,7 @@ USE_AZURE_OPENAI = os.environ.get("USE_AZURE_OPENAI", "false").lower() == "true"
 
 # Standard OpenAI settings
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5-mini")
 
 # Azure OpenAI settings (only used if USE_AZURE_OPENAI=true)
 AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
@@ -161,7 +161,6 @@ DO NOT flag:
 Only flag these specific issues:
 - **BANNED: AutoMapper** - Flag ANY use of AutoMapper. Suggest manual mapping instead.
 - Async/await deadlocks: `.Result`, `.Wait()`, `Task.Run(...).Result` in async methods or request handlers
-- **EXCEPTION — DO NOT FLAG**: `.GetAwaiter().GetResult()` inside a **constructor** is SAFE and ACCEPTABLE. Constructors cannot be async, so this is the standard pattern for one-time initialization (e.g. creating MongoDB indexes). NEVER flag this pattern in a constructor.
 - Null dereference that WILL throw (not might throw)
 - SQL/NoSQL injection with string interpolation in queries
 - Hardcoded secrets/passwords/API keys in source code
@@ -193,27 +192,29 @@ var stream = new FileStream(path, FileMode.Open);
 var dto = _mapper.Map<UserDto>(user);
 ```
 
+## HARD RULES — NEVER VIOLATE
+
+1. **`.GetAwaiter().GetResult()` in a constructor is ALWAYS SAFE.** Constructors cannot be async. This is the standard C# pattern for one-time initialization. Do NOT flag it. Do NOT mention it. SKIP IT ENTIRELY.
+2. **Cache key formatting and validation is NOT a bug.** Do NOT flag cache key construction.
+3. **If ObjectId.TryParse is already being used, the input IS validated.** Do NOT suggest additional validation for the same value.
+
 ## Examples of Code to IGNORE (do NOT flag)
 
 ```csharp
-// IGNORE: Standard env var retrieval - this is fine
-var token = os.environ.get("API_KEY")
+// IGNORE: .GetAwaiter().GetResult() in a constructor — this is SAFE
+CreateIndexesAsync().GetAwaiter().GetResult();
+
+// IGNORE: Standard env var retrieval
 var config = Environment.GetEnvironmentVariable("CONFIG")
 
-// IGNORE: Error handling that crashes is acceptable
-response.raise_for_status()  // Let it throw, that's fine
-
-// IGNORE: FirstOrDefault with null check is safe
+// IGNORE: FirstOrDefault with null check
 var item = items.FirstOrDefault();
 if (item == null) return NotFound();
 
 // IGNORE: Proper async
 var result = await GetDataAsync();
 
-// IGNORE: .GetAwaiter().GetResult() in a constructor for one-time init is acceptable
-CreateIndexesAsync().GetAwaiter().GetResult();
-
-// IGNORE: Using statement is safe
+// IGNORE: Using statement
 using var stream = new FileStream(path, FileMode.Open);
 ```
 
@@ -223,24 +224,29 @@ using var stream = new FileStream(path, FileMode.Open);
 2. Only flag ACTUAL BUGS with HIGH confidence
 3. Do not make generic suggestions
 4. Do not flag Python/JavaScript/YAML for C#-specific issues
+5. **CRITICAL: Each comment's "file" field MUST be the EXACT file path from the "### FILE:" header where the code appears. Do NOT attribute a finding in one file to a different file.**
 
 ## Code to Review
+
+Each file below is inside its own clearly marked section.
+Pay close attention to which file each code block belongs to.
 
 """
     for file_info in files_with_diffs:
         annotated = annotate_patch_with_line_numbers(file_info['patch'])
-        prompt += f"\n### File: {file_info['filename']}\n```\n{annotated}\n```\n"
+        prompt += f"\n{'='*60}\n### FILE: {file_info['filename']}\n{'='*60}\n```\n{annotated}\n```\n"
 
     prompt += """
 
 Each line above is prefixed with its real file line number (e.g. L  28).
 Use EXACTLY that number in the "line" field of your response.
+Use EXACTLY the file path from the "### FILE:" header for the "file" field.
 
 Respond with ONLY a JSON object in this exact format, no other text:
 {
   "comments": [
     {
-      "file": "path/to/file.cs",
+      "file": "exact/path/from/FILE/header.cs",
       "line": 42,
       "body": "Description of the bug"
     }
