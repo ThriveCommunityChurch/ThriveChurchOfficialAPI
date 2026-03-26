@@ -100,6 +100,33 @@ def parse_diff_for_positions(patch):
     return line_map
 
 
+def annotate_patch_with_line_numbers(patch):
+    """Convert a raw diff patch into line-numbered content for the LLM.
+
+    Strips diff markers (+/-/@@) and labels each added/context line with its
+    actual file line number so the AI can reference exact lines.
+    """
+    if not patch:
+        return ""
+    lines = []
+    current_new_line = 0
+    for line in patch.split("\n"):
+        if line.startswith("@@"):
+            match = re.search(r"\+(\d+)", line)
+            if match:
+                current_new_line = int(match.group(1)) - 1
+        elif line.startswith("-"):
+            # Deleted lines - show for context but don't assign a line number
+            lines.append(f"     (deleted) {line[1:]}")
+        elif line.startswith("+"):
+            current_new_line += 1
+            lines.append(f"L{current_new_line:>4}: {line[1:]}")
+        else:
+            current_new_line += 1
+            lines.append(f"L{current_new_line:>4}: {line}")
+    return "\n".join(lines)
+
+
 def count_changed_lines(files):
     """Count total added/modified lines across all files."""
     total = 0
@@ -197,9 +224,13 @@ using var stream = new FileStream(path, FileMode.Open);
 
 """
     for file_info in files_with_diffs:
-        prompt += f"\n### File: {file_info['filename']}\n```\n{file_info['patch']}\n```\n"
+        annotated = annotate_patch_with_line_numbers(file_info['patch'])
+        prompt += f"\n### File: {file_info['filename']}\n```\n{annotated}\n```\n"
 
     prompt += """
+
+Each line above is prefixed with its real file line number (e.g. L  28).
+Use EXACTLY that number in the "line" field of your response.
 
 Respond with ONLY a JSON object in this exact format, no other text:
 {
