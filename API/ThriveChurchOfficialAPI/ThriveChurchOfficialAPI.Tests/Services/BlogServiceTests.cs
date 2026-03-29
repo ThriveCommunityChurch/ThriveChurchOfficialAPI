@@ -98,13 +98,13 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         }
 
         [TestMethod]
-        public async Task GetPublishedBlogPosts_PageSizeTooLarge_DefaultsTo10()
+        public async Task GetPublishedBlogPosts_PageSizeLarge_PassesThrough()
         {
-            var pagedResponse = CreateTestPagedResponse(5, 1, 10);
-            _mockBlogRepository.Setup(r => r.GetPublishedBlogPosts(1, 10)).ReturnsAsync(pagedResponse);
+            var pagedResponse = CreateTestPagedResponse(5, 1, 100);
+            _mockBlogRepository.Setup(r => r.GetPublishedBlogPosts(1, 100)).ReturnsAsync(pagedResponse);
             var result = await _blogService.GetPublishedBlogPosts(1, 100);
             Assert.IsFalse(result.HasErrors);
-            _mockBlogRepository.Verify(r => r.GetPublishedBlogPosts(1, 10), Times.Once);
+            _mockBlogRepository.Verify(r => r.GetPublishedBlogPosts(1, 100), Times.Once);
         }
 
         [TestMethod]
@@ -283,13 +283,13 @@ namespace ThriveChurchOfficialAPI.Tests.Services
         }
 
         [TestMethod]
-        public async Task SearchBlogPosts_PageSizeTooLarge_DefaultsTo10()
+        public async Task SearchBlogPosts_PageSizeLarge_PassesThrough()
         {
-            var pagedResponse = CreateTestPagedResponse(3, 1, 10);
-            _mockBlogRepository.Setup(r => r.SearchBlogPosts("grace", 1, 10)).ReturnsAsync(pagedResponse);
+            var pagedResponse = CreateTestPagedResponse(3, 1, 100);
+            _mockBlogRepository.Setup(r => r.SearchBlogPosts("grace", 1, 100)).ReturnsAsync(pagedResponse);
             var result = await _blogService.SearchBlogPosts("grace", 1, 100);
             Assert.IsFalse(result.HasErrors);
-            _mockBlogRepository.Verify(r => r.SearchBlogPosts("grace", 1, 10), Times.Once);
+            _mockBlogRepository.Verify(r => r.SearchBlogPosts("grace", 1, 100), Times.Once);
         }
 
         [TestMethod]
