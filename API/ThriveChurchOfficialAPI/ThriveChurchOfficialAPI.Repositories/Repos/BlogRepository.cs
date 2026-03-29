@@ -31,8 +31,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                 {
                     cm.AutoMap();
                     cm.GetMemberMap(c => c.SourceId).SetSerializer(
-                        new MongoDB.Bson.Serialization.Serializers.StringSerializer(
-                            MongoDB.Bson.Serialization.Options.BsonType.ObjectId));
+                        new MongoDB.Bson.Serialization.Serializers.StringSerializer(BsonType.ObjectId));
                 });
             }
 
