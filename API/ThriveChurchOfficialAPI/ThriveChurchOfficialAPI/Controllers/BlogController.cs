@@ -28,10 +28,10 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// </summary>
         /// <remarks>
         /// Returns published blog posts ordered by PublishedDate descending.
-        /// Default page size is 10, max is 50.
+        /// Default page size is 10. No upper limit.
         /// </remarks>
         /// <param name="pageNumber">1-based page number (default: 1)</param>
-        /// <param name="pageSize">Number of items per page (default: 10, max: 50)</param>
+        /// <param name="pageSize">Number of items per page (default: 10)</param>
         /// <returns>Paged blog post response</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>
@@ -109,7 +109,7 @@ namespace ThriveChurchOfficialAPI.Controllers
         /// </remarks>
         /// <param name="query">Search keyword</param>
         /// <param name="pageNumber">1-based page number (default: 1)</param>
-        /// <param name="pageSize">Number of items per page (default: 10, max: 50)</param>
+        /// <param name="pageSize">Number of items per page (default: 10)</param>
         /// <returns>Paged blog post search results</returns>
         /// <response code="200">OK</response>
         /// <response code="400">Bad Request</response>

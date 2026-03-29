@@ -12,7 +12,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// Gets published blog posts with paging
         /// </summary>
         /// <param name="pageNumber">1-based page number</param>
-        /// <param name="pageSize">Number of items per page (max 50)</param>
+        /// <param name="pageSize">Number of items per page</param>
         /// <returns>Paged blog post response</returns>
         Task<SystemResponse<BlogPostPagedResponse>> GetPublishedBlogPosts(int pageNumber = 1, int pageSize = 10);
 
@@ -35,7 +35,7 @@ namespace ThriveChurchOfficialAPI.Services
         /// </summary>
         /// <param name="query">Search keyword</param>
         /// <param name="pageNumber">1-based page number</param>
-        /// <param name="pageSize">Number of items per page (max 50)</param>
+        /// <param name="pageSize">Number of items per page</param>
         /// <returns>Paged blog post search results</returns>
         Task<SystemResponse<BlogPostPagedResponse>> SearchBlogPosts(string query, int pageNumber = 1, int pageSize = 10);
     }

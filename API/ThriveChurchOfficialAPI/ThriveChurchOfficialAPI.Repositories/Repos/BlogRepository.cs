@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using ThriveChurchOfficialAPI.Core;
 
@@ -23,6 +24,17 @@ namespace ThriveChurchOfficialAPI.Repositories
         public BlogRepository(IConfiguration Configuration)
             : base(Configuration)
         {
+            // Register class map for proper ObjectId to string deserialization on SourceId
+            if (!BsonClassMap.IsClassMapRegistered(typeof(BlogPost)))
+            {
+                BsonClassMap.RegisterClassMap<BlogPost>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.GetMemberMap(c => c.SourceId).SetSerializer(
+                        new MongoDB.Bson.Serialization.Serializers.StringSerializer(BsonType.ObjectId));
+                });
+            }
+
             _blogsCollection = DB.GetCollection<BlogPost>("Blogs");
 
             // Create indexes for better query performance

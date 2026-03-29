@@ -40,3 +40,7 @@ launchSettings.json
 
 # Coverage Reports
 **/TestResults/
+
+# Giant Folders
+**/node_modules/
+.github/evals

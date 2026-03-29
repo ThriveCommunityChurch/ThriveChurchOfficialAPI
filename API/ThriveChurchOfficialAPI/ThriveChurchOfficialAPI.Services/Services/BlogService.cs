@@ -39,7 +39,7 @@ namespace ThriveChurchOfficialAPI.Services
                     string.Format(SystemMessages.IllogicalPagingNumber, pageNumber));
             }
 
-            if (pageSize < 1 || pageSize > 50)
+            if (pageSize < 1)
             {
                 pageSize = 10;
             }
@@ -142,7 +142,7 @@ namespace ThriveChurchOfficialAPI.Services
                     string.Format(SystemMessages.IllogicalPagingNumber, pageNumber));
             }
 
-            if (pageSize < 1 || pageSize > 50)
+            if (pageSize < 1)
             {
                 pageSize = 10;
             }
