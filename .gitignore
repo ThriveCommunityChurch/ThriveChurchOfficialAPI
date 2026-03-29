@@ -40,3 +40,4 @@ launchSettings.json
 
 # Coverage Reports
 **/TestResults/
+**/node_modules/
