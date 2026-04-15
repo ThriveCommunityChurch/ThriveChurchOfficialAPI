@@ -58,17 +58,17 @@ namespace ThriveChurchOfficialAPI.Repositories
                     Builders<BlogPost>.IndexKeys.Ascending(b => b.IsPublished),
                     new CreateIndexOptions { Name = IndexKeys.BlogsByIsPublishedAsc }),
 
-                // Index on PublishedDate for sorting
+                // Index on CreateDate for sorting
                 new CreateIndexModel<BlogPost>(
-                    Builders<BlogPost>.IndexKeys.Descending(b => b.PublishedDate),
-                    new CreateIndexOptions { Name = IndexKeys.BlogsByPublishedDateDesc }),
+                    Builders<BlogPost>.IndexKeys.Descending(b => b.CreateDate),
+                    new CreateIndexOptions { Name = IndexKeys.BlogsByCreateDateDesc }),
 
                 // Compound index for published posts sorted by date (most common query)
                 new CreateIndexModel<BlogPost>(
                     Builders<BlogPost>.IndexKeys
                         .Ascending(b => b.IsPublished)
-                        .Descending(b => b.PublishedDate),
-                    new CreateIndexOptions { Name = IndexKeys.BlogsByIsPublishedAndPublishedDate })
+                        .Descending(b => b.CreateDate),
+                    new CreateIndexOptions { Name = IndexKeys.BlogsByIsPublishedAndCreateDate })
             };
 
             await _blogsCollection.Indexes.CreateManyAsync(indexModels);
@@ -78,7 +78,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         public async Task<BlogPostPagedResponse> GetPublishedBlogPosts(int pageNumber, int pageSize)
         {
             var filter = Builders<BlogPost>.Filter.Eq(b => b.IsPublished, true);
-            var sort = Builders<BlogPost>.Sort.Descending(b => b.PublishedDate);
+            var sort = Builders<BlogPost>.Sort.Descending(b => b.CreateDate);
 
             var totalCount = await _blogsCollection.CountDocumentsAsync(filter);
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
@@ -131,7 +131,7 @@ namespace ThriveChurchOfficialAPI.Repositories
                 )
             );
 
-            var sort = Builders<BlogPost>.Sort.Descending(b => b.PublishedDate);
+            var sort = Builders<BlogPost>.Sort.Descending(b => b.CreateDate);
             var totalCount = await _blogsCollection.CountDocumentsAsync(filter);
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
