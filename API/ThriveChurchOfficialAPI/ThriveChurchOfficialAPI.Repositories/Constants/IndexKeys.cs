@@ -25,7 +25,7 @@ namespace ThriveChurchOfficialAPI.Repositories
         // Blogs Collection
         public const string BlogsBySlugAsc_Unique = "Blogs_Slug_1";
         public const string BlogsByIsPublishedAsc = "Blogs_IsPublished_1";
-        public const string BlogsByPublishedDateDesc = "Blogs_PublishedDate_-1";
-        public const string BlogsByIsPublishedAndPublishedDate = "Blogs_IsPublished_1_PublishedDate_-1";
+        public const string BlogsByCreateDateDesc = "Blogs_CreateDate_-1";
+        public const string BlogsByIsPublishedAndCreateDate = "Blogs_IsPublished_1_CreateDate_-1";
     }
 }
