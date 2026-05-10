@@ -5,7 +5,7 @@ on:
 
 jobs:
   dependabot-triage:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.CI_RUNNER && fromJSON('["self-hosted", "Linux", "X64"]') || fromJSON('["ubuntu-latest"]') }}
     if: github.actor == 'dependabot[bot]'
 
     permissions:
